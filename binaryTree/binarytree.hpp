@@ -27,7 +27,7 @@ struct tree_para
 		fracFtrs = 0.0625;
 		nThreads = 8;
 	}
-}
+};
 
 
 /*  struct of the binary tree , save and load */
@@ -40,7 +40,7 @@ struct biTree
 	Mat hs;			/* Kx1 log ratio (.5*log(p/(1-p)) at each node, used later to decide polarity */
 	Mat weights;	/* Kx1 total sample weight at each node */
 	Mat depth;		/* Kx1 depth of node*/
-}
+};
 
 
 class binaryTree
@@ -55,8 +55,8 @@ class binaryTree
 		 * =====================================================================================
 		 */
 		bool Train( 
-				const Mat &neg_data,			/* input, format-> numbers0 x featuredim */
-			    const Mat &pos_data,			/* input, format-> numbers1 x featuredim */ 
+				const Mat &neg_data,			/* input   featuredim x numbers0 */
+			    const Mat &pos_data,			/* input   featuredim x numbers1*/ 
 			    const tree_para &paras			/* input tree paras */
 			   );
 	private:
@@ -69,6 +69,43 @@ class binaryTree
 		 * =====================================================================================
 		 */
 		bool checkTreeParas( const tree_para & p );		/* input parameter */
+
+		/* 
+		 * ===  FUNCTION  ======================================================================
+		 *         Name:  computeXMinMax
+		 *  Description:  like matlab's XMin = min(min(X0), min(X1)) - 0.01
+		 *								XMax = max(max(X0), max(X1)) + 0.01
+		 *			in : X0, X1
+		 *			out: XMin XMax
+		 * =====================================================================================
+		 */
+		void computeXMinMax( const Mat &X0,		/* neg data */
+							 const Mat &X1,		/* pos data , column feature */
+							 Mat& XMin,			
+							 Mat& XMax);
+
+
+		/* 
+		 * ===  FUNCTION  ======================================================================
+		 *         Name:  binaryTreeTrain
+		 *  Description:  train the tree
+		 *			out:  errors_st		error when using the selected feature  number_of_feature_selected x 1
+		 *				  thresholds    threshold of selected feature		   number_of_feature_selected x 1
+		 * =====================================================================================
+		 */
+		bool binaryTreeTrain(   const Mat &neg_data,			// in column feature featuredim x number
+								const Mat &pos_data,			// in same as neg_data
+								const Mat &norm_neg_weight,		// in sample weight, normalized( sum(neg) + sum(pos) = 1)
+								const Mat &norm_pos_weight,		// in 
+								int nBins,						// in number of bins
+								double prior,					// in prior of the error rate
+								const Mat &fids_st,				// in index of the selected feature
+								int nthreads,					// in numbers of the threads use in training
+								Mat &errors_st,					// out
+								Mat &thresholds);				// out
+
+private:
+		biTree m_tree;
 
 };
 #endif

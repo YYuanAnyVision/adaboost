@@ -5,8 +5,10 @@
 !_TAG_PROGRAM_URL	http://ctags.sourceforge.net	/official site/
 !_TAG_PROGRAM_VERSION	5.8	//
 BINARYTREE_HPP	binarytree.hpp	8;"	d
-Train	binarytree.cpp	/^bool binaryTree::Train(  const Mat &neg_data,			\/* input, format-> numbers0 x featuredim *\/$/;"	f	class:binaryTree	signature:( const Mat &neg_data, const Mat &pos_data, const tree_para &paras )
 Train	binarytree.hpp	/^		bool Train( $/;"	p	class:binaryTree	access:public	signature:( const Mat &neg_data, const Mat &pos_data, const tree_para &paras )
+Train	test_binarytree.cpp	/^	bt.Train( train_neg, train_pos, tree_para());$/;"	p	file:	signature:( train_neg, train_pos, tree_para())
+at	binarytree.cpp	/^		XMax.at<double>(i,0) = std::max( max1, max2 ) + 0.01;$/;"	p	file:	signature:(i,0)
+at	binarytree.cpp	/^		XMin.at<double>(i,0) = std::min( min1, min2 ) - 0.01;$/;"	p	file:	signature:(i,0)
 biTree	binarytree.hpp	/^struct biTree$/;"	s
 biTree::child	binarytree.hpp	/^	Mat child;		\/* Kx1 child index for each node *\/$/;"	m	struct:biTree	access:public
 biTree::depth	binarytree.hpp	/^	Mat depth;		\/* Kx1 depth of node*\/$/;"	m	struct:biTree	access:public
@@ -15,24 +17,42 @@ biTree::hs	binarytree.hpp	/^	Mat hs;			\/* Kx1 log ratio (.5*log(p\/(1-p)) at ea
 biTree::thrs	binarytree.hpp	/^	Mat thrs;		\/* Kx1 thresholds for each node *\/$/;"	m	struct:biTree	access:public
 biTree::weights	binarytree.hpp	/^	Mat weights;	\/* Kx1 total sample weight at each node *\/$/;"	m	struct:biTree	access:public
 binaryTree	binarytree.hpp	/^class binaryTree$/;"	c
-binaryTree::Train	binarytree.cpp	/^bool binaryTree::Train(  const Mat &neg_data,			\/* input, format-> numbers0 x featuredim *\/$/;"	f	class:binaryTree	signature:( const Mat &neg_data, const Mat &pos_data, const tree_para &paras )
 binaryTree::Train	binarytree.hpp	/^		bool Train( $/;"	p	class:binaryTree	access:public	signature:( const Mat &neg_data, const Mat &pos_data, const tree_para &paras )
 binaryTree::checkTreeParas	binarytree.cpp	/^bool binaryTree::checkTreeParas( const tree_para & p )		\/* input parameter *\/$/;"	f	class:binaryTree	signature:( const tree_para & p )
 binaryTree::checkTreeParas	binarytree.hpp	/^		bool checkTreeParas( const tree_para & p );		\/* input parameter *\/$/;"	p	class:binaryTree	access:private	signature:( const tree_para & p )
+binaryTree::computeXMinMax	binarytree.cpp	/^void binaryTree::computeXMinMax( const Mat &X0,		\/* neg data *\/$/;"	f	class:binaryTree	signature:( const Mat &X0, const Mat &X1, Mat& XMin, Mat& XMax)
+binaryTree::computeXMinMax	binarytree.hpp	/^		void computeXMinMax( const Mat &X0,		\/* neg data *\/$/;"	p	class:binaryTree	access:private	signature:( const Mat &X0, const Mat &X1, Mat& XMin, Mat& XMax)
+binaryTree::m_tree	binarytree.hpp	/^		biTree m_tree;$/;"	m	class:binaryTree	access:private
+binaryTreeTrain	binarytree.cpp	/^bool binaryTreeTrain(   const Mat &neg_data,			\/\/ in column feature featuredim x number$/;"	f	signature:( const Mat &neg_data, const Mat &pos_data, const Mat &norm_neg_weight, const Mat &norm_pos_weight, int nBins, double prior, const Mat &fids_st, int nthreads, Mat &errors_st, Mat &thresholds)
+bt	test_binarytree.cpp	/^	binaryTree bt;$/;"	l
 checkTreeParas	binarytree.cpp	/^bool binaryTree::checkTreeParas( const tree_para & p )		\/* input parameter *\/$/;"	f	class:binaryTree	signature:( const tree_para & p )
 checkTreeParas	binarytree.hpp	/^		bool checkTreeParas( const tree_para & p );		\/* input parameter *\/$/;"	p	class:binaryTree	access:private	signature:( const tree_para & p )
 child	binarytree.hpp	/^	Mat child;		\/* Kx1 child index for each node *\/$/;"	m	struct:biTree	access:public
+computeXMinMax	binarytree.cpp	/^void binaryTree::computeXMinMax( const Mat &X0,		\/* neg data *\/$/;"	f	class:binaryTree	signature:( const Mat &X0, const Mat &X1, Mat& XMin, Mat& XMax)
+computeXMinMax	binarytree.hpp	/^		void computeXMinMax( const Mat &X0,		\/* neg data *\/$/;"	p	class:binaryTree	access:private	signature:( const Mat &X0, const Mat &X1, Mat& XMin, Mat& XMax)
 depth	binarytree.hpp	/^	Mat depth;		\/* Kx1 depth of node*\/$/;"	m	struct:biTree	access:public
+featureDim	binarytree.cpp	/^	int featureDim = X0.rows;$/;"	l
 fids	binarytree.hpp	/^	Mat fids;		\/* Kx1 feature index for each node , K for number of nodes*\/$/;"	m	struct:biTree	access:public
 fracFtrs	binarytree.hpp	/^	double	fracFtrs;	\/* fraction of features to sample for each node split *\/$/;"	m	struct:tree_para	access:public
+fs	test_binarytree.cpp	/^	FileStorage fs;$/;"	l
 hs	binarytree.hpp	/^	Mat hs;			\/* Kx1 log ratio (.5*log(p\/(1-p)) at each node, used later to decide polarity *\/$/;"	m	struct:biTree	access:public
+m_tree	binarytree.hpp	/^		biTree m_tree;$/;"	m	class:binaryTree	access:private
+main	test_binarytree.cpp	/^int main( int argc, char** argv)$/;"	f	signature:( int argc, char** argv)
+max1	binarytree.cpp	/^		double max1, max2, min1, min2;$/;"	l
+max2	binarytree.cpp	/^		double max1, max2, min1, min2;$/;"	l
 maxDepth	binarytree.hpp	/^	int		maxDepth;   \/* max depth of the tree *\/$/;"	m	struct:tree_para	access:public
+min1	binarytree.cpp	/^		double max1, max2, min1, min2;$/;"	l
+min2	binarytree.cpp	/^		double max1, max2, min1, min2;$/;"	l
 minWeight	binarytree.hpp	/^	double	minWeight;	\/* minimum sample weight allow split*\/$/;"	m	struct:tree_para	access:public
 nBins	binarytree.hpp	/^	int		nBins;		\/* maximum number of quantization bins, better <=256 *\/$/;"	m	struct:tree_para	access:public
 nThreads	binarytree.hpp	/^	int		nThreads;	\/* max number of computational threads to use *\/$/;"	m	struct:tree_para	access:public
-num_neg_samples	binarytree.cpp	/^	int num_neg_samples;$/;"	l
-num_pos_samples	binarytree.cpp	/^	int num_pos_samples;$/;"	l
+release	test_binarytree.cpp	/^	fs.release();$/;"	p	file:	signature:()
+t	test_binarytree.cpp	/^	double t = getTickCount();$/;"	l
 thrs	binarytree.hpp	/^	Mat thrs;		\/* Kx1 thresholds for each node *\/$/;"	m	struct:biTree	access:public
+train_neg	test_binarytree.cpp	/^	Mat train_neg, train_pos;$/;"	l
+train_neg	test_binarytree.cpp	/^	fs["matrix"]>>train_neg;$/;"	l
+train_pos	test_binarytree.cpp	/^	Mat train_neg, train_pos;$/;"	l
+train_pos	test_binarytree.cpp	/^	fs["matrix"] >>train_pos;$/;"	l
 tree_para	binarytree.hpp	/^	tree_para()$/;"	f	struct:tree_para	access:public	signature:()
 tree_para	binarytree.hpp	/^struct tree_para$/;"	s
 tree_para::fracFtrs	binarytree.hpp	/^	double	fracFtrs;	\/* fraction of features to sample for each node split *\/$/;"	m	struct:tree_para	access:public
