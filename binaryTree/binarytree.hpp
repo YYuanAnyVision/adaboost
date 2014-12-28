@@ -89,8 +89,8 @@ class binaryTree
 		 * ===  FUNCTION  ======================================================================
 		 *         Name:  binaryTreeTrain
 		 *  Description:  train the tree
-		 *			out:  errors_st		error when using the selected feature  number_of_feature_selected x 1
-		 *				  thresholds    threshold of selected feature		   number_of_feature_selected x 1
+		 *			out:  errors_st			error when using the selected feature  number_of_feature_selected x 1
+		 *				  featureSelected	selected feature					   number_of_feature_selected x 1
 		 * =====================================================================================
 		 */
 		bool binaryTreeTrain(   const Mat &neg_data,			// in column feature featuredim x number
@@ -103,6 +103,27 @@ class binaryTree
 								int nthreads,					// in numbers of the threads use in training
 								Mat &errors_st,					// out
 								Mat &thresholds);				// out
+
+
+		/* 
+		 * ===  FUNCTION  ======================================================================
+		 *         Name:  computeCDF
+		 *  Description:  compute the cdf, give the data and weights
+		 * =====================================================================================
+		 */
+		bool computeCDF(	const Mat & sampleData,				// in samples	featuredim x numberOfSamples
+							const Mat & weights,				// in weights	numberOfSamples x 1
+							int nBins,							// in number of bins
+							vector<double> &cdf					// out cdf
+						);
+
+		/* 
+		 * ===  FUNCTION  ======================================================================
+		 *         Name:  any
+		 *  Description:  true if there's at least one non-element 
+		 * =====================================================================================
+		 */
+		bool any( const Mat& input);								// in 
 
 private:
 		biTree m_tree;
