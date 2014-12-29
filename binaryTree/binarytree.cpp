@@ -110,8 +110,8 @@ bool binaryTree::binaryTreeTrain(
 	int Nthreads = std::min( nthreads, omp_get_max_threads());
 
 	/* debug information:  */
-	cout<<"training using "<<Nthreads<<" threads ..."<<endl;
-	cout<<"number of selected feature is "<<fids_st.rows<<"\n: "<<fids_st<<endl;
+	//cout<<"training using "<<Nthreads<<" threads ..."<<endl;
+	//cout<<"number of selected feature is "<<fids_st.rows<<"\n: "<<fids_st<<endl;
 
 
 	vector<double> cdf0(nBins, 0);
@@ -142,7 +142,7 @@ bool binaryTree::binaryTreeTrain(
 		}
 		errors_st.at<double>(i,0) = e0;
 		thresholds.at<uchar>(i,0) = thr;
-		cout<<i<<" threshold with "<<(int)thr<<" with error "<<e0<<endl;
+		//cout<<i<<" threshold with "<<(int)thr<<" with error "<<e0<<endl;
 	}
 
 }
@@ -202,8 +202,8 @@ bool binaryTree::Train( const Mat &neg_data,			/* input, format-> featuredim x n
 
 	/*  0 for neg, 1 for pos */
 	/*  wts0 = 1/num_neg_samples, wts0=wts0/sum(wts0) + sum(wts1)  and 2 = sum(wts0) + sum(wts1)*/
-	Mat wts0 = Mat::ones( num_neg_samples, 1, CV_64F); wts0 /=(num_neg_samples*2);
-	Mat wts1 = Mat::ones( num_pos_samples, 1, CV_64F); wts1 /=(num_pos_samples*2);
+	Mat *wts0 = new Mat(Mat::ones( num_neg_samples, 1, CV_64F)); *wts0 /=(num_neg_samples*2);
+	Mat *wts1 = new Mat(Mat::ones( num_pos_samples, 1, CV_64F)); *wts1 /=(num_pos_samples*2);
 	
 	Mat quan_neg_data( neg_data.size(), CV_64F );
 	Mat quan_pos_data( pos_data.size(), CV_64F );
@@ -247,8 +247,8 @@ bool binaryTree::Train( const Mat &neg_data,			/* input, format-> featuredim x n
 	/* store the weight of all nodes, initialize weight in the root node( index 0 )
 	 * delete corresponding item after the node split 
 	 * the tree splits in a breath-first manner */
-	vector<Mat*> wtsAll0;wtsAll0.reserve(K);wtsAll0[0] = &wts0;
-	vector<Mat*> wtsAll1;wtsAll1.reserve(K);wtsAll1[0] = &wts1;
+	vector<Mat*> wtsAll0;wtsAll0.reserve(K);wtsAll0[0] = wts0;
+	vector<Mat*> wtsAll1;wtsAll1.reserve(K);wtsAll1[0] = wts1;
 	
 	int k=0;    /* k is the index now processing ... */
 	K=1;		/* increasing in the training process */
@@ -262,9 +262,9 @@ bool binaryTree::Train( const Mat &neg_data,			/* input, format-> featuredim x n
 	while( k < K)
 	{
 		/* get node wrights and prior */
-		Mat *weight0 = wtsAll0[k]; wtsAll0[k] = NULL;
+		Mat *weight0 = wtsAll0[k]; 
 		Scalar tmp_sum=cv::sum(*weight0); double w0=tmp_sum.val[0]; /* delete weight0 later */
-		Mat *weight1 = wtsAll1[k]; wtsAll1[k]= NULL;
+		Mat *weight1 = wtsAll1[k];
 		tmp_sum = cv::sum(*weight1); double w1 = tmp_sum.val[0];
 		
 		double w = w0+w1; double prior = w1/w; 
@@ -276,7 +276,7 @@ bool binaryTree::Train( const Mat &neg_data,			/* input, format-> featuredim x n
 		//cout<<m_tree.hs.at<double>(k,0)<<endl;
 		
 		/*  if nearly pure node ot insufficient data --> don't train split */
-		if( prior < 1e-3 || prior > 1-1e-3 || m_tree.depth.at<unsigned int>(k,0) > paras.maxDepth)
+		if( prior < 1e-3 || prior > 1-1e-3 || m_tree.depth.at<int>(k,0) >= paras.maxDepth || w < paras.minWeight)
 		{
 			cout<<"------- node number "<<k<<" stop spliting -------"<<endl;
 			k++;continue;	/*  not break, since there maybe other node needs to split */
@@ -294,13 +294,13 @@ bool binaryTree::Train( const Mat &neg_data,			/* input, format-> featuredim x n
 		Point minLocation; double minError; double maxError;
 		cv::minMaxLoc( errors_st, &minError, &maxError, &minLocation);
 		int minErrorIndex = (int)minLocation.y;
-		cout<<"min error is "<<minError<<" max error is "<<maxError<<" index: "<<minLocation.y<<endl;
+		//cout<<"min error is "<<minError<<" max error is "<<maxError<<" index: "<<minLocation.y<<endl;
 
 		int selectedFeature = fidsSt.at<int>(minErrorIndex, 0);
-		cout<<"selected feature is No "<<selectedFeature<<endl;
+		//cout<<"selected feature is No "<<selectedFeature<<endl;
 
 		double threshold_ready_to_apply = threshold_st.at<uchar>(minErrorIndex,0) + 0.5;
-		cout<<"threshold is set to "<<threshold_ready_to_apply<<endl;
+		//cout<<"threshold is set to "<<threshold_ready_to_apply<<endl;
 
 		/* split the data and continue if necessary */
 		Mat left0 = quan_neg_data.row(selectedFeature) < threshold_ready_to_apply; left0 /=255; /* normalize to 0,1 otherwize is 0,255 */
@@ -310,15 +310,38 @@ bool binaryTree::Train( const Mat &neg_data,			/* input, format-> featuredim x n
 		 *  !any(left0) && !any(left1) --> means all the sample in right node ..*/
 		if( (any(left0) || any(left1)) && ( any(1-left0) || any(1-left1)))
 		{
-			cout<<"--------> split <----------"<<endl;
+			//cout<<"--------> split <----------"<<endl;
 			double actual_threshold = Xmin.at<double>( selectedFeature, 0) + Xstep.at<double>( selectedFeature, 0) * threshold_ready_to_apply;
 			m_tree.child.at<int>(k,0) = K; m_tree.fids.at<int>(k,0) = selectedFeature;m_tree.thrs.at<double>(k,0) = actual_threshold;
-			cout<<"node "<<k<<"'s child is "<<m_tree.child.at<int>(k,0)<<", with feature "<<
-				m_tree.fids.at<int>(k,0)<<" and threshold "<<m_tree.thrs.at<double>(k,0)<<endl;
+			cout<<"---> split node "<<k<<"'s child is "<<m_tree.child.at<int>(k,0)<<", with feature "<<
+				m_tree.fids.at<int>(k,0)<<" and threshold "<<m_tree.thrs.at<double>(k,0)<<" with depth "<<(int)m_tree.depth.at<int>(k,0)<<endl;
 
-			/* weights rearrange */
-			wtsAll0
+			/* -------------------------------- weights rearrange -------------------------------------*/
+			Mat left0_double; left0.convertTo( left0_double, CV_64F);
+			//cout<<"weight0 size "<<(*weight0).rows<<" "<<(*weight0).cols<<" "<<(*weight0).type()<<endl;
+			//cout<<"left0 size "<<left0_double.rows<<" "<<left0_double.cols<<" "<<left0_double.type()<<endl;
+			Mat *newWeight0 = new Mat((*weight0).mul(left0_double.t()));
+			Mat *newWeight0plus = new Mat((*weight0).mul( 1-left0_double.t())); /* "1-left0_double" is same as "~left0_double" */
+			//cout<<" weights0 is \n"<<*weight0<<endl;
+			//cout<<"left0_double is \n"<<left0_double<<endl;
+			//cout<<" newWeights is \n"<<newWeight0<<endl;
+			//
+			wtsAll0[K]   = newWeight0;				/* left node */
+			wtsAll0[K+1] = newWeight0plus;			/* right node, index+1*/
+			delete wtsAll0[k]; wtsAll0[k] = NULL;	/* works on node k is done, release the memory */
+
+			Mat left1_double; left1.convertTo( left1_double, CV_64F);
+			Mat *newWeight1 = new Mat( (*weight1).mul(left1_double.t()) );
+			Mat *newWeight1plus = new Mat( (*weight1).mul(1-left1_double.t()) );
+
+			wtsAll1[K] = newWeight1;
+			wtsAll1[K+1] = newWeight1plus; 
+			delete wtsAll1[k]; wtsAll1[k] = NULL;
 			
+			/* -------------------------------- depth increasing-------------------------------------*/
+			m_tree.depth.at<uchar>(K,0) = m_tree.depth.at<int>(k)+1;
+			m_tree.depth.at<uchar>(K+1,0) = m_tree.depth.at<int>(k)+1;
+			K=K+2;														/* adding two more nodes, left&right */
 		}
 		else
 			cout<<"--------> no spliting <-----------"<<endl;
@@ -328,6 +351,13 @@ bool binaryTree::Train( const Mat &neg_data,			/* input, format-> featuredim x n
 		k++;
 	}
 
+	/* ############################# training result ############################# */
+	cout<<"depth info :\n"<<m_tree.depth.rowRange(0,20)<<endl;
+	cout<<"threshold info:\n"<<m_tree.thrs.rowRange(0,20)<<endl;
+	cout<<"selected feature info:\n "<<m_tree.fids.rowRange(0,20)<<endl;
+	cout<<"child info:\n"<<m_tree.child.rowRange(0,20)<<endl;
+	cout<<"hs info :\n"<<m_tree.hs.rowRange(0,20)<<endl;
+	cout<<"weight info :\n"<<m_tree.weights.rowRange(0,20)<<endl;
 
 	return true;
 }
