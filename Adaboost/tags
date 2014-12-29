@@ -1,0 +1,21 @@
+!_TAG_FILE_FORMAT	2	/extended format; --format=1 will not append ;" to lines/
+!_TAG_FILE_SORTED	1	/0=unsorted, 1=sorted, 2=foldcase/
+!_TAG_PROGRAM_AUTHOR	Darren Hiebert	/dhiebert@users.sourceforge.net/
+!_TAG_PROGRAM_NAME	Exuberant Ctags	//
+!_TAG_PROGRAM_URL	http://ctags.sourceforge.net	/official site/
+!_TAG_PROGRAM_VERSION	5.9~svn20110310	//
+ADABOOST_HPP	Adaboost.hpp	2;"	d
+Adaboost	Adaboost.hpp	/^class Adaboost$/;"	c
+Adaboost::Apply	Adaboost.hpp	/^		bool Apply();$/;"	p	class:Adaboost	access:public	signature:()
+Adaboost::SetDebug	Adaboost.hpp	/^		void SetDebug();$/;"	p	class:Adaboost	access:public	signature:()
+Adaboost::Train	Adaboost.cpp	/^bool Adaboost::Train(	const Mat &neg_data,				\/* in : neg data format-> featuredim x number0*\/$/;"	f	class:Adaboost	signature:( const Mat &neg_data, const Mat &pos_data, const int &nWeaks, const tree_para &treepara)
+Adaboost::Train	Adaboost.hpp	/^		bool Train(  const Mat &neg_data,				\/* in : neg data  format-> featuredim x number0 *\/$/;"	p	class:Adaboost	access:public	signature:( const Mat &neg_data, const Mat &pos_data, const int &nWeaks, const tree_para &treepara)
+Adaboost::m_debug	Adaboost.hpp	/^		bool m_debug;$/;"	m	class:Adaboost	access:private
+Adaboost::m_trees	Adaboost.hpp	/^		vector<binaryTree> m_trees;$/;"	m	class:Adaboost	access:private
+Apply	Adaboost.hpp	/^		bool Apply();$/;"	p	class:Adaboost	access:public	signature:()
+SetDebug	Adaboost.hpp	/^		void SetDebug();$/;"	p	class:Adaboost	access:public	signature:()
+Train	Adaboost.cpp	/^bool Adaboost::Train(	const Mat &neg_data,				\/* in : neg data format-> featuredim x number0*\/$/;"	f	class:Adaboost	signature:( const Mat &neg_data, const Mat &pos_data, const int &nWeaks, const tree_para &treepara)
+Train	Adaboost.hpp	/^		bool Train(  const Mat &neg_data,				\/* in : neg data  format-> featuredim x number0 *\/$/;"	p	class:Adaboost	access:public	signature:( const Mat &neg_data, const Mat &pos_data, const int &nWeaks, const tree_para &treepara)
+m_debug	Adaboost.hpp	/^		bool m_debug;$/;"	m	class:Adaboost	access:private
+m_trees	Adaboost.hpp	/^		vector<binaryTree> m_trees;$/;"	m	class:Adaboost	access:private
+main	test_adaboost.cpp	/^int main( int argc, char** argv)$/;"	f	signature:( int argc, char** argv)

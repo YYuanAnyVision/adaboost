@@ -62,17 +62,17 @@ void binaryTree::convertHs()
 }
 
 bool binaryTree::computeCDF(	const Mat & sampleData,				// in samples	1 x numberOfSamples, same feature for all the samples, one row
-					const Mat & weights,				// in weights	numberOfSamples x 1
-					int nBins,							// in number of bins
-					vector<double> &cdf					// out cdf
-					)
+								const Mat & weights,				// in weights	numberOfSamples x 1
+								int nBins,							// in number of bins
+								vector<double> &cdf					// out cdf
+								)
 {
 	/*  initialize the cdf */
 	for ( int c=0;c<cdf.size() ;c++ )
 		cdf[c] = 0.0;
 	if( sampleData.type() != CV_8U || weights.type() != CV_64F || nBins != cdf.size() || sampleData.rows != 1 || sampleData.cols != weights.rows)
 	{
-		cout<<"Wrong Data Formar in function computeCDF, return "<<endl;
+		cout<<"in function computeCDF : Wrong Data Formar in function computeCDF, return "<<endl;
 		return false;
 	}
 
@@ -111,7 +111,7 @@ bool binaryTree::binaryTreeTrain(
 			norm_neg_weight.type()!= CV_64F || norm_pos_weight.type()!= CV_64F ||
 			fids_st.type() != CV_32S || nthreads < 0 || nBins < 0 || prior < 0)
 	{
-		cout<<"wrong input ..."<<endl;
+		cout<<"in functin binaryTreeTrain : wrong input ..."<<endl;
 		return false;
 	}
 
@@ -187,20 +187,20 @@ bool binaryTree::Train( const Mat &neg_data,			/* input, format-> featuredim x n
 	/* sanity check*/
 	if( neg_data.empty() || pos_data.empty() || !checkTreeParas(paras) || neg_data.channels()!=1 || pos_data.channels()!=1)
 	{
-		cout<<"input wrong format"<<endl;
+		cout<<"in function Train : input wrong format"<<endl;
 		return false;
 	}
 
 	if( neg_data.type() != pos_data.type() )
 	{
-		cout<<"neg and pos data should be the same type "<<endl;
+		cout<<"in function Train : neg and pos data should be the same type "<<endl;
 		return false;
 	}
 
 	int feature_dim = neg_data.rows;
 	if( feature_dim != pos_data.rows)
 	{
-		cout<<"feature dim should be the same between neg and pos samples "<<endl;
+		cout<<"in function Train : feature dim should be the same between neg and pos samples "<<endl;
 		return false;
 	}
 
@@ -372,39 +372,52 @@ bool binaryTree::Train( const Mat &neg_data,			/* input, format-> featuredim x n
 	/* ############################# training result ############################# */
 
 	/*  crop the infos , only need top K elements */
-	m_tree.child = m_tree.child.rowRange(0,K);
-	m_tree.depth = m_tree.depth.rowRange(0,K);
-	m_tree.fids  = m_tree.fids.rowRange(0,K);
-	m_tree.hs    = m_tree.hs.rowRange(0,K);
-	m_tree.thrs  = m_tree.thrs.rowRange(0,K);
-	m_tree.weights = m_tree.weights.rowRange(0,K);
+	m_tree.child    = m_tree.child.rowRange(0,K);
+	m_tree.depth    = m_tree.depth.rowRange(0,K);
+	m_tree.fids     = m_tree.fids.rowRange(0,K);
+	m_tree.hs       = m_tree.hs.rowRange(0,K);
+	m_tree.thrs     = m_tree.thrs.rowRange(0,K);
+	m_tree.weights  = m_tree.weights.rowRange(0,K);
+	errs			= errs.rowRange(0,K);
 
 	/*  convert hs to label info, from loglikelihood to lable {1,-1} */
 	convertHs();
 
+	/*  computing the weighted error */
+	m_error = 0;
+	for(int i=0;i<m_tree.child.rows;i++)
+	{
+		if( m_tree.child.at<int>(i,0) == 0 )
+			m_error += m_tree.weights.at<double>(i,0)*errs.at<double>(i,0);
+	}
 
 	if(m_debug)
 	{
 		cout<<"-------------------------------------------------tree information ---------------------------------------------------"<<endl;
 		cout<<":"<<endl;
-		cout<<"K                "<<K<<endl;
-		cout<<"depth            "<<m_tree.depth<<endl;
-		cout<<"threshold info   "<<m_tree.thrs<<endl;
-		cout<<"selected feature "<<m_tree.fids<<endl;
-		cout<<"child info       "<<m_tree.child<<endl;
-		cout<<"hs info          "<<m_tree.hs<<endl;
-		cout<<"weight info      "<<m_tree.weights<<endl;
+		cout<<"K                    "<<K<<endl;
+		cout<<"depth                "<<m_tree.depth<<endl;
+		cout<<"threshold info       "<<m_tree.thrs<<endl;
+		cout<<"selected feature     "<<m_tree.fids<<endl;
+		cout<<"child info           "<<m_tree.child<<endl;
+		cout<<"hs info              "<<m_tree.hs<<endl;
+		cout<<"weight info          "<<m_tree.weights<<endl;
+		cout<<"weighted error is    "<<m_error<<endl;
 		cout<<"----------------------------------------------------------------------------------------------------------------------"<<endl;
 		}
 
 	return true;
 }
 
+double binaryTree::getTrainError()
+{
+	return m_error;
+}
 
 
 
 template< class T> 
-bool  _apply( int* inds,				/* out: predicted label 1 or -1 */
+bool  _apply( double* inds,				/* out: predicted label 1 or -1 */
 			 const T *data,				/* in : data, column vector, but opencv stores data row by row in memory*/
 			 const double *thrs,		/* in : thresholds  */
 			 const int *fids,			/* in : feature index vector */
@@ -429,7 +442,7 @@ bool  _apply( int* inds,				/* out: predicted label 1 or -1 */
 				k = child[k]+1;				/* right node */
 			}
 		}
-		inds[i] = hs[k];
+		inds[i] = 1.0*hs[k];
 	}
 }
 
@@ -438,46 +451,46 @@ bool binaryTree::Apply( const Mat &inputData, Mat &predictedLabel )		/* input  f
 {
 	if(!inputData.isContinuous() ||  inputData.channels()!=1 )
 	{
-		cout<<"please make the input data continuous and only single channel is supported"<<endl;
+		cout<<"in function Apply : please make the input data continuous and only single channel is supported"<<endl;
 		return false;
 	}
 	if(m_tree.child.empty() || m_tree.depth.empty() || m_tree.fids.empty() || m_tree.hs.empty() || m_tree.thrs.empty() || m_tree.weights.empty())
 	{
-		cout<<"tree not ready, in function Apply "<<endl;
+		cout<<"in function Apply : tree not ready, in function Apply "<<endl;
 		return false;
 	}
 
 	/* prepare the output matrix */
 	int number_of_samples = inputData.cols;
-	predictedLabel = Mat::zeros( number_of_samples, 1, CV_32S);
+	predictedLabel = Mat::zeros( number_of_samples, 1, CV_64F);
 
 	/* apply the decision tree to the data */
 	if( inputData.type() == CV_64F )
 	{
-		_apply( (int*)predictedLabel.data, (uchar*)inputData.data, (double*)m_tree.thrs.data,
+		_apply( (double*)predictedLabel.data, (uchar*)inputData.data, (double*)m_tree.thrs.data,
 				(int*)m_tree.fids.data, (int*)m_tree.child.data, (int*)m_tree.hs.data, number_of_samples);
 	}
 	else if( inputData.type() == CV_32F)
 	{
-		_apply( (int*)predictedLabel.data, (float*)inputData.data, (double*)m_tree.thrs.data,
+		_apply( (double*)predictedLabel.data, (float*)inputData.data, (double*)m_tree.thrs.data,
 				(int*)m_tree.fids.data, (int*)m_tree.child.data, (int*)m_tree.hs.data, number_of_samples);
 
 	}
 	else if( inputData.type() == CV_32S)
 	{
-		_apply( (int*)predictedLabel.data, (int*)inputData.data, (double*)m_tree.thrs.data,
+		_apply( (double*)predictedLabel.data, (int*)inputData.data, (double*)m_tree.thrs.data,
 				(int*)m_tree.fids.data, (int*)m_tree.child.data, (int*)m_tree.hs.data, number_of_samples);
 
 	}
 	else if( inputData.type() == CV_64F)
 	{
-		_apply( (int*)predictedLabel.data, (double*)inputData.data, (double*)m_tree.thrs.data,
+		_apply( (double*)predictedLabel.data, (double*)inputData.data, (double*)m_tree.thrs.data,
 				(int*)m_tree.fids.data, (int*)m_tree.child.data, (int*)m_tree.hs.data, number_of_samples);
 
 	}
 	else
 	{
-		cout<<" unsupported data type, Should be one channel, CV_8U, CV_32F, CV_32S, CV_64F" <<endl;
+		cout<<"in function Apply :unsupported data type, Should be one channel, CV_8U, CV_32F, CV_32S, CV_64F" <<endl;
 		return false;
 	}
 	return true;

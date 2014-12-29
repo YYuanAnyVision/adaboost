@@ -7,8 +7,8 @@ if (OPENMP_FOUND)
     set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
 endif()
 
-add_library( binaryTree binarytree.hpp binarytree.cpp )
-add_executable( btree_test test_binarytree.cpp )
+add_library( adaboost  Adaboost.hpp Adaboost.cpp )
+add_executable( ada_test  test_adaboost.cpp )
 
-target_link_libraries(  btree_test ${OpenCV_LIBS} binaryTree)
+target_link_libraries(  ada_test ${OpenCV_LIBS} adaboost binaryTree)
 

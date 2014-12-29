@@ -155,9 +155,19 @@ class binaryTree
 		 */
 		void convertHs();
 
+
+		/* 
+		 * ===  FUNCTION  ======================================================================
+		 *         Name:  getTrainError
+		 *  Description:  return the weighted train error
+		 * =====================================================================================
+		 */
+		double getTrainError();
+
 private:
 		biTree m_tree;						/*  model struct */
 		bool m_debug;						/* want output? */
+		double m_error;						/* training error, used for adaboost training */
 
 };
 #endif
