@@ -8,6 +8,7 @@ using namespace cv;
 int main( int argc, char** argv)
 {
 	binaryTree bt;
+	bt.SetDebug( true );
 	FileStorage fs;
 	fs.open( "train_neg.xml" , FileStorage::READ);
 	Mat train_neg, train_pos;
@@ -25,9 +26,9 @@ int main( int argc, char** argv)
 	cout<<"neg data size "<<train_neg.rows<<" "<<train_neg.cols<<endl;
 	double t = getTickCount();
 	bt.Train( train_neg, train_pos, tree_para());
-	cout<<"time consume is \n"<<((double)getTickCount()-t)/(double)getTickFrequency()<<endl;
-
-	//cout<<Xmax<<endl;
-	
+	cout<<"training time : "<<((double)getTickCount() - t)/double(getTickFrequency())<<endl;
+	Mat p;
+	bt.Apply( train_neg, p);
+	cout<<"predicted label for train_neg data is "<<p<<endl;
 	return 0;
 }

@@ -49,6 +49,18 @@ void binaryTree::computeXMinMax( const Mat &X0,		/* neg data */
 	}
 }
 
+
+void binaryTree::convertHs()
+{
+	if( !m_tree.hs.empty() )
+	{
+		Mat nhs = Mat( m_tree.hs.size(), CV_32S);
+		for( int c=0;c<m_tree.hs.rows;c++)
+			nhs.at<int>(c,0) = ( m_tree.hs.at<double>(c,0) > 1e-7?1:-1);
+		m_tree.hs = nhs;
+	}
+}
+
 bool binaryTree::computeCDF(	const Mat & sampleData,				// in samples	1 x numberOfSamples, same feature for all the samples, one row
 					const Mat & weights,				// in weights	numberOfSamples x 1
 					int nBins,							// in number of bins
@@ -110,17 +122,16 @@ bool binaryTree::binaryTreeTrain(
 	int Nthreads = std::min( nthreads, omp_get_max_threads());
 
 	/* debug information:  */
-	//cout<<"training using "<<Nthreads<<" threads ..."<<endl;
 	//cout<<"number of selected feature is "<<fids_st.rows<<"\n: "<<fids_st<<endl;
 
 
-	vector<double> cdf0(nBins, 0);
-	vector<double> cdf1(nBins, 0);
-
 	/*  choose the best feature with the best threshold, so iteration is between number_of_selected_feature*nBins  */
-	//#pragma omp parallel for num_threads(Nthreads)
+	#pragma omp parallel for num_threads(Nthreads)
 	for ( int i=0;i<number_of_selected_feature ;i++ ) 
 	{
+		vector<double> cdf0(nBins, 0);
+		vector<double> cdf1(nBins, 0);
+
 		double e0 = 1;		/* e0 and e1 --> e0+e1 = 1, getting a very small e0 and very big e0 are both good*/
 		double e1 = 0;
 		double e;
@@ -142,9 +153,8 @@ bool binaryTree::binaryTreeTrain(
 		}
 		errors_st.at<double>(i,0) = e0;
 		thresholds.at<uchar>(i,0) = thr;
-		//cout<<i<<" threshold with "<<(int)thr<<" with error "<<e0<<endl;
 	}
-
+	return true;
 }
 
 bool binaryTree::any( const Mat &input )
@@ -165,6 +175,10 @@ bool binaryTree::any( const Mat &input )
 		return false;
 }
 
+void binaryTree::SetDebug( bool isDebug )		/* in: wanna debug information */
+{
+	m_debug = isDebug;
+}
 
 bool binaryTree::Train( const Mat &neg_data,			/* input, format-> featuredim x number0 */
 						const Mat &pos_data,			/* input, format-> featuredim x number1 */ 
@@ -278,7 +292,8 @@ bool binaryTree::Train( const Mat &neg_data,			/* input, format-> featuredim x n
 		/*  if nearly pure node ot insufficient data --> don't train split */
 		if( prior < 1e-3 || prior > 1-1e-3 || m_tree.depth.at<int>(k,0) >= paras.maxDepth || w < paras.minWeight)
 		{
-			cout<<"------- node number "<<k<<" stop spliting -------"<<endl;
+			if(m_debug)
+				cout<<"------- node number "<<k<<" stop spliting -------"<<endl;
 			k++;continue;	/*  not break, since there maybe other node needs to split */
 		}
 
@@ -306,14 +321,17 @@ bool binaryTree::Train( const Mat &neg_data,			/* input, format-> featuredim x n
 		Mat left0 = quan_neg_data.row(selectedFeature) < threshold_ready_to_apply; left0 /=255; /* normalize to 0,1 otherwize is 0,255 */
 		Mat left1 = quan_pos_data.row(selectedFeature) < threshold_ready_to_apply; left1 /=255;
 		
+
 		/* any(left0) --> there neg samples left in the left leaf, so the condition means they will split, 
 		 *  !any(left0) && !any(left1) --> means all the sample in right node ..*/
 		if( (any(left0) || any(left1)) && ( any(1-left0) || any(1-left1)))
 		{
-			//cout<<"--------> split <----------"<<endl;
+			if(m_debug)
+				cout<<"--------> split <----------"<<endl;
 			double actual_threshold = Xmin.at<double>( selectedFeature, 0) + Xstep.at<double>( selectedFeature, 0) * threshold_ready_to_apply;
 			m_tree.child.at<int>(k,0) = K; m_tree.fids.at<int>(k,0) = selectedFeature;m_tree.thrs.at<double>(k,0) = actual_threshold;
-			cout<<"---> split node "<<k<<"'s child is "<<m_tree.child.at<int>(k,0)<<", with feature "<<
+			if(m_debug)
+				cout<<"---> split node "<<k<<"'s child is "<<m_tree.child.at<int>(k,0)<<", with feature "<<
 				m_tree.fids.at<int>(k,0)<<" and threshold "<<m_tree.thrs.at<double>(k,0)<<" with depth "<<(int)m_tree.depth.at<int>(k,0)<<endl;
 
 			/* -------------------------------- weights rearrange -------------------------------------*/
@@ -325,7 +343,6 @@ bool binaryTree::Train( const Mat &neg_data,			/* input, format-> featuredim x n
 			//cout<<" weights0 is \n"<<*weight0<<endl;
 			//cout<<"left0_double is \n"<<left0_double<<endl;
 			//cout<<" newWeights is \n"<<newWeight0<<endl;
-			//
 			wtsAll0[K]   = newWeight0;				/* left node */
 			wtsAll0[K+1] = newWeight0plus;			/* right node, index+1*/
 			delete wtsAll0[k]; wtsAll0[k] = NULL;	/* works on node k is done, release the memory */
@@ -344,25 +361,127 @@ bool binaryTree::Train( const Mat &neg_data,			/* input, format-> featuredim x n
 			K=K+2;														/* adding two more nodes, left&right */
 		}
 		else
-			cout<<"--------> no spliting <-----------"<<endl;
-
-
+		{
+			if(m_debug)
+				cout<<"--------> no spliting <-----------"<<endl;
+		}
 
 		k++;
 	}
 
 	/* ############################# training result ############################# */
-	cout<<"depth info :\n"<<m_tree.depth.rowRange(0,20)<<endl;
-	cout<<"threshold info:\n"<<m_tree.thrs.rowRange(0,20)<<endl;
-	cout<<"selected feature info:\n "<<m_tree.fids.rowRange(0,20)<<endl;
-	cout<<"child info:\n"<<m_tree.child.rowRange(0,20)<<endl;
-	cout<<"hs info :\n"<<m_tree.hs.rowRange(0,20)<<endl;
-	cout<<"weight info :\n"<<m_tree.weights.rowRange(0,20)<<endl;
+
+	/*  crop the infos , only need top K elements */
+	m_tree.child = m_tree.child.rowRange(0,K);
+	m_tree.depth = m_tree.depth.rowRange(0,K);
+	m_tree.fids  = m_tree.fids.rowRange(0,K);
+	m_tree.hs    = m_tree.hs.rowRange(0,K);
+	m_tree.thrs  = m_tree.thrs.rowRange(0,K);
+	m_tree.weights = m_tree.weights.rowRange(0,K);
+
+	/*  convert hs to label info, from loglikelihood to lable {1,-1} */
+	convertHs();
+
+
+	if(m_debug)
+	{
+		cout<<"-------------------------------------------------tree information ---------------------------------------------------"<<endl;
+		cout<<":"<<endl;
+		cout<<"K                "<<K<<endl;
+		cout<<"depth            "<<m_tree.depth<<endl;
+		cout<<"threshold info   "<<m_tree.thrs<<endl;
+		cout<<"selected feature "<<m_tree.fids<<endl;
+		cout<<"child info       "<<m_tree.child<<endl;
+		cout<<"hs info          "<<m_tree.hs<<endl;
+		cout<<"weight info      "<<m_tree.weights<<endl;
+		cout<<"----------------------------------------------------------------------------------------------------------------------"<<endl;
+		}
 
 	return true;
 }
 
 
+
+
+template< class T> 
+bool  _apply( int* inds,				/* out: predicted label 1 or -1 */
+			 const T *data,				/* in : data, column vector, but opencv stores data row by row in memory*/
+			 const double *thrs,		/* in : thresholds  */
+			 const int *fids,			/* in : feature index vector */
+			 const int *child,			/* in : child index  */
+			 const int *hs,				/* in : label info */
+			 int number_of_samples )	/* in : feature dimension, only used for error check*/
+{
+	int Nthreads = std::min( 8, omp_get_max_threads());
+	#pragma omp parallel for num_threads(Nthreads)
+	for ( int i=0;i<number_of_samples;i++ )
+	{
+		int k = 0;
+		while( child[k] )					/*  not leaf node */
+		{
+			/*  data(r, c) = data[ r*number_of_sample + c] */
+			if( data[ fids[k]*number_of_samples +i] < thrs[k] )
+			{
+				k = child[k];				/* left node */
+			}
+			else
+			{
+				k = child[k]+1;				/* right node */
+			}
+		}
+		inds[i] = hs[k];
+	}
+}
+
+
+bool binaryTree::Apply( const Mat &inputData, Mat &predictedLabel )		/* input  featuredim x number_of_sample, column vector*/
+{
+	if(!inputData.isContinuous() ||  inputData.channels()!=1 )
+	{
+		cout<<"please make the input data continuous and only single channel is supported"<<endl;
+		return false;
+	}
+	if(m_tree.child.empty() || m_tree.depth.empty() || m_tree.fids.empty() || m_tree.hs.empty() || m_tree.thrs.empty() || m_tree.weights.empty())
+	{
+		cout<<"tree not ready, in function Apply "<<endl;
+		return false;
+	}
+
+	/* prepare the output matrix */
+	int number_of_samples = inputData.cols;
+	predictedLabel = Mat::zeros( number_of_samples, 1, CV_32S);
+
+	/* apply the decision tree to the data */
+	if( inputData.type() == CV_64F )
+	{
+		_apply( (int*)predictedLabel.data, (uchar*)inputData.data, (double*)m_tree.thrs.data,
+				(int*)m_tree.fids.data, (int*)m_tree.child.data, (int*)m_tree.hs.data, number_of_samples);
+	}
+	else if( inputData.type() == CV_32F)
+	{
+		_apply( (int*)predictedLabel.data, (float*)inputData.data, (double*)m_tree.thrs.data,
+				(int*)m_tree.fids.data, (int*)m_tree.child.data, (int*)m_tree.hs.data, number_of_samples);
+
+	}
+	else if( inputData.type() == CV_32S)
+	{
+		_apply( (int*)predictedLabel.data, (int*)inputData.data, (double*)m_tree.thrs.data,
+				(int*)m_tree.fids.data, (int*)m_tree.child.data, (int*)m_tree.hs.data, number_of_samples);
+
+	}
+	else if( inputData.type() == CV_64F)
+	{
+		_apply( (int*)predictedLabel.data, (double*)inputData.data, (double*)m_tree.thrs.data,
+				(int*)m_tree.fids.data, (int*)m_tree.child.data, (int*)m_tree.hs.data, number_of_samples);
+
+	}
+	else
+	{
+		cout<<" unsupported data type, Should be one channel, CV_8U, CV_32F, CV_32S, CV_64F" <<endl;
+		return false;
+	}
+	return true;
+}
 
 
 

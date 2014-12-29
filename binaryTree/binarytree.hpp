@@ -40,6 +40,7 @@ struct biTree
 	Mat hs;			/* Kx1 log ratio (.5*log(p/(1-p)) at each node, used later to decide polarity */
 	Mat weights;	/* Kx1 total sample weight at each node */
 	Mat depth;		/* Kx1 depth of node*/
+	int K;
 };
 
 
@@ -47,6 +48,14 @@ class binaryTree
 {
 	
 	public:
+
+		/* 
+		 * ===  FUNCTION  ======================================================================
+		 *         Name:  SetDebug
+		 *  Description:  output debug information or not
+		 * =====================================================================================
+		 */
+		void SetDebug( bool isDebug );		/* in: wanna debug information */
 		/* 
 		 * ===  FUNCTION  ======================================================================
 		 *         Name:  Train
@@ -59,6 +68,17 @@ class binaryTree
 			    const Mat &pos_data,			/* input   featuredim x numbers1*/ 
 			    const tree_para &paras			/* input tree paras */
 			   );
+
+
+		/* 
+		 * ===  FUNCTION  ======================================================================
+		 *         Name:  Apply
+		 *  Description:  predict giving data
+		 *		    out:  true->no error
+		 * =====================================================================================
+		 */
+		bool Apply( const Mat &inputData,		/* inp  featuredim x number_of_sample, column vector*/
+					  Mat &predictResult);		/* out  predicted label number_of_sample x 1, column vector*/		
 	private:
 
 		/* 
@@ -125,8 +145,19 @@ class binaryTree
 		 */
 		bool any( const Mat& input);								// in 
 
+
+		/* 
+		 * ===  FUNCTION  ======================================================================
+		 *         Name:  convertHs
+		 *  Description:  convert hs to label( 1 or -1), it is the output of the tree~
+		 *					hs = (hs>0)*2-1;
+		 * =====================================================================================
+		 */
+		void convertHs();
+
 private:
-		biTree m_tree;
+		biTree m_tree;						/*  model struct */
+		bool m_debug;						/* want output? */
 
 };
 #endif

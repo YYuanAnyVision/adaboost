@@ -4,9 +4,13 @@
 !_TAG_PROGRAM_NAME	Exuberant Ctags	//
 !_TAG_PROGRAM_URL	http://ctags.sourceforge.net	/official site/
 !_TAG_PROGRAM_VERSION	5.9~svn20110310	//
+Apply	binarytree.hpp	/^		bool Apply( const Mat &inputData,		\/* inp  featuredim x number_of_sample, column vector*\/$/;"	p	class:binaryTree	access:public	signature:( const Mat &inputData, Mat &predictResult)
+Apply	test_binarytree.cpp	/^	bt.Apply( train_neg, p);$/;"	p	file:	signature:( train_neg, p)
 BINARYTREE_HPP	binarytree.hpp	8;"	d
 K	binarytree.cpp	/^	int K = 2*( num_neg_samples + num_pos_samples);$/;"	l
+K	binarytree.hpp	/^	int K;$/;"	m	struct:biTree	access:public
 Nthreads	binarytree.cpp	/^	int Nthreads = std::min( nthreads, omp_get_max_threads());$/;"	l
+SetDebug	binarytree.hpp	/^		void SetDebug( bool isDebug );		\/* in: wanna debug information *\/$/;"	p	class:binaryTree	access:public	signature:( bool isDebug )
 Train	binarytree.cpp	/^bool binaryTree::Train( const Mat &neg_data,			\/* input, format-> featuredim x number0 *\/$/;"	f	class:binaryTree	signature:( const Mat &neg_data, const Mat &pos_data, const tree_para &paras )
 Train	binarytree.hpp	/^		bool Train( $/;"	p	class:binaryTree	access:public	signature:( const Mat &neg_data, const Mat &pos_data, const tree_para &paras )
 Train	test_binarytree.cpp	/^	bt.Train( train_neg, train_pos, tree_para());$/;"	p	file:	signature:( train_neg, train_pos, tree_para())
@@ -16,6 +20,7 @@ Xstep	binarytree.cpp	/^	Mat Xstep( feature_dim , 1, CV_64F );$/;"	p	file:	signat
 _any	binarytree.cpp	/^template<class T> bool _any( T *ptr, int numberOfele )$/;"	f	signature:( T *ptr, int numberOfele )
 any	binarytree.cpp	/^bool binaryTree::any( const Mat &input )$/;"	f	class:binaryTree	signature:( const Mat &input )
 any	binarytree.hpp	/^		bool any( const Mat& input);								\/\/ in $/;"	p	class:binaryTree	access:private	signature:( const Mat& input)
+at	binarytree.cpp	/^			nhs.at<int>(c,0) = ( m_tree.hs.at<double>(c,0) > 1e-7?1:-1);$/;"	p	file:	signature:(c,0)
 at	binarytree.cpp	/^		XMax.at<double>(i,0) = std::max( max1, max2 ) + 0.01;$/;"	p	file:	signature:(i,0)
 at	binarytree.cpp	/^		XMin.at<double>(i,0) = std::min( min1, min2 ) - 0.01;$/;"	p	file:	signature:(i,0)
 at	binarytree.cpp	/^		errors_st.at<double>(i,0) = e0;$/;"	p	file:	signature:(i,0)
@@ -24,6 +29,7 @@ at	binarytree.cpp	/^		m_tree.hs.at<double>(k,0)=std::max( -4.0, std::min(4.0, 0.
 at	binarytree.cpp	/^		m_tree.weights.at<double>(k,0) = w; errs.at<double>(k,0)=std::min( prior, 1-prior);$/;"	p	file:	signature:(k,0)
 at	binarytree.cpp	/^		thresholds.at<uchar>(i,0) = thr;$/;"	p	file:	signature:(i,0)
 biTree	binarytree.hpp	/^struct biTree$/;"	s
+biTree::K	binarytree.hpp	/^	int K;$/;"	m	struct:biTree	access:public
 biTree::child	binarytree.hpp	/^	Mat child;		\/* Kx1 child index for each node *\/$/;"	m	struct:biTree	access:public
 biTree::depth	binarytree.hpp	/^	Mat depth;		\/* Kx1 depth of node*\/$/;"	m	struct:biTree	access:public
 biTree::fids	binarytree.hpp	/^	Mat fids;		\/* Kx1 feature index for each node , K for number of nodes*\/$/;"	m	struct:biTree	access:public
@@ -31,6 +37,8 @@ biTree::hs	binarytree.hpp	/^	Mat hs;			\/* Kx1 log ratio (.5*log(p\/(1-p)) at ea
 biTree::thrs	binarytree.hpp	/^	Mat thrs;		\/* Kx1 thresholds for each node *\/$/;"	m	struct:biTree	access:public
 biTree::weights	binarytree.hpp	/^	Mat weights;	\/* Kx1 total sample weight at each node *\/$/;"	m	struct:biTree	access:public
 binaryTree	binarytree.hpp	/^class binaryTree$/;"	c
+binaryTree::Apply	binarytree.hpp	/^		bool Apply( const Mat &inputData,		\/* inp  featuredim x number_of_sample, column vector*\/$/;"	p	class:binaryTree	access:public	signature:( const Mat &inputData, Mat &predictResult)
+binaryTree::SetDebug	binarytree.hpp	/^		void SetDebug( bool isDebug );		\/* in: wanna debug information *\/$/;"	p	class:binaryTree	access:public	signature:( bool isDebug )
 binaryTree::Train	binarytree.cpp	/^bool binaryTree::Train( const Mat &neg_data,			\/* input, format-> featuredim x number0 *\/$/;"	f	class:binaryTree	signature:( const Mat &neg_data, const Mat &pos_data, const tree_para &paras )
 binaryTree::Train	binarytree.hpp	/^		bool Train( $/;"	p	class:binaryTree	access:public	signature:( const Mat &neg_data, const Mat &pos_data, const tree_para &paras )
 binaryTree::any	binarytree.cpp	/^bool binaryTree::any( const Mat &input )$/;"	f	class:binaryTree	signature:( const Mat &input )
@@ -43,12 +51,15 @@ binaryTree::computeCDF	binarytree.cpp	/^bool binaryTree::computeCDF(	const Mat &
 binaryTree::computeCDF	binarytree.hpp	/^		bool computeCDF(	const Mat & sampleData,				\/\/ in samples	featuredim x numberOfSamples$/;"	p	class:binaryTree	access:private	signature:( const Mat & sampleData, const Mat & weights, int nBins, vector<double> &cdf )
 binaryTree::computeXMinMax	binarytree.cpp	/^void binaryTree::computeXMinMax( const Mat &X0,		\/* neg data *\/$/;"	f	class:binaryTree	signature:( const Mat &X0, const Mat &X1, Mat& XMin, Mat& XMax)
 binaryTree::computeXMinMax	binarytree.hpp	/^		void computeXMinMax( const Mat &X0,		\/* neg data *\/$/;"	p	class:binaryTree	access:private	signature:( const Mat &X0, const Mat &X1, Mat& XMin, Mat& XMax)
-binaryTree::m_tree	binarytree.hpp	/^		biTree m_tree;$/;"	m	class:binaryTree	access:private
+binaryTree::convertHs	binarytree.cpp	/^void binaryTree::convertHs()$/;"	f	class:binaryTree	signature:()
+binaryTree::convertHs	binarytree.hpp	/^		void convertHs();$/;"	p	class:binaryTree	access:private	signature:()
+binaryTree::m_debug	binarytree.hpp	/^		bool m_debug;						\/* want output? *\/$/;"	m	class:binaryTree	access:private
+binaryTree::m_tree	binarytree.hpp	/^		biTree m_tree;						\/*  model struct *\/$/;"	m	class:binaryTree	access:private
 binaryTreeTrain	binarytree.cpp	/^bool binaryTree::binaryTreeTrain(   $/;"	f	class:binaryTree	signature:( const Mat &neg_data, const Mat &pos_data, const Mat &norm_neg_weight, const Mat &norm_pos_weight, int nBins, double prior, const Mat &fids_st, int nthreads, Mat &errors_st, Mat &thresholds)
 binaryTreeTrain	binarytree.hpp	/^		bool binaryTreeTrain(   const Mat &neg_data,			\/\/ in column feature featuredim x number$/;"	p	class:binaryTree	access:private	signature:( const Mat &neg_data, const Mat &pos_data, const Mat &norm_neg_weight, const Mat &norm_pos_weight, int nBins, double prior, const Mat &fids_st, int nthreads, Mat &errors_st, Mat &thresholds)
 bt	test_binarytree.cpp	/^	binaryTree bt;$/;"	l
-cdf0	binarytree.cpp	/^	vector<double> cdf0(nBins, 0);$/;"	p	file:	signature:(nBins, 0)
-cdf1	binarytree.cpp	/^	vector<double> cdf1(nBins, 0);$/;"	p	file:	signature:(nBins, 0)
+cdf0	binarytree.cpp	/^		vector<double> cdf0(nBins, 0);$/;"	p	file:	signature:(nBins, 0)
+cdf1	binarytree.cpp	/^		vector<double> cdf1(nBins, 0);$/;"	p	file:	signature:(nBins, 0)
 checkTreeParas	binarytree.cpp	/^bool binaryTree::checkTreeParas( const tree_para & p )		\/* input parameter *\/$/;"	f	class:binaryTree	signature:( const tree_para & p )
 checkTreeParas	binarytree.hpp	/^		bool checkTreeParas( const tree_para & p );		\/* input parameter *\/$/;"	p	class:binaryTree	access:private	signature:( const tree_para & p )
 child	binarytree.hpp	/^	Mat child;		\/* Kx1 child index for each node *\/$/;"	m	struct:biTree	access:public
@@ -56,6 +67,8 @@ computeCDF	binarytree.cpp	/^bool binaryTree::computeCDF(	const Mat & sampleData,
 computeCDF	binarytree.hpp	/^		bool computeCDF(	const Mat & sampleData,				\/\/ in samples	featuredim x numberOfSamples$/;"	p	class:binaryTree	access:private	signature:( const Mat & sampleData, const Mat & weights, int nBins, vector<double> &cdf )
 computeXMinMax	binarytree.cpp	/^void binaryTree::computeXMinMax( const Mat &X0,		\/* neg data *\/$/;"	f	class:binaryTree	signature:( const Mat &X0, const Mat &X1, Mat& XMin, Mat& XMax)
 computeXMinMax	binarytree.hpp	/^		void computeXMinMax( const Mat &X0,		\/* neg data *\/$/;"	p	class:binaryTree	access:private	signature:( const Mat &X0, const Mat &X1, Mat& XMin, Mat& XMax)
+convertHs	binarytree.cpp	/^void binaryTree::convertHs()$/;"	f	class:binaryTree	signature:()
+convertHs	binarytree.hpp	/^		void convertHs();$/;"	p	class:binaryTree	access:private	signature:()
 convertTo	binarytree.cpp	/^		quan_neg_data.convertTo( quan_neg_data, CV_8U);$/;"	p	file:	signature:( quan_neg_data, CV_8U)
 convertTo	binarytree.cpp	/^		quan_pos_data.convertTo( quan_pos_data, CV_8U);$/;"	p	file:	signature:( quan_pos_data, CV_8U)
 copyTo	binarytree.cpp	/^			tmp.copyTo( quan_neg_data.col(i));		$/;"	p	file:	signature:( quan_neg_data.col(i))
@@ -71,11 +84,9 @@ endl	binarytree.cpp	/^		cout<<"Wrong Data Formar in function computeCDF, return 
 endl	binarytree.cpp	/^		cout<<"feature dim should be the same between neg and pos samples "<<endl;$/;"	l
 endl	binarytree.cpp	/^		cout<<"input wrong format"<<endl;$/;"	l
 endl	binarytree.cpp	/^		cout<<"neg and pos data should be the same type "<<endl;$/;"	l
-endl	binarytree.cpp	/^		cout<<"selected feature is No "<<selectedFeature<<endl;$/;"	l
-endl	binarytree.cpp	/^		cout<<"threshold is set to "<<threshold_ready_to_apply<<endl;$/;"	l
 endl	binarytree.cpp	/^		cout<<"wrong input ..."<<endl;$/;"	l
-endl	binarytree.cpp	/^		cout<<i<<" threshold with "<<(int)thr<<" with error "<<e0<<endl;$/;"	l
 endl	binarytree.cpp	/^	cout<<"training using "<<Nthreads<<" threads ..."<<endl;$/;"	l
+endl	test_binarytree.cpp	/^	cout<<"predicted label for train_neg data is "<<p<<endl;$/;"	l
 errors_st	binarytree.cpp	/^		Mat errors_st, threshold_st;$/;"	l
 errs	binarytree.cpp	/^	Mat errs = Mat( K, 1, CV_64F);$/;"	l
 featureDim	binarytree.cpp	/^	int featureDim = X0.rows;$/;"	l
@@ -87,7 +98,8 @@ fs	test_binarytree.cpp	/^	FileStorage fs;$/;"	l
 getTickCount	binarytree.cpp	/^	cv::RNG rng(getTickCount());$/;"	p	file:	signature:()
 hs	binarytree.hpp	/^	Mat hs;			\/* Kx1 log ratio (.5*log(p\/(1-p)) at each node, used later to decide polarity *\/$/;"	m	struct:biTree	access:public
 k	binarytree.cpp	/^	int k=0;    \/* k is the index now processing ... *\/$/;"	l
-m_tree	binarytree.hpp	/^		biTree m_tree;$/;"	m	class:binaryTree	access:private
+m_debug	binarytree.hpp	/^		bool m_debug;						\/* want output? *\/$/;"	m	class:binaryTree	access:private
+m_tree	binarytree.hpp	/^		biTree m_tree;						\/*  model struct *\/$/;"	m	class:binaryTree	access:private
 main	test_binarytree.cpp	/^int main( int argc, char** argv)$/;"	f	signature:( int argc, char** argv)
 max1	binarytree.cpp	/^		double max1, max2, min1, min2;$/;"	l
 max2	binarytree.cpp	/^		double max1, max2, min1, min2;$/;"	l
@@ -103,12 +115,14 @@ minWeight	binarytree.hpp	/^	double	minWeight;	\/* minimum sample weight allow sp
 nBins	binarytree.hpp	/^	int		nBins;		\/* maximum number of quantization bins, better <=256 *\/$/;"	m	struct:tree_para	access:public
 nThreads	binarytree.hpp	/^	int		nThreads;	\/* max number of computational threads to use *\/$/;"	m	struct:tree_para	access:public
 ncols	binarytree.cpp	/^	int ncols = input.cols;$/;"	l
+nhs	binarytree.cpp	/^		Mat nhs = Mat( m_tree.hs.size(), CV_32S);$/;"	l
 nrows	binarytree.cpp	/^	int nrows = input.rows;$/;"	l
 num_neg_samples	binarytree.cpp	/^	int num_neg_samples = neg_data.cols;$/;"	l
 num_pos_samples	binarytree.cpp	/^	int num_pos_samples = pos_data.cols;$/;"	l
 number_of_samples	binarytree.cpp	/^	int number_of_samples = sampleData.cols;$/;"	l
 number_of_selected_feature	binarytree.cpp	/^	int number_of_selected_feature = fids_st.rows;$/;"	l
 p	binarytree.cpp	/^	uchar *p = sampleData.data;										\/* just one row ~, same as uchar *p = sampleData.ptr(0) *\/$/;"	l
+p	test_binarytree.cpp	/^	Mat p;$/;"	l
 prior	binarytree.cpp	/^		double w = w0+w1; double prior = w1\/w; $/;"	l
 quan_neg_data	binarytree.cpp	/^	Mat quan_neg_data( neg_data.size(), CV_64F );$/;"	p	file:	signature:( neg_data.size(), CV_64F )
 quan_pos_data	binarytree.cpp	/^	Mat quan_pos_data( pos_data.size(), CV_64F );$/;"	p	file:	signature:( pos_data.size(), CV_64F )
