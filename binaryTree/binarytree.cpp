@@ -50,14 +50,12 @@ void binaryTree::computeXMinMax( const Mat &X0,		/* neg data */
 }
 
 
-void binaryTree::convertHs()
+void binaryTree::convertHsToDouble()
 {
 	if( !m_tree.hs.empty() )
 	{
-		Mat nhs = Mat( m_tree.hs.size(), CV_32S);
 		for( int c=0;c<m_tree.hs.rows;c++)
-			nhs.at<int>(c,0) = ( m_tree.hs.at<double>(c,0) > 1e-7?1:-1);
-		m_tree.hs = nhs;
+			m_tree.hs.at<double>(c,0) = ( m_tree.hs.at<double>(c,0) > 1e-7?1:-1);
 	}
 }
 
@@ -180,10 +178,21 @@ void binaryTree::SetDebug( bool isDebug )		/* in: wanna debug information */
 	m_debug = isDebug;
 }
 
-bool binaryTree::Train( const Mat &neg_data,			/* input, format-> featuredim x number0 */
-						const Mat &pos_data,			/* input, format-> featuredim x number1 */ 
-						const tree_para &paras			/* input tree paras */)
+bool binaryTree::Train( data_pack & train_data,			/* input&output : training data and weights info */
+						const tree_para &paras)			/* input tree paras */
 {
+	if(m_debug)
+	{
+		cout<<"training parameters are: \n";
+		cout<<"nbins :\t\t"<<paras.nBins<<endl;
+		cout<<"maxDepth:\t\t"<<paras.maxDepth<<endl;
+		cout<<"fracFtrs:\t\t"<<paras.fracFtrs<<endl;
+		cout<<"nThreads:\t\t"<<paras.nThreads<<endl;
+	}
+	/*  extract data from paclage .. */
+	Mat neg_data = train_data.neg_data;
+	Mat pos_data = train_data.pos_data;
+
 	/* sanity check*/
 	if( neg_data.empty() || pos_data.empty() || !checkTreeParas(paras) || neg_data.channels()!=1 || pos_data.channels()!=1)
 	{
@@ -207,17 +216,84 @@ bool binaryTree::Train( const Mat &neg_data,			/* input, format-> featuredim x n
 	int num_neg_samples = neg_data.cols;
 	int num_pos_samples = pos_data.cols;
 	
-	Mat Xmin( feature_dim , 1, CV_64F );
-	Mat Xmax( feature_dim , 1, CV_64F );
-	Mat Xstep( feature_dim , 1, CV_64F );
+	/*  data is not quantized at the first time, since quantization is very expensive, keep
+	 *  the information */
+	Mat Xmin;	
+	Mat Xmax;	
+	Mat Xstep;	
+	if( train_data.Xmax.empty() || train_data.Xmin.empty() || train_data.Xstep.empty())
+	{
+		if(m_debug)
+			cout<<"quantization info is empty, generate new quantization infos "<<endl;
+		Xmin	= Mat::zeros( feature_dim , 1, CV_64F );
+		Xmax	= Mat::zeros( feature_dim , 1, CV_64F );
+		Xstep	= Mat::zeros( feature_dim , 1, CV_64F );
 
-	/*  compute min and max value , used for value quantization*/
-	computeXMinMax( neg_data, pos_data, Xmin, Xmax);
+		/*  compute min and max value , used for value quantization*/
+		computeXMinMax( neg_data, pos_data, Xmin, Xmax);
+		Xstep = ( Xmax - Xmin )/( paras.nBins - 1);
 
-	/*  0 for neg, 1 for pos */
-	/*  wts0 = 1/num_neg_samples, wts0=wts0/sum(wts0) + sum(wts1)  and 2 = sum(wts0) + sum(wts1)*/
-	Mat *wts0 = new Mat(Mat::ones( num_neg_samples, 1, CV_64F)); *wts0 /=(num_neg_samples*2);
-	Mat *wts1 = new Mat(Mat::ones( num_pos_samples, 1, CV_64F)); *wts1 /=(num_pos_samples*2);
+		/*  keep quantization information, quantization info is read only, no need to copy*/
+		train_data.Xmax  = Xmax;
+		train_data.Xmin  = Xmin;
+		train_data.Xstep = Xstep;
+	}
+	else
+	{	
+		if(m_debug)
+			cout<<"extracting quantization info from the train_data directly "<<endl;
+		Xmin  = train_data.Xmin;
+	 	Xmax  = train_data.Xmax;
+		Xstep = train_data.Xstep; 
+	}
+
+	/* extract weights informatin */
+	Mat *wts0,*wts1;
+	if( train_data.wts0.empty())
+	{
+		if(m_debug)
+			cout<<"empty weight, generate new uniform wright "<<endl;
+		wts0 = new Mat(Mat::ones( num_neg_samples, 1, CV_64F)); *wts0 /=(num_neg_samples);
+	}
+	else
+	{
+		if(m_debug)
+			cout<<"extracting weights0  info from the train_data directly "<<endl;
+		wts0 = new Mat(train_data.wts0);
+	}
+
+	if( train_data.wts1.empty())
+	{
+		if(m_debug)
+			cout<<"empty weight, generate new uniform wright "<<endl;
+		wts1 = new Mat(Mat::ones( num_pos_samples, 1, CV_64F)); *wts1 /=(num_pos_samples);
+	}
+	else
+	{
+		if(m_debug)
+			cout<<"extracting weights1 info from the train_data directly "<<endl;
+		wts1 = new Mat(train_data.wts1);
+	}
+
+	/*  normalize the weights if necessary*/
+	double w = cv::sum(*wts0)[0] + cv::sum(*wts1)[0];
+	if( m_debug)
+	{
+		cout<<"w0 is now"<<cv::sum(*wts0)[0]<<endl;
+		cout<<"w1 is now"<<cv::sum(*wts1)[0]<<endl;
+		cout<<"w is now "<<w<<endl;
+	}
+	if( std::abs( w - 1.0) > 1e-3)
+	{
+		cout<<"normalzie w "<<endl;
+		*wts0 = *wts0/w;
+		*wts1 = *wts1/w;
+	}
+
+	/*  save the weight, clone the Mat since wts0 wts1 will be delete in the loop */
+	train_data.wts0 = (*wts0).clone();
+	train_data.wts1 = (*wts1).clone();
+
 	
 	Mat quan_neg_data( neg_data.size(), CV_64F );
 	Mat quan_pos_data( pos_data.size(), CV_64F );
@@ -230,7 +306,6 @@ bool binaryTree::Train( const Mat &neg_data,			/* input, format-> featuredim x n
 	else
 	{
 		// data quantization, range [0 paras.nbins]
-		Xstep = ( Xmax - Xmin )/( paras.nBins - 1);
 		for ( int i=0;i<neg_data.cols ;i++ ) 
 		{
 			Mat tmp = (neg_data.col(i) - Xmin)/Xstep; /*  Mat expression used in assignment, no mem copy here */
@@ -370,7 +445,6 @@ bool binaryTree::Train( const Mat &neg_data,			/* input, format-> featuredim x n
 	}
 
 	/* ############################# training result ############################# */
-
 	/*  crop the infos , only need top K elements */
 	m_tree.child    = m_tree.child.rowRange(0,K);
 	m_tree.depth    = m_tree.depth.rowRange(0,K);
@@ -381,7 +455,8 @@ bool binaryTree::Train( const Mat &neg_data,			/* input, format-> featuredim x n
 	errs			= errs.rowRange(0,K);
 
 	/*  convert hs to label info, from loglikelihood to lable {1,-1} */
-	convertHs();
+	/*  remains double for adaboosting training */
+	convertHsToDouble();
 
 	/*  computing the weighted error */
 	m_error = 0;
@@ -390,22 +465,12 @@ bool binaryTree::Train( const Mat &neg_data,			/* input, format-> featuredim x n
 		if( m_tree.child.at<int>(i,0) == 0 )
 			m_error += m_tree.weights.at<double>(i,0)*errs.at<double>(i,0);
 	}
-
-	if(m_debug)
+	
+	if( m_error > 0.5)
 	{
-		cout<<"-------------------------------------------------tree information ---------------------------------------------------"<<endl;
-		cout<<":"<<endl;
-		cout<<"K                    "<<K<<endl;
-		cout<<"depth                "<<m_tree.depth<<endl;
-		cout<<"threshold info       "<<m_tree.thrs<<endl;
-		cout<<"selected feature     "<<m_tree.fids<<endl;
-		cout<<"child info           "<<m_tree.child<<endl;
-		cout<<"hs info              "<<m_tree.hs<<endl;
-		cout<<"weight info          "<<m_tree.weights<<endl;
-		cout<<"weighted error is    "<<m_error<<endl;
-		cout<<"----------------------------------------------------------------------------------------------------------------------"<<endl;
-		}
-
+		cout<<"fatal error, train error should not be greater than 0.5, causing Adaboost training error "<<endl;
+		return false;
+	}
 	return true;
 }
 
@@ -422,11 +487,11 @@ bool  _apply( double* inds,				/* out: predicted label 1 or -1 */
 			 const double *thrs,		/* in : thresholds  */
 			 const int *fids,			/* in : feature index vector */
 			 const int *child,			/* in : child index  */
-			 const int *hs,				/* in : label info */
+			 const double *hs,				/* in : label info */
 			 int number_of_samples )	/* in : feature dimension, only used for error check*/
 {
 	int Nthreads = std::min( 8, omp_get_max_threads());
-	#pragma omp parallel for num_threads(Nthreads)
+	//#pragma omp parallel for num_threads(Nthreads)
 	for ( int i=0;i<number_of_samples;i++ )
 	{
 		int k = 0;
@@ -442,7 +507,8 @@ bool  _apply( double* inds,				/* out: predicted label 1 or -1 */
 				k = child[k]+1;				/* right node */
 			}
 		}
-		inds[i] = 1.0*hs[k];
+		/*  double format */
+		inds[i] = hs[k];
 	}
 }
 
@@ -464,28 +530,29 @@ bool binaryTree::Apply( const Mat &inputData, Mat &predictedLabel )		/* input  f
 	int number_of_samples = inputData.cols;
 	predictedLabel = Mat::zeros( number_of_samples, 1, CV_64F);
 
+
 	/* apply the decision tree to the data */
-	if( inputData.type() == CV_64F )
+	if( inputData.type() == CV_8U)
 	{
 		_apply( (double*)predictedLabel.data, (uchar*)inputData.data, (double*)m_tree.thrs.data,
-				(int*)m_tree.fids.data, (int*)m_tree.child.data, (int*)m_tree.hs.data, number_of_samples);
+				(int*)m_tree.fids.data, (int*)m_tree.child.data, (double*)m_tree.hs.data, number_of_samples);
 	}
 	else if( inputData.type() == CV_32F)
 	{
 		_apply( (double*)predictedLabel.data, (float*)inputData.data, (double*)m_tree.thrs.data,
-				(int*)m_tree.fids.data, (int*)m_tree.child.data, (int*)m_tree.hs.data, number_of_samples);
+				(int*)m_tree.fids.data, (int*)m_tree.child.data, (double*)m_tree.hs.data, number_of_samples);
 
 	}
 	else if( inputData.type() == CV_32S)
 	{
 		_apply( (double*)predictedLabel.data, (int*)inputData.data, (double*)m_tree.thrs.data,
-				(int*)m_tree.fids.data, (int*)m_tree.child.data, (int*)m_tree.hs.data, number_of_samples);
+				(int*)m_tree.fids.data, (int*)m_tree.child.data, (double*)m_tree.hs.data, number_of_samples);
 
 	}
 	else if( inputData.type() == CV_64F)
 	{
 		_apply( (double*)predictedLabel.data, (double*)inputData.data, (double*)m_tree.thrs.data,
-				(int*)m_tree.fids.data, (int*)m_tree.child.data, (int*)m_tree.hs.data, number_of_samples);
+				(int*)m_tree.fids.data, (int*)m_tree.child.data, (double*)m_tree.hs.data, number_of_samples);
 
 	}
 	else
@@ -496,11 +563,28 @@ bool binaryTree::Apply( const Mat &inputData, Mat &predictedLabel )		/* input  f
 	return true;
 }
 
+void binaryTree::scaleHs( double factor )
+{
+	m_tree.hs = m_tree.hs*factor;
+}
 
 
 
+const biTree* binaryTree::getTree()
+{
+	return &m_tree;
+}
 
 
-
-
-
+void binaryTree::showTreeInfo()
+{
+	cout<<"-------------------------------------------------tree information ---------------------------------------------------"<<endl;
+	cout<<"depth                "<<m_tree.depth<<endl;
+	cout<<"threshold info       "<<m_tree.thrs<<endl;
+	cout<<"selected feature     "<<m_tree.fids<<endl;
+	cout<<"child info           "<<m_tree.child<<endl;
+	cout<<"hs info              "<<m_tree.hs<<endl;
+	cout<<"weight info          "<<m_tree.weights<<endl;
+	cout<<"weighted error is    "<<m_error<<endl;
+	cout<<"----------------------------------------------------------------------------------------------------------------------"<<endl;
+}

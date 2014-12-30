@@ -26,7 +26,15 @@ class Adaboost
 
 
 		bool Apply();
-		void SetDebug();
+
+
+		/* 
+		 * ===  FUNCTION  ======================================================================
+		 *         Name:  SetDebug
+		 *  Description:  wanna Debug information ?
+		 * =====================================================================================
+		 */
+		void SetDebug( bool yesIwant);
 	private:
 		vector<binaryTree> m_trees;
 		bool m_debug;

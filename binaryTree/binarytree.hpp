@@ -24,7 +24,7 @@ struct tree_para
 		nBins = 256;
 		maxDepth = 2;
 		minWeight = 0.01;
-		fracFtrs = 0.0625;
+		fracFtrs = 1.0;
 		nThreads = 8;
 	}
 };
@@ -41,6 +41,19 @@ struct biTree
 	Mat weights;	/* Kx1 total sample weight at each node */
 	Mat depth;		/* Kx1 depth of node*/
 	int K;
+};
+
+
+/*  struct of training data and other informations */
+struct data_pack
+{
+	Mat neg_data;			/* negative training data,				featuredim x numbers0 */
+	Mat pos_data;			/* positive training data,				featuredim x numbers1*/
+	Mat wts0;				/* weights for negative data			numbers0   x 1*/
+	Mat wts1;				/* weights for positive data			numbers1   x 1 */
+	Mat Xmin;				/* minimun value of each dimension		featuredim x 1*/
+	Mat Xmax;				/* maximun value of each dimension		featuredim x 1*/
+	Mat Xstep;				/* quantization step					featuredim x 1 */
 };
 
 
@@ -64,9 +77,8 @@ class binaryTree
 		 * =====================================================================================
 		 */
 		bool Train( 
-				const Mat &neg_data,			/* input   featuredim x numbers0 */
-			    const Mat &pos_data,			/* input   featuredim x numbers1*/ 
-			    const tree_para &paras			/* input tree paras */
+				data_pack & train_data,			/* input&output : training data and weights info */
+			    const tree_para &paras			/* input		: tree paras */
 			   );
 
 
@@ -79,6 +91,40 @@ class binaryTree
 		 */
 		bool Apply( const Mat &inputData,		/* inp  featuredim x number_of_sample, column vector*/
 					  Mat &predictResult);		/* out  predicted label number_of_sample x 1, column vector*/		
+
+		/* 
+		 * ===  FUNCTION  ======================================================================
+		 *         Name:  showTreeInfo
+		 *  Description:  output the information about the tree
+		 * =====================================================================================
+		 */
+		void showTreeInfo();
+
+		/* 
+		 * ===  FUNCTION  ======================================================================
+		 *         Name:  getTrainError
+		 *  Description:  return the weighted train error
+		 * =====================================================================================
+		 */
+		double getTrainError();
+
+
+		/* 
+		 * ===  FUNCTION  ======================================================================
+		 *         Name:  scaleHs
+		 *  Description:  scale the hs vector, used in adaboosting training
+		 * =====================================================================================
+		 */
+		void scaleHs( double factor );					/*  in : scale factor */
+
+
+		/* 
+		 * ===  FUNCTION  ======================================================================
+		 *         Name:  getTree
+		 *  Description:  return the tree
+		 * =====================================================================================
+		 */
+		const biTree* getTree();
 	private:
 
 		/* 
@@ -153,16 +199,11 @@ class binaryTree
 		 *					hs = (hs>0)*2-1;
 		 * =====================================================================================
 		 */
-		void convertHs();
+		void convertHsToDouble();
 
 
-		/* 
-		 * ===  FUNCTION  ======================================================================
-		 *         Name:  getTrainError
-		 *  Description:  return the weighted train error
-		 * =====================================================================================
-		 */
-		double getTrainError();
+
+		
 
 private:
 		biTree m_tree;						/*  model struct */
