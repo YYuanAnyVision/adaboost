@@ -183,6 +183,7 @@ bool binaryTree::Train( data_pack & train_data,			/* input&output : training dat
 {
 	if(m_debug)
 	{
+		cout<<"remember the input data will be revised, make a copy before Train function !"<<endl;
 		cout<<"training parameters are: \n";
 		cout<<"nbins :\t\t"<<paras.nBins<<endl;
 		cout<<"maxDepth:\t\t"<<paras.maxDepth<<endl;
@@ -254,6 +255,9 @@ bool binaryTree::Train( data_pack & train_data,			/* input&output : training dat
 		if(m_debug)
 			cout<<"empty weight, generate new uniform wright "<<endl;
 		wts0 = new Mat(Mat::ones( num_neg_samples, 1, CV_64F)); *wts0 /=(num_neg_samples);
+
+		/*  save the weight, clone the Mat since wts0 wts1 will be delete in the loop */
+		train_data.wts0 = (*wts0).clone();
 	}
 	else
 	{
@@ -267,6 +271,8 @@ bool binaryTree::Train( data_pack & train_data,			/* input&output : training dat
 		if(m_debug)
 			cout<<"empty weight, generate new uniform wright "<<endl;
 		wts1 = new Mat(Mat::ones( num_pos_samples, 1, CV_64F)); *wts1 /=(num_pos_samples);
+		/*  save the weight, clone the Mat since wts0 wts1 will be delete in the loop */
+		train_data.wts1 = (*wts1).clone();
 	}
 	else
 	{
@@ -279,21 +285,15 @@ bool binaryTree::Train( data_pack & train_data,			/* input&output : training dat
 	double w = cv::sum(*wts0)[0] + cv::sum(*wts1)[0];
 	if( m_debug)
 	{
-		cout<<"w0 is now"<<cv::sum(*wts0)[0]<<endl;
-		cout<<"w1 is now"<<cv::sum(*wts1)[0]<<endl;
-		cout<<"w is now "<<w<<endl;
+		cout<<"w0 is now \t"<<cv::sum(*wts0)[0]<<endl;
+		cout<<"w1 is now \t"<<cv::sum(*wts1)[0]<<endl;
+		cout<<"w is now \t"<<w<<endl;
 	}
 	if( std::abs( w - 1.0) > 1e-3)
 	{
-		cout<<"normalzie w "<<endl;
 		*wts0 = *wts0/w;
 		*wts1 = *wts1/w;
 	}
-
-	/*  save the weight, clone the Mat since wts0 wts1 will be delete in the loop */
-	train_data.wts0 = (*wts0).clone();
-	train_data.wts1 = (*wts1).clone();
-
 	
 	Mat quan_neg_data( neg_data.size(), CV_64F );
 	Mat quan_pos_data( pos_data.size(), CV_64F );
@@ -320,6 +320,11 @@ bool binaryTree::Train( data_pack & train_data,			/* input&output : training dat
 		/*  convert to uint8  */
 		quan_pos_data.convertTo( quan_pos_data, CV_8U);
 		quan_neg_data.convertTo( quan_neg_data, CV_8U);
+
+		/* ------- save the quantized data to train_data pack------  
+		 * !!!! this will change the original data !!!! */
+		train_data.neg_data = quan_neg_data;
+		train_data.pos_data = quan_pos_data;
 	}
 	
 	//cout<<"quantization data "<<quan_neg_data.col(308)<<endl;
@@ -490,7 +495,7 @@ bool  _apply( double* inds,				/* out: predicted label 1 or -1 */
 			 const double *hs,				/* in : label info */
 			 int number_of_samples )	/* in : feature dimension, only used for error check*/
 {
-	int Nthreads = std::min( 8, omp_get_max_threads());
+	int Nthreads = std::min( 16, omp_get_max_threads());
 	//#pragma omp parallel for num_threads(Nthreads)
 	for ( int i=0;i<number_of_samples;i++ )
 	{
@@ -523,6 +528,13 @@ bool binaryTree::Apply( const Mat &inputData, Mat &predictedLabel )		/* input  f
 	if(m_tree.child.empty() || m_tree.depth.empty() || m_tree.fids.empty() || m_tree.hs.empty() || m_tree.thrs.empty() || m_tree.weights.empty())
 	{
 		cout<<"in function Apply : tree not ready, in function Apply "<<endl;
+		return false;
+	}
+
+	if( !m_tree.child.isContinuous() || !m_tree.depth.isContinuous() || !m_tree.fids.isContinuous() || 
+			!m_tree.hs.isContinuous() || !m_tree.thrs.isContinuous() || !m_tree.weights.isContinuous())
+	{
+		cout<<" tree model is not continuous, will result error later "<<endl;
 		return false;
 	}
 
@@ -587,4 +599,25 @@ void binaryTree::showTreeInfo()
 	cout<<"weight info          "<<m_tree.weights<<endl;
 	cout<<"weighted error is    "<<m_error<<endl;
 	cout<<"----------------------------------------------------------------------------------------------------------------------"<<endl;
+}
+
+bool binaryTree::setTreeModel( const biTree& model )		/*  in : model */
+{
+	int number_of_element = model.fids.rows;
+	if( number_of_element != model.thrs.rows ||
+			number_of_element != model.child.rows ||
+			number_of_element != model.hs.rows ||
+			number_of_element != model.weights.rows ||
+			number_of_element != model.depth.rows)
+	{
+		cout<<"Model file incorrect "<<endl;
+		return false;
+	}
+	m_tree.fids = model.fids;
+	m_tree.depth = model.depth;
+	m_tree.hs = model.hs;
+	m_tree.weights = model.weights;
+	m_tree.thrs = model.thrs;
+	m_tree.child = model.child;
+	return true;
 }

@@ -25,8 +25,25 @@ class Adaboost
 					 const tree_para &treepara);		/* in : parameter for the decision tree */
 
 
-		bool Apply();
+		/* 
+		 * ===  FUNCTION  ======================================================================
+		 *         Name:  Apply
+		 *  Description:  apply the model to the Test Data, output double confidence
+		 * =====================================================================================
+		 */
+		bool Apply( const Mat &test_data,				/* in: test data format-> featuredim x numberSample */
+					Mat &predicted_vector);				/*out: predicted vector, double format, predicted confidence */
 
+
+
+		/* 
+		 * ===  FUNCTION  ======================================================================
+		 *         Name:  ApplyLabel
+		 *  Description: same as Apply, but output the int label 
+		 * =====================================================================================
+		 */
+		bool ApplyLabel( const Mat &test_data,			/*  in: test data format-> featuredim x numberSample */ 
+						 Mat &predicted_label);			/*out: predicted vector, int format, predicted label */
 
 		/* 
 		 * ===  FUNCTION  ======================================================================
@@ -35,9 +52,29 @@ class Adaboost
 		 * =====================================================================================
 		 */
 		void SetDebug( bool yesIwant);
+		
+
+		/* 
+		 * ===  FUNCTION  ======================================================================
+		 *         Name:  saveModel
+		 *  Description:  save the adaboost model
+		 * =====================================================================================
+		 */
+		bool saveModel( string filename );
+
+		
+		/* 
+		 * ===  FUNCTION  ======================================================================
+		 *         Name:  loadModel
+		 *  Description:  load the model from xml file
+		 * =====================================================================================
+		 */
+		bool loadModel( string filename );
+
 	private:
 		vector<binaryTree> m_trees;
 		bool m_debug;
+		int  m_feature_dim;
 };
 #endif
 

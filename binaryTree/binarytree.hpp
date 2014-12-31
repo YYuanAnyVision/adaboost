@@ -22,7 +22,7 @@ struct tree_para
 	tree_para()
 	{
 		nBins = 256;
-		maxDepth = 2;
+		maxDepth = 3;
 		minWeight = 0.01;
 		fracFtrs = 1.0;
 		nThreads = 8;
@@ -33,14 +33,12 @@ struct tree_para
 /*  struct of the binary tree , save and load */
 struct biTree
 {
-
 	Mat fids;		/* Kx1 feature index for each node , K for number of nodes*/
 	Mat thrs;		/* Kx1 thresholds for each node */
 	Mat child;		/* Kx1 child index for each node */
 	Mat hs;			/* Kx1 log ratio (.5*log(p/(1-p)) at each node, used later to decide polarity */
 	Mat weights;	/* Kx1 total sample weight at each node */
 	Mat depth;		/* Kx1 depth of node*/
-	int K;
 };
 
 
@@ -74,6 +72,7 @@ class binaryTree
 		 *         Name:  Train
 		 *  Description:  train the binary tree
 		 *			out:  true->no error
+		 *	    warning:  this will change the original data in train_data !!
 		 * =====================================================================================
 		 */
 		bool Train( 
@@ -125,6 +124,15 @@ class binaryTree
 		 * =====================================================================================
 		 */
 		const biTree* getTree();
+
+
+		/* 
+		 * ===  FUNCTION  ======================================================================
+		 *         Name:  setTreeModel
+		 *  Description:  set the m_tree
+		 * =====================================================================================
+		 */
+		bool setTreeModel( const biTree& model );		/*  in : model */
 	private:
 
 		/* 
@@ -200,10 +208,6 @@ class binaryTree
 		 * =====================================================================================
 		 */
 		void convertHsToDouble();
-
-
-
-		
 
 private:
 		biTree m_tree;						/*  model struct */
