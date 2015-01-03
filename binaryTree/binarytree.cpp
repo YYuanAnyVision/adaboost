@@ -22,7 +22,7 @@ template<class T> bool _any( T *ptr, int numberOfele )
 	return false;
 }
 
-bool binaryTree::checkTreeParas( const tree_para & p )		/* input parameter */
+bool binaryTree::checkTreeParas( const tree_para & p )		const  /* input parameter */
 {
 	if( p.nBins > 256||p.nBins < 2 || p.maxDepth< 0 || p.minWeight < 0 || p.minWeight > 1 || p.nThreads < 0 || 
 			p.fracFtrs >1 || p.fracFtrs<0)
@@ -34,7 +34,7 @@ bool binaryTree::checkTreeParas( const tree_para & p )		/* input parameter */
 void binaryTree::computeXMinMax( const Mat &X0,		/* neg data */
 								 const Mat &X1,		/* pos data , column feature */
 								 Mat& XMin,			
-								 Mat& XMax)
+								 Mat& XMax ) const
 {
 	assert( X0.rows == X1.rows );
 	int featureDim = X0.rows;
@@ -63,7 +63,7 @@ bool binaryTree::computeCDF(	const Mat & sampleData,				// in samples	1 x number
 								const Mat & weights,				// in weights	numberOfSamples x 1
 								int nBins,							// in number of bins
 								vector<double> &cdf					// out cdf
-								)
+								) const
 {
 	/*  initialize the cdf */
 	for ( int c=0;c<cdf.size() ;c++ )
@@ -155,7 +155,7 @@ bool binaryTree::binaryTreeTrain(
 	return true;
 }
 
-bool binaryTree::any( const Mat &input )
+bool binaryTree::any( const Mat &input ) const
 {
 	if( input.channels()!=1 || !input.isContinuous())
 		return false;
@@ -185,7 +185,7 @@ bool binaryTree::Train( data_pack & train_data,			/* input&output : training dat
 	{
 		cout<<"remember the input data will be revised, make a copy before Train function !"<<endl;
 		cout<<"training parameters are: \n";
-		cout<<"nbins :\t\t"<<paras.nBins<<endl;
+		cout<<"nbins(shoule be less than 256:) :\t\t"<<paras.nBins<<endl;
 		cout<<"maxDepth:\t\t"<<paras.maxDepth<<endl;
 		cout<<"fracFtrs:\t\t"<<paras.fracFtrs<<endl;
 		cout<<"nThreads:\t\t"<<paras.nThreads<<endl;
@@ -473,13 +473,13 @@ bool binaryTree::Train( data_pack & train_data,			/* input&output : training dat
 	
 	if( m_error > 0.5)
 	{
-		cout<<"fatal error, train error should not be greater than 0.5, causing Adaboost training error "<<endl;
+		cout<<"fatal error, train error should not be greater than 0.5, causing Adaboost training crash "<<endl;
 		return false;
 	}
 	return true;
 }
 
-double binaryTree::getTrainError()
+double binaryTree::getTrainError() const
 {
 	return m_error;
 }
@@ -492,7 +492,7 @@ bool  _apply( double* inds,				/* out: predicted label 1 or -1 */
 			 const double *thrs,		/* in : thresholds  */
 			 const int *fids,			/* in : feature index vector */
 			 const int *child,			/* in : child index  */
-			 const double *hs,				/* in : label info */
+			 const double *hs,			/* in : label info */
 			 int number_of_samples )	/* in : feature dimension, only used for error check*/
 {
 	int Nthreads = std::min( 16, omp_get_max_threads());
@@ -502,7 +502,6 @@ bool  _apply( double* inds,				/* out: predicted label 1 or -1 */
 		int k = 0;
 		while( child[k] )					/*  not leaf node */
 		{
-			/*  data(r, c) = data[ r*number_of_sample + c] */
 			if( data[ fids[k]*number_of_samples +i] < thrs[k] )
 			{
 				k = child[k];				/* left node */
@@ -518,7 +517,7 @@ bool  _apply( double* inds,				/* out: predicted label 1 or -1 */
 }
 
 
-bool binaryTree::Apply( const Mat &inputData, Mat &predictedLabel )		/* input  featuredim x number_of_sample, column vector*/
+bool binaryTree::Apply( const Mat &inputData, Mat &predictedLabel )	 const	/* input  featuredim x number_of_sample, column vector*/
 {
 	if(!inputData.isContinuous() ||  inputData.channels()!=1 )
 	{
@@ -534,7 +533,7 @@ bool binaryTree::Apply( const Mat &inputData, Mat &predictedLabel )		/* input  f
 	if( !m_tree.child.isContinuous() || !m_tree.depth.isContinuous() || !m_tree.fids.isContinuous() || 
 			!m_tree.hs.isContinuous() || !m_tree.thrs.isContinuous() || !m_tree.weights.isContinuous())
 	{
-		cout<<" tree model is not continuous, will result error later "<<endl;
+		cout<<" tree model is not continuous, will result errors later "<<endl;
 		return false;
 	}
 
@@ -582,13 +581,13 @@ void binaryTree::scaleHs( double factor )
 
 
 
-const biTree* binaryTree::getTree()
+const biTree* binaryTree::getTree() const
 {
 	return &m_tree;
 }
 
 
-void binaryTree::showTreeInfo()
+void binaryTree::showTreeInfo() const
 {
 	cout<<"-------------------------------------------------tree information ---------------------------------------------------"<<endl;
 	cout<<"depth                "<<m_tree.depth<<endl;

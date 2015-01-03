@@ -41,13 +41,18 @@ int main( int argc, char** argv)
 	cout<<"neg data dimension : "<<test_neg.rows<<" number : "<<test_neg.cols<<endl;
 
 	Adaboost ab; ab.SetDebug( false );
-	int number_n_weak = 256;
+	int number_n_weak = 128;
 
-	//double t = getTickCount();
-	//ab.Train( train_neg, train_pos, number_n_weak, tree_para());
-	//t = (double)getTickCount() - t;
-	//cout<<"time consuming is "<<t/(double)getTickFrequency()<<"s, training "<<number_n_weak<<" weak classifier "<<endl;
-	//ab.saveModel("ttab.xml");
+	double t = getTickCount();
+
+	tree_para train_paras;
+	train_paras.nBins = 128;
+	train_paras.maxDepth = 2;
+
+	ab.Train( train_neg, train_pos, number_n_weak, train_paras);
+	t = (double)getTickCount() - t;
+	cout<<"time consuming is "<<t/(double)getTickFrequency()<<"s, training "<<number_n_weak<<" weak classifiers "<<endl;
+	ab.saveModel("ttab.xml");
 
 	cout<<"Load and test the model"<<endl;
 	ab.loadModel( "ttab.xml");

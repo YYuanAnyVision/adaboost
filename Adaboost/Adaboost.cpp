@@ -108,16 +108,24 @@ bool Adaboost::Train(	const Mat &neg_data,				/* in : neg data format-> featured
 			cout<<"stopping early, loss = "<<loss<<", less than 1e-40"<<endl;
 			break;
 		}
-
+		
 		/* otherwise adding the new weak classifer to the end */
 		m_trees.push_back( bt );
+
+		/*  show the training error after adding the weak classifier */
+
 		errs.at<double>(c,0) = bt.getTrainError();
 		losses.at<double>(c,0) = loss;
-
 		/* output  training informations , checks what's going on inside */
 		int verbose = 16;
 		if((c+1)%verbose == 0)
-			cout <<setprecision(8)<< "errs in weak learner "<<setw(4)<<c<<"\terr="<<errs.at<double>(c,0)<<"\t loss ="<<losses.at<double>(c,0)<<endl;
+		{
+			double fn,fp;
+			applyAndGetError(neg_data, pos_data, fn, fp );
+			cout<<"Training FP is "<<setprecision(6)<<setw(10)<<fp<<", FN is "<<
+				setprecision(6)<<setw(10)<<fn<<". size(learner) "<<setw(5)<<m_trees.size();
+			cout<<"\terr="<<setprecision(6)<<setw(10)<<errs.at<double>(c,0)<<"\t loss ="<<losses.at<double>(c,0)<<endl;
+		}
 	}
 
 	/* --------------------------  output debug information ------------------------------ */
@@ -146,9 +154,11 @@ bool Adaboost::Train(	const Mat &neg_data,				/* in : neg data format-> featured
 				cout <<setprecision(8)<< "errs in weak learner "<<setw(4)<<c<<"\terr="<<errs.at<double>(c,0)<<"\t loss ="<<losses.at<double>(c,0)<<endl;
 		}
 	}
+
 	/*  save the trained model  */
 	if(!saveModel("lastTrain.xml"))
 	{
+		cout<<"the model is saved as lastTrain.xml by default"<<endl;
 		cout<<"can not save the model .."<<endl;
 		return false;
 	}
@@ -163,7 +173,7 @@ void Adaboost::SetDebug( bool d )
 
 
 bool Adaboost::Apply( const Mat &test_data,				/*  in: test data format-> featuredim x numberSample */
-					Mat &predicted_vector)				/* out: predicted vector, double format, predicted confidence */
+					Mat &predicted_vector) const		/* out: predicted vector, double format, predicted confidence */
 {
 	if( m_feature_dim != test_data.rows)
 	{
@@ -186,7 +196,7 @@ bool Adaboost::Apply( const Mat &test_data,				/*  in: test data format-> featur
 }
 
 bool Adaboost::ApplyLabel( const Mat &test_data,			/*  in: test data format-> featuredim x numberSample */ 
-				Mat &predicted_label)						/*out: predicted vector, int format, predicted label */
+				Mat &predicted_label)	const				/*out: predicted vector, int format, predicted label */
 {
 	Mat predicted_confidence;
 	if( !Apply( test_data, predicted_confidence ))
@@ -207,7 +217,7 @@ bool Adaboost::ApplyLabel( const Mat &test_data,			/*  in: test data format-> fe
 }
 
 
-bool Adaboost::saveModel( string filename )
+bool Adaboost::saveModel( string filename ) const
 {
 	cout<<"saving the model ..."<<endl;
 	if(m_trees.empty())
@@ -326,4 +336,26 @@ bool Adaboost::loadModel( string filename )
 	cout<<"m_trees's size is "<<m_trees.size()<<endl;
 	cout<<"Loading done!"<<endl;
 	return true;
+}
+
+void Adaboost::applyAndGetError( const Mat &neg_data,			/* in : neg data  format-> featuredim x number0 */
+							     const Mat &pos_data,			/* in : neg data  format-> featuredim x number0 */
+							     double &fn,					/* out: false negative */
+							     double &fp) const				/* out: false positive */
+{
+	Mat predicted_label0, predicted_label1;
+	ApplyLabel( neg_data, predicted_label0);
+	ApplyLabel( pos_data, predicted_label1);
+	
+	fp = 0;
+	fn = 0;
+	for(int c=0;c<predicted_label0.rows;c++)
+		fp += (predicted_label0.at<int>(c,0) > 0?1:0);
+	fp /= predicted_label0.rows;
+
+	for(int c=0;c<predicted_label1.rows;c++)
+		fn += (predicted_label1.at<int>(c,0) < 0?1:0);
+	fn /= predicted_label1.rows;
+
+
 }

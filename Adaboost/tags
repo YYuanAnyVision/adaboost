@@ -3,13 +3,13 @@
 !_TAG_PROGRAM_AUTHOR	Darren Hiebert	/dhiebert@users.sourceforge.net/
 !_TAG_PROGRAM_NAME	Exuberant Ctags	//
 !_TAG_PROGRAM_URL	http://ctags.sourceforge.net	/official site/
-!_TAG_PROGRAM_VERSION	5.9~svn20110310	//
+!_TAG_PROGRAM_VERSION	5.8	//
 ADABOOST_HPP	Adaboost.hpp	2;"	d
 Adaboost	Adaboost.hpp	/^class Adaboost$/;"	c
-Adaboost::Apply	Adaboost.cpp	/^bool Adaboost::Apply( const Mat &test_data,				\/*  in: test data format-> featuredim x numberSample *\/$/;"	f	class:Adaboost	signature:( const Mat &test_data, Mat &predicted_vector)
-Adaboost::Apply	Adaboost.hpp	/^		bool Apply( const Mat &test_data,				\/* in: test data format-> featuredim x numberSample *\/$/;"	p	class:Adaboost	access:public	signature:( const Mat &test_data, Mat &predicted_vector)
-Adaboost::ApplyLabel	Adaboost.cpp	/^bool Adaboost::ApplyLabel( const Mat &test_data,			\/*  in: test data format-> featuredim x numberSample *\/ $/;"	f	class:Adaboost	signature:( const Mat &test_data, Mat &predicted_label)
-Adaboost::ApplyLabel	Adaboost.hpp	/^		bool ApplyLabel( const Mat &test_data,			\/*  in: test data format-> featuredim x numberSample *\/ $/;"	p	class:Adaboost	access:public	signature:( const Mat &test_data, Mat &predicted_label)
+Adaboost::Apply	Adaboost.cpp	/^bool Adaboost::Apply( const Mat &test_data,				\/*  in: test data format-> featuredim x numberSample *\/$/;"	f	class:Adaboost	signature:( const Mat &test_data, Mat &predicted_vector) const
+Adaboost::Apply	Adaboost.hpp	/^		bool Apply( const Mat &test_data,				\/* in: test data format-> featuredim x numberSample *\/$/;"	p	class:Adaboost	access:public	signature:( const Mat &test_data, Mat &predicted_vector) const
+Adaboost::ApplyLabel	Adaboost.cpp	/^bool Adaboost::ApplyLabel( const Mat &test_data,			\/*  in: test data format-> featuredim x numberSample *\/ $/;"	f	class:Adaboost	signature:( const Mat &test_data, Mat &predicted_label) const
+Adaboost::ApplyLabel	Adaboost.hpp	/^		bool ApplyLabel( const Mat &test_data,			\/*  in: test data format-> featuredim x numberSample *\/ $/;"	p	class:Adaboost	access:public	signature:( const Mat &test_data, Mat &predicted_label) const
 Adaboost::SetDebug	Adaboost.cpp	/^void Adaboost::SetDebug( bool d )$/;"	f	class:Adaboost	signature:( bool d )
 Adaboost::SetDebug	Adaboost.hpp	/^		void SetDebug( bool yesIwant);$/;"	p	class:Adaboost	access:public	signature:( bool yesIwant)
 Adaboost::Train	Adaboost.cpp	/^bool Adaboost::Train(	const Mat &neg_data,				\/* in : neg data format-> featuredim x number0*\/$/;"	f	class:Adaboost	signature:( const Mat &neg_data, const Mat &pos_data, const int &nWeaks, const tree_para &treepara)
@@ -19,15 +19,17 @@ Adaboost::loadModel	Adaboost.hpp	/^		bool loadModel( string filename );$/;"	p	cl
 Adaboost::m_debug	Adaboost.hpp	/^		bool m_debug;$/;"	m	class:Adaboost	access:private
 Adaboost::m_feature_dim	Adaboost.hpp	/^		int  m_feature_dim;$/;"	m	class:Adaboost	access:private
 Adaboost::m_trees	Adaboost.hpp	/^		vector<binaryTree> m_trees;$/;"	m	class:Adaboost	access:private
-Adaboost::saveModel	Adaboost.cpp	/^bool Adaboost::saveModel( string filename )$/;"	f	class:Adaboost	signature:( string filename )
-Adaboost::saveModel	Adaboost.hpp	/^		bool saveModel( string filename );$/;"	p	class:Adaboost	access:public	signature:( string filename )
+Adaboost::saveModel	Adaboost.cpp	/^bool Adaboost::saveModel( string filename ) const$/;"	f	class:Adaboost	signature:( string filename ) const
+Adaboost::saveModel	Adaboost.hpp	/^		bool saveModel( string filename ) const;$/;"	p	class:Adaboost	access:public	signature:( string filename ) const
 Apply	Adaboost.cpp	/^		Mat p; m_trees[c].Apply( test_data, p);$/;"	p	file:	signature:( test_data, p)
 Apply	Adaboost.cpp	/^		bt.Apply( neg_data, h0);$/;"	p	file:	signature:( neg_data, h0)
 Apply	Adaboost.cpp	/^		bt.Apply( pos_data, h1);$/;"	p	file:	signature:( pos_data, h1)
-Apply	Adaboost.cpp	/^bool Adaboost::Apply( const Mat &test_data,				\/*  in: test data format-> featuredim x numberSample *\/$/;"	f	class:Adaboost	signature:( const Mat &test_data, Mat &predicted_vector)
-Apply	Adaboost.hpp	/^		bool Apply( const Mat &test_data,				\/* in: test data format-> featuredim x numberSample *\/$/;"	p	class:Adaboost	access:public	signature:( const Mat &test_data, Mat &predicted_vector)
-ApplyLabel	Adaboost.cpp	/^bool Adaboost::ApplyLabel( const Mat &test_data,			\/*  in: test data format-> featuredim x numberSample *\/ $/;"	f	class:Adaboost	signature:( const Mat &test_data, Mat &predicted_label)
-ApplyLabel	Adaboost.hpp	/^		bool ApplyLabel( const Mat &test_data,			\/*  in: test data format-> featuredim x numberSample *\/ $/;"	p	class:Adaboost	access:public	signature:( const Mat &test_data, Mat &predicted_label)
+Apply	Adaboost.cpp	/^bool Adaboost::Apply( const Mat &test_data,				\/*  in: test data format-> featuredim x numberSample *\/$/;"	f	class:Adaboost	signature:( const Mat &test_data, Mat &predicted_vector) const
+Apply	Adaboost.hpp	/^		bool Apply( const Mat &test_data,				\/* in: test data format-> featuredim x numberSample *\/$/;"	p	class:Adaboost	access:public	signature:( const Mat &test_data, Mat &predicted_vector) const
+ApplyLabel	Adaboost.cpp	/^	ab.ApplyLabel( neg_data, predicted_label0);$/;"	p	file:	signature:( neg_data, predicted_label0)
+ApplyLabel	Adaboost.cpp	/^	ab.ApplyLabel( pos_data, predicted_label1);$/;"	p	file:	signature:( pos_data, predicted_label1)
+ApplyLabel	Adaboost.cpp	/^bool Adaboost::ApplyLabel( const Mat &test_data,			\/*  in: test data format-> featuredim x numberSample *\/ $/;"	f	class:Adaboost	signature:( const Mat &test_data, Mat &predicted_label) const
+ApplyLabel	Adaboost.hpp	/^		bool ApplyLabel( const Mat &test_data,			\/*  in: test data format-> featuredim x numberSample *\/ $/;"	p	class:Adaboost	access:public	signature:( const Mat &test_data, Mat &predicted_label) const
 ApplyLabel	test_adaboost.cpp	/^	ab.ApplyLabel( test_neg, predicted_label0);$/;"	p	file:	signature:( test_neg, predicted_label0)
 ApplyLabel	test_adaboost.cpp	/^	ab.ApplyLabel( test_pos, predicted_label1);$/;"	p	file:	signature:( test_pos, predicted_label1)
 H0	Adaboost.cpp	/^	Mat H0 = Mat::zeros( number_neg_samples, 1, CV_64F);$/;"	l
@@ -38,7 +40,7 @@ SetDebug	Adaboost.hpp	/^		void SetDebug( bool yesIwant);$/;"	p	class:Adaboost	ac
 SetDebug	test_adaboost.cpp	/^	Adaboost ab; ab.SetDebug( false );$/;"	p	file:	signature:( false )
 Train	Adaboost.cpp	/^bool Adaboost::Train(	const Mat &neg_data,				\/* in : neg data format-> featuredim x number0*\/$/;"	f	class:Adaboost	signature:( const Mat &neg_data, const Mat &pos_data, const int &nWeaks, const tree_para &treepara)
 Train	Adaboost.hpp	/^		bool Train(  const Mat &neg_data,				\/* in : neg data  format-> featuredim x number0 *\/$/;"	p	class:Adaboost	access:public	signature:( const Mat &neg_data, const Mat &pos_data, const int &nWeaks, const tree_para &treepara)
-Train	test_adaboost.cpp	/^	ab.Train( train_neg, train_pos, number_n_weak, tree_para());$/;"	p	file:	signature:( train_neg, train_pos, number_n_weak, tree_para())
+Train	test_adaboost.cpp	/^	ab.Train( train_neg, train_pos, number_n_weak, train_paras);$/;"	p	file:	signature:( train_neg, train_pos, number_n_weak, train_paras)
 ab	test_adaboost.cpp	/^	Adaboost ab; ab.SetDebug( false );$/;"	l
 alpha	Adaboost.cpp	/^		double alpha = 1; $/;"	l
 at	Adaboost.cpp	/^			predicted_label.at<int>(c,0) = -1;$/;"	p	file:	signature:(c,0)
@@ -46,6 +48,7 @@ at	Adaboost.cpp	/^			predicted_label.at<int>(c,0) = 1;$/;"	p	file:	signature:(c,
 at	Adaboost.cpp	/^		errs.at<double>(c,0) = bt.getTrainError();$/;"	p	file:	signature:(c,0)
 at	Adaboost.cpp	/^		losses.at<double>(c,0) = loss;$/;"	p	file:	signature:(c,0)
 at	Adaboost.cpp	/^		nodes.at<int>(c,0) = (*ptr).fids.rows;$/;"	p	file:	signature:(c,0)
+bbt	Adaboost.cpp	/^		binaryTree bbt;$/;"	l
 bt	Adaboost.cpp	/^		biTree bt;$/;"	l
 bt	Adaboost.cpp	/^		binaryTree bt; bt.SetDebug(m_debug);$/;"	l
 child_pack	Adaboost.cpp	/^	Mat child_pack		= Mat::zeros( max_number_nodes,  number_of_trees, (*sample).child.type() );$/;"	l
@@ -84,6 +87,7 @@ endl	Adaboost.cpp	/^		cout<<"can not open file "<<filename<<endl;$/;"	l
 endl	Adaboost.cpp	/^		cout<<"can not save the model .."<<endl;$/;"	l
 endl	Adaboost.cpp	/^		cout<<"input Dimension Wrong, or you should use column feature "<<endl;$/;"	l
 endl	Adaboost.cpp	/^		cout<<"model is empty ..."<<endl;$/;"	l
+endl	Adaboost.cpp	/^		cout<<"the model is saved as lastTrain.xml by default"<<endl;$/;"	l
 endl	Adaboost.cpp	/^		cout<<"tree ne ? tree ne? tree doumeiyou ,nishuo ge mao"<<endl;$/;"	l
 endl	Adaboost.cpp	/^	cout<<"Loading done!"<<endl;$/;"	l
 endl	Adaboost.cpp	/^	cout<<"Loading model file "<<endl;$/;"	l
@@ -92,10 +96,11 @@ endl	Adaboost.cpp	/^	cout<<"saving done! "<<endl;$/;"	l
 endl	Adaboost.cpp	/^	cout<<"saving the model ..."<<endl;$/;"	l
 endl	test_adaboost.cpp	/^	cout<<"--> False Negative is "<<fn<<endl;$/;"	l
 endl	test_adaboost.cpp	/^	cout<<"--> False Positive is "<<fp<<endl;$/;"	l
+endl	test_adaboost.cpp	/^	cout<<"Load and test the model"<<endl;$/;"	l
 endl	test_adaboost.cpp	/^	cout<<"Results on the training data is :"<<endl;$/;"	l
 endl	test_adaboost.cpp	/^	cout<<"test Apply function :"<<endl;$/;"	l
 endl	test_adaboost.cpp	/^	cout<<"test data info: "<<endl;$/;"	l
-endl	test_adaboost.cpp	/^	cout<<"time consuming is "<<t\/(double)getTickFrequency()<<"s, training "<<number_n_weak<<" weak classifier "<<endl;$/;"	l
+endl	test_adaboost.cpp	/^	cout<<"time consuming is "<<t\/(double)getTickFrequency()<<"s, training "<<number_n_weak<<" weak classifiers "<<endl;$/;"	l
 endl	test_adaboost.cpp	/^	cout<<"train data info: "<<endl;$/;"	l
 error	Adaboost.cpp	/^		double error = bt.getTrainError();$/;"	l
 errs	Adaboost.cpp	/^	Mat errs   = Mat::zeros( nWeaks, 1, CV_64F);$/;"	l
@@ -105,8 +110,10 @@ fids_pack	Adaboost.cpp	/^	Mat fids_pack		= Mat::zeros( max_number_nodes,  number
 fids_pack	Adaboost.cpp	/^	Mat fids_pack;			\/*    ------ tree model ------       *\/$/;"	l
 fids_pack	Adaboost.cpp	/^	fs<<"fids"<<fids_pack;$/;"	l
 fids_pack	Adaboost.cpp	/^	fs["fids"] >> fids_pack;$/;"	l
+fn	Adaboost.cpp	/^		double fn,fp;$/;"	l
 fn	Adaboost.cpp	/^		double fp = 0, fn = 0;$/;"	l
 fn	test_adaboost.cpp	/^	double fn = 0;$/;"	l
+fp	Adaboost.cpp	/^		double fn,fp;$/;"	l
 fp	Adaboost.cpp	/^		double fp = 0, fn = 0;$/;"	l
 fp	test_adaboost.cpp	/^	double fp = 0;$/;"	l
 fs	Adaboost.cpp	/^	FileStorage fs( filename, FileStorage::READ );$/;"	p	file:	signature:( filename, FileStorage::READ )
@@ -123,6 +130,8 @@ loadModel	Adaboost.hpp	/^		bool loadModel( string filename );$/;"	p	class:Adaboo
 loss	Adaboost.cpp	/^		double loss = (cv::sum( train_pack.wts0))[0] + (cv::sum(train_pack.wts1))[0];$/;"	l
 losses	Adaboost.cpp	/^	Mat losses = Mat::zeros( nWeaks, 1, CV_64F);$/;"	l
 m_debug	Adaboost.hpp	/^		bool m_debug;$/;"	m	class:Adaboost	access:private
+m_feature_dim	Adaboost.cpp	/^	fs<<"featureDim"<<m_feature_dim;$/;"	l
+m_feature_dim	Adaboost.cpp	/^	fs["featureDim"] >> m_feature_dim;$/;"	l
 m_feature_dim	Adaboost.hpp	/^		int  m_feature_dim;$/;"	m	class:Adaboost	access:private
 m_trees	Adaboost.hpp	/^		vector<binaryTree> m_trees;$/;"	m	class:Adaboost	access:private
 main	test_adaboost.cpp	/^int main( int argc, char** argv)$/;"	f	signature:( int argc, char** argv)
@@ -132,25 +141,28 @@ nodes	Adaboost.cpp	/^	Mat nodes( m_trees.size(), 1, CV_32S);			\/*  number of no
 nodes	Adaboost.cpp	/^	Mat nodes;				\/* numbers of nodes for each tree    *\/$/;"	l
 nodes	Adaboost.cpp	/^	fs<<"nodes"<<nodes;$/;"	l
 nodes	Adaboost.cpp	/^	fs["nodes"] >> nodes;$/;"	l
-number_n_weak	test_adaboost.cpp	/^	int number_n_weak = 256;$/;"	l
+number_n_weak	test_adaboost.cpp	/^	int number_n_weak = 128*4;$/;"	l
 number_neg_samples	Adaboost.cpp	/^	int number_neg_samples = neg_data.cols;$/;"	l
 number_of_trees	Adaboost.cpp	/^	int   number_of_trees = m_trees.size();$/;"	l
 number_of_trees	Adaboost.cpp	/^	int number_of_trees = nodes.rows;$/;"	l
 number_pos_samples	Adaboost.cpp	/^	int number_pos_samples = pos_data.cols;$/;"	l
 p	Adaboost.cpp	/^		Mat p; m_trees[c].Apply( test_data, p);$/;"	l
 predicted_confidence	Adaboost.cpp	/^	Mat predicted_confidence;$/;"	l
+predicted_label0	Adaboost.cpp	/^	Mat predicted_label0, predicted_label1;$/;"	v
 predicted_label0	test_adaboost.cpp	/^	Mat predicted_label0, predicted_label1;$/;"	l
+predicted_label1	Adaboost.cpp	/^	Mat predicted_label0, predicted_label1;$/;"	v
 predicted_label1	test_adaboost.cpp	/^	Mat predicted_label0, predicted_label1;$/;"	l
 ptr	Adaboost.cpp	/^		const biTree *ptr = m_trees[c].getTree();$/;"	l
+push_back	Adaboost.cpp	/^		m_trees.push_back( bbt);$/;"	p	file:	signature:( bbt)
 push_back	Adaboost.cpp	/^		m_trees.push_back( bt );$/;"	p	file:	signature:( bt )
 release	test_adaboost.cpp	/^	fs.release();$/;"	p	file:	signature:()
 reserve	Adaboost.cpp	/^	m_trees.reserve( nWeaks);$/;"	p	file:	signature:( nWeaks)
 reserve	Adaboost.cpp	/^	m_trees.reserve( number_of_trees );$/;"	p	file:	signature:( number_of_trees )
 sample	Adaboost.cpp	/^	const biTree *sample = m_trees[0].getTree();$/;"	l
-saveModel	Adaboost.cpp	/^bool Adaboost::saveModel( string filename )$/;"	f	class:Adaboost	signature:( string filename )
-saveModel	Adaboost.hpp	/^		bool saveModel( string filename );$/;"	p	class:Adaboost	access:public	signature:( string filename )
+saveModel	Adaboost.cpp	/^bool Adaboost::saveModel( string filename ) const$/;"	f	class:Adaboost	signature:( string filename ) const
+saveModel	Adaboost.hpp	/^		bool saveModel( string filename ) const;$/;"	p	class:Adaboost	access:public	signature:( string filename ) const
 scaleHs	Adaboost.cpp	/^		bt.scaleHs( alpha );$/;"	p	file:	signature:( alpha )
-setTreeModel	Adaboost.cpp	/^		m_trees[c].setTreeModel(bt);$/;"	p	file:	signature:(bt)
+setTreeModel	Adaboost.cpp	/^		bbt.setTreeModel(bt);$/;"	p	file:	signature:(bt)
 showTreeInfo	Adaboost.cpp	/^			bt.showTreeInfo();$/;"	p	file:	signature:()
 t	test_adaboost.cpp	/^	double t = getTickCount();$/;"	l
 test_neg	test_adaboost.cpp	/^	Mat train_neg, train_pos, test_pos, test_neg;$/;"	l
@@ -165,6 +177,7 @@ time_single_shot	Adaboost.cpp	/^		double time_single_shot = getTickCount();$/;"	
 train_neg	test_adaboost.cpp	/^	Mat train_neg, train_pos, test_pos, test_neg;$/;"	l
 train_neg	test_adaboost.cpp	/^	fs["matrix"]>>train_neg;$/;"	l
 train_pack	Adaboost.cpp	/^	data_pack train_pack;$/;"	l
+train_paras	test_adaboost.cpp	/^	tree_para train_paras;$/;"	l
 train_pos	test_adaboost.cpp	/^	Mat train_neg, train_pos, test_pos, test_neg;$/;"	l
 train_pos	test_adaboost.cpp	/^	fs["matrix"] >>train_pos;$/;"	l
 verbose	Adaboost.cpp	/^		int verbose = 16;$/;"	l

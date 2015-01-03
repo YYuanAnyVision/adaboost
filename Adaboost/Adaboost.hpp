@@ -32,7 +32,7 @@ class Adaboost
 		 * =====================================================================================
 		 */
 		bool Apply( const Mat &test_data,				/* in: test data format-> featuredim x numberSample */
-					Mat &predicted_vector);				/*out: predicted vector, double format, predicted confidence */
+					Mat &predicted_vector) const;		/*out: predicted vector, double format, predicted confidence */
 
 
 
@@ -43,7 +43,7 @@ class Adaboost
 		 * =====================================================================================
 		 */
 		bool ApplyLabel( const Mat &test_data,			/*  in: test data format-> featuredim x numberSample */ 
-						 Mat &predicted_label);			/*out: predicted vector, int format, predicted label */
+						 Mat &predicted_label) const;	/*out: predicted vector, int format, predicted label */
 
 		/* 
 		 * ===  FUNCTION  ======================================================================
@@ -60,7 +60,7 @@ class Adaboost
 		 *  Description:  save the adaboost model
 		 * =====================================================================================
 		 */
-		bool saveModel( string filename );
+		bool saveModel( string filename ) const;
 
 		
 		/* 
@@ -70,6 +70,19 @@ class Adaboost
 		 * =====================================================================================
 		 */
 		bool loadModel( string filename );
+
+		
+		/* 
+		 * ===  FUNCTION  ======================================================================
+		 *         Name:  applyAndGetError
+		 *  Description:  out: fn : false negative
+		 *				  out: fp : false potitive
+		 * =====================================================================================
+		 */
+		void applyAndGetError( const Mat &neg_data,			/* in : neg data  format-> featuredim x number0 */
+							   const Mat &pos_data,			/* in : neg data  format-> featuredim x number0 */
+							   double &fn,					/* out: false negative */
+							   double &fp) const;			/* out: false positive */
 
 	private:
 		vector<binaryTree> m_trees;

@@ -22,9 +22,9 @@ struct tree_para
 	tree_para()
 	{
 		nBins = 256;
-		maxDepth = 3;
+		maxDepth = 2;
 		minWeight = 0.01;
-		fracFtrs = 1.0;
+		fracFtrs = 0.5;
 		nThreads = 8;
 	}
 };
@@ -88,8 +88,8 @@ class binaryTree
 		 *		    out:  true->no error
 		 * =====================================================================================
 		 */
-		bool Apply( const Mat &inputData,		/* inp  featuredim x number_of_sample, column vector*/
-					  Mat &predictResult);		/* out  predicted label number_of_sample x 1, column vector*/		
+		bool Apply( const Mat &inputData,			/* inp  featuredim x number_of_sample, column vector*/
+					  Mat &predictResult) const;	/* out  predicted label number_of_sample x 1, column vector*/		
 
 		/* 
 		 * ===  FUNCTION  ======================================================================
@@ -97,7 +97,7 @@ class binaryTree
 		 *  Description:  output the information about the tree
 		 * =====================================================================================
 		 */
-		void showTreeInfo();
+		void showTreeInfo() const;
 
 		/* 
 		 * ===  FUNCTION  ======================================================================
@@ -105,7 +105,7 @@ class binaryTree
 		 *  Description:  return the weighted train error
 		 * =====================================================================================
 		 */
-		double getTrainError();
+		double getTrainError() const;
 
 
 		/* 
@@ -123,7 +123,7 @@ class binaryTree
 		 *  Description:  return the tree
 		 * =====================================================================================
 		 */
-		const biTree* getTree();
+		const biTree* getTree() const;
 
 
 		/* 
@@ -142,7 +142,7 @@ class binaryTree
 		 *			out:  true if the parameter is in the right range
 		 * =====================================================================================
 		 */
-		bool checkTreeParas( const tree_para & p );		/* input parameter */
+		bool checkTreeParas( const tree_para & p ) const;	/* input parameter */
 
 		/* 
 		 * ===  FUNCTION  ======================================================================
@@ -156,7 +156,7 @@ class binaryTree
 		void computeXMinMax( const Mat &X0,		/* neg data */
 							 const Mat &X1,		/* pos data , column feature */
 							 Mat& XMin,			
-							 Mat& XMax);
+							 Mat& XMax) const;
 
 
 		/* 
@@ -189,7 +189,7 @@ class binaryTree
 							const Mat & weights,				// in weights	numberOfSamples x 1
 							int nBins,							// in number of bins
 							vector<double> &cdf					// out cdf
-						);
+						) const;
 
 		/* 
 		 * ===  FUNCTION  ======================================================================
@@ -197,7 +197,7 @@ class binaryTree
 		 *  Description:  true if there's at least one non-element 
 		 * =====================================================================================
 		 */
-		bool any( const Mat& input);								// in 
+		bool any( const Mat& input) const;								// in 
 
 
 		/* 
@@ -212,7 +212,7 @@ class binaryTree
 private:
 		biTree m_tree;						/*  model struct */
 		bool m_debug;						/* want output? */
-		double m_error;						/* training error, used for adaboost training */
+		double m_error;						/* training error, used for adaboost training only */
 
 };
 #endif
