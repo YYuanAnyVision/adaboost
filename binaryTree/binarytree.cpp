@@ -54,8 +54,8 @@ void binaryTree::convertHsToDouble()
 {
 	if( !m_tree.hs.empty() )
 	{
-		for( int c=0;c<m_tree.hs.rows;c++)
-			m_tree.hs.at<double>(c,0) = ( m_tree.hs.at<double>(c,0) > 1e-7?1:-1);
+		for( int c=0;c<m_tree.hs.cols;c++)
+			m_tree.hs.at<double>(0,c) = ( m_tree.hs.at<double>(0,c) > 1e-7?1:-1);
 	}
 }
 
@@ -330,13 +330,13 @@ bool binaryTree::Train( data_pack & train_data,			/* input&output : training dat
 	//cout<<"quantization data "<<quan_neg_data.col(308)<<endl;
 	/*  K--> max number of split */
 	int K = 2*( num_neg_samples + num_pos_samples);
-	m_tree.thrs    = Mat::zeros( K, 1, CV_64F);
-	m_tree.hs      = Mat::zeros( K, 1, CV_64F);
-	m_tree.weights = Mat::zeros( K, 1, CV_64F);
-	m_tree.fids =  Mat::zeros( K, 1, CV_32S);
-	m_tree.child = Mat::zeros( K, 1, CV_32S);
-	m_tree.depth = Mat::zeros( K, 1, CV_32S);
-	Mat errs = Mat( K, 1, CV_64F);
+	m_tree.thrs    = Mat::zeros( 1,K,CV_64F);
+	m_tree.hs      = Mat::zeros( 1,K,CV_64F);
+	m_tree.weights = Mat::zeros( 1,K,CV_64F);
+	m_tree.fids	   = Mat::zeros( 1,K,CV_32S);
+	m_tree.child   = Mat::zeros( 1,K,CV_32S);
+	m_tree.depth   = Mat::zeros( 1,K,CV_32S);
+	Mat errs       = Mat( 1,K,CV_64F);
 
 	/* store the weight of all nodes, initialize weight in the root node( index 0 )
 	 * delete corresponding item after the node split 
@@ -362,15 +362,15 @@ bool binaryTree::Train( data_pack & train_data,			/* input&output : training dat
 		tmp_sum = cv::sum(*weight1); double w1 = tmp_sum.val[0];
 		
 		double w = w0+w1; double prior = w1/w; 
-		m_tree.weights.at<double>(k,0) = w; errs.at<double>(k,0)=std::min( prior, 1-prior);
-		m_tree.hs.at<double>(k,0)=std::max( -4.0, std::min(4.0, 0.5*std::log(prior/(1-prior))));
+		m_tree.weights.at<double>(0,k) = w; errs.at<double>(0,k)=std::min( prior, 1-prior);
+		m_tree.hs.at<double>(0,k)=std::max( -4.0, std::min(4.0, 0.5*std::log(prior/(1-prior))));
 
 		//cout<<"prior is "<<prior<<endl;
-		//cout<<m_tree.weights.at<double>(k,0)<<endl;
-		//cout<<m_tree.hs.at<double>(k,0)<<endl;
+		//cout<<m_tree.weights.at<double>(0,k)<<endl;
+		//cout<<m_tree.hs.at<double>(0,k)<<endl;
 		
 		/*  if nearly pure node ot insufficient data --> don't train split */
-		if( prior < 1e-3 || prior > 1-1e-3 || m_tree.depth.at<int>(k,0) >= paras.maxDepth || w < paras.minWeight)
+		if( prior < 1e-3 || prior > 1-1e-3 || m_tree.depth.at<int>(0,k) >= paras.maxDepth || w < paras.minWeight)
 		{
 			if(m_debug)
 				cout<<"------- node number "<<k<<" stop spliting -------"<<endl;
@@ -409,10 +409,10 @@ bool binaryTree::Train( data_pack & train_data,			/* input&output : training dat
 			if(m_debug)
 				cout<<"--------> split <----------"<<endl;
 			double actual_threshold = Xmin.at<double>( selectedFeature, 0) + Xstep.at<double>( selectedFeature, 0) * threshold_ready_to_apply;
-			m_tree.child.at<int>(k,0) = K; m_tree.fids.at<int>(k,0) = selectedFeature;m_tree.thrs.at<double>(k,0) = actual_threshold;
+			m_tree.child.at<int>(0,k) = K; m_tree.fids.at<int>(0,k) = selectedFeature;m_tree.thrs.at<double>(0,k) = actual_threshold;
 			if(m_debug)
-				cout<<"---> split node "<<k<<"'s child is "<<m_tree.child.at<int>(k,0)<<", with feature "<<
-				m_tree.fids.at<int>(k,0)<<" and threshold "<<m_tree.thrs.at<double>(k,0)<<" with depth "<<(int)m_tree.depth.at<int>(k,0)<<endl;
+				cout<<"---> split node "<<k<<"'s child is "<<m_tree.child.at<int>(0,k)<<", with feature "<<
+				m_tree.fids.at<int>(0,k)<<" and threshold "<<m_tree.thrs.at<double>(0,k)<<" with depth "<<(int)m_tree.depth.at<int>(0,k)<<endl;
 
 			/* -------------------------------- weights rearrange -------------------------------------*/
 			Mat left0_double; left0.convertTo( left0_double, CV_64F);
@@ -436,8 +436,8 @@ bool binaryTree::Train( data_pack & train_data,			/* input&output : training dat
 			delete wtsAll1[k]; wtsAll1[k] = NULL;
 			
 			/* -------------------------------- depth increasing-------------------------------------*/
-			m_tree.depth.at<uchar>(K,0) = m_tree.depth.at<int>(k)+1;
-			m_tree.depth.at<uchar>(K+1,0) = m_tree.depth.at<int>(k)+1;
+			m_tree.depth.at<int>(0,K) = m_tree.depth.at<int>(0,k)+1;
+			m_tree.depth.at<int>(0,K+1) = m_tree.depth.at<int>(0,k)+1;
 			K=K+2;														/* adding two more nodes, left&right */
 		}
 		else
@@ -451,13 +451,13 @@ bool binaryTree::Train( data_pack & train_data,			/* input&output : training dat
 
 	/* ############################# training result ############################# */
 	/*  crop the infos , only need top K elements */
-	m_tree.child    = m_tree.child.rowRange(0,K);
-	m_tree.depth    = m_tree.depth.rowRange(0,K);
-	m_tree.fids     = m_tree.fids.rowRange(0,K);
-	m_tree.hs       = m_tree.hs.rowRange(0,K);
-	m_tree.thrs     = m_tree.thrs.rowRange(0,K);
-	m_tree.weights  = m_tree.weights.rowRange(0,K);
-	errs			= errs.rowRange(0,K);
+	m_tree.child    = m_tree.child.colRange(0,K);
+	m_tree.depth    = m_tree.depth.colRange(0,K);
+	m_tree.fids     = m_tree.fids.colRange(0,K);
+	m_tree.hs       = m_tree.hs.colRange(0,K);
+	m_tree.thrs     = m_tree.thrs.colRange(0,K);
+	m_tree.weights  = m_tree.weights.colRange(0,K);
+	errs			= errs.colRange(0,K);
 
 	/*  convert hs to label info, from loglikelihood to lable {1,-1} */
 	/*  remains double for adaboosting training */
@@ -471,10 +471,10 @@ bool binaryTree::Train( data_pack & train_data,			/* input&output : training dat
 
 	/*  computing the weighted error */
 	m_error = 0;
-	for(int i=0;i<m_tree.child.rows;i++)
+	for(int i=0;i<m_tree.child.cols;i++)
 	{
-		if( m_tree.child.at<int>(i,0) == 0 )
-			m_error += m_tree.weights.at<double>(i,0)*errs.at<double>(i,0);
+		if( m_tree.child.at<int>(0,i) == 0 )
+			m_error += m_tree.weights.at<double>(0,i)*errs.at<double>(0,i);
 	}
 	
 	if( m_error > 0.5)
@@ -608,12 +608,12 @@ void binaryTree::showTreeInfo() const
 
 bool binaryTree::setTreeModel( const biTree& model )		/*  in : model */
 {
-	int number_of_element = model.fids.rows;
-	if( number_of_element != model.thrs.rows ||
-			number_of_element != model.child.rows ||
-			number_of_element != model.hs.rows ||
-			number_of_element != model.weights.rows ||
-			number_of_element != model.depth.rows)
+	int number_of_element = model.fids.cols;
+	if( number_of_element != model.thrs.cols ||
+			number_of_element != model.child.cols ||
+			number_of_element != model.hs.cols ||
+			number_of_element != model.weights.cols ||
+			number_of_element != model.depth.cols)
 	{
 		cout<<"Model file incorrect "<<endl;
 		return false;

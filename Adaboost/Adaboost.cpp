@@ -229,7 +229,7 @@ bool Adaboost::saveModel( string filename ) const
 		return false;
 	}
 	/* put all the infos into a big matrix , then save it
-	 * each column -> one model's parameters*/
+	 * each row -> one model's parameters*/
 
 	/*  take a sample , measure the length */
 	const biTree *sample = m_trees[0].getTree();
@@ -242,27 +242,27 @@ bool Adaboost::saveModel( string filename ) const
 	for( int c=0;c<m_trees.size();c++)
 	{
 		const biTree *ptr = m_trees[c].getTree();
-		max_number_nodes = std::max( max_number_nodes, (*ptr).fids.rows );
-		nodes.at<int>(c,0) = (*ptr).fids.rows;
+		max_number_nodes = std::max( max_number_nodes, (*ptr).fids.cols );
+		nodes.at<int>(c,0) = (*ptr).fids.cols;
 	}
 
-	Mat fids_pack		= Mat::zeros( max_number_nodes,  number_of_trees, (*sample).fids.type() );
-	Mat child_pack		= Mat::zeros( max_number_nodes,  number_of_trees, (*sample).child.type() );
-	Mat thrs_pack		= Mat::zeros( max_number_nodes,  number_of_trees, (*sample).thrs.type() );
-	Mat hs_pack			= Mat::zeros( max_number_nodes,  number_of_trees, (*sample).hs.type() );
-	Mat weights_pack	= Mat::zeros( max_number_nodes,  number_of_trees, (*sample).weights.type() );
-	Mat depth_pack		= Mat::zeros( max_number_nodes,  number_of_trees, (*sample).depth.type() );
+	Mat fids_pack		= Mat::zeros(   number_of_trees, max_number_nodes,(*sample).fids.type() );
+	Mat child_pack		= Mat::zeros(   number_of_trees, max_number_nodes,(*sample).child.type() );
+	Mat thrs_pack		= Mat::zeros(   number_of_trees, max_number_nodes,(*sample).thrs.type() );
+	Mat hs_pack			= Mat::zeros(   number_of_trees, max_number_nodes,(*sample).hs.type() );
+	Mat weights_pack	= Mat::zeros(   number_of_trees, max_number_nodes,(*sample).weights.type() );
+	Mat depth_pack		= Mat::zeros(   number_of_trees, max_number_nodes,(*sample).depth.type() );
 
 	for( int c=0;c<m_trees.size();c++)
 	{
 		const biTree *ptr = m_trees[c].getTree();
-		int nnodes = (*ptr).fids.rows;
-		(*ptr).fids.copyTo( fids_pack.col(c).rowRange(0,nnodes));		/* copying the rigth data to the right place */
-		(*ptr).thrs.copyTo( thrs_pack.col(c).rowRange(0,nnodes));
-		(*ptr).child.copyTo( child_pack.col(c).rowRange(0,nnodes));
-		(*ptr).hs.copyTo( hs_pack.col(c).rowRange(0,nnodes));
-		(*ptr).weights.copyTo( weights_pack.col(c).rowRange(0,nnodes));
-		(*ptr).depth.copyTo(depth_pack.col(c).rowRange(0,nnodes));
+		int nnodes = (*ptr).fids.cols;
+		(*ptr).fids.copyTo( fids_pack.row(c).colRange(0,nnodes));		/* copying the rigth data to the right place */
+		(*ptr).thrs.copyTo( thrs_pack.row(c).colRange(0,nnodes));
+		(*ptr).child.copyTo( child_pack.row(c).colRange(0,nnodes));
+		(*ptr).hs.copyTo( hs_pack.row(c).colRange(0,nnodes));
+		(*ptr).weights.copyTo( weights_pack.row(c).colRange(0,nnodes));
+		(*ptr).depth.copyTo(depth_pack.row(c).colRange(0,nnodes));
 	}
 
 	FileStorage fs( filename, FileStorage::WRITE);
@@ -299,7 +299,7 @@ bool Adaboost::loadModel( string filename )
 
 	Mat nodes;				/* numbers of nodes for each tree    */
 	Mat fids_pack;			/*    ------ tree model ------       */
-	Mat child_pack;			/*	node number  x number_of_trees   */
+	Mat child_pack;			/*	 number_of_trees x node number   */
 	Mat thrs_pack;			/*       see binaryTree.hpp		     */
 	Mat hs_pack;			/*								     */
 	Mat weights_pack;		/*     						         */
@@ -312,7 +312,6 @@ bool Adaboost::loadModel( string filename )
 	fs["weights"] >> weights_pack;
 	fs["depth"] >> depth_pack;
 	fs["thrs"] >> thrs_pack;
-
 	fs["featureDim"] >> m_feature_dim;
 
 	cout<<"Loading model file done, now initialize the Models "<<endl;
@@ -324,20 +323,20 @@ bool Adaboost::loadModel( string filename )
 	{
 		biTree bt;
 		/*  binaryTree assumes the memory of the tree model is continuous ( pointer operation ) 
-		 *  so we have to make a new copy of the data,*/
-		fids_pack.col(c).rowRange(0,nodes.at<int>(c,0)).copyTo(bt.fids);		
-		child_pack.col(c).rowRange(0,nodes.at<int>(c,0)).copyTo(bt.child);	
-		weights_pack.col(c).rowRange(0,nodes.at<int>(c,0)).copyTo(bt.weights);
-		hs_pack.col(c).rowRange(0,nodes.at<int>(c,0)).copyTo(bt.hs);		
-		thrs_pack.col(c).rowRange(0,nodes.at<int>(c,0)).copyTo(bt.thrs);
-		depth_pack.col(c).rowRange(0,nodes.at<int>(c,0)).copyTo(bt.depth);	
+		 *  so it have to be the row format~~*/
+		bt.fids		= fids_pack.row(c).colRange(0,nodes.at<int>(c,0));				/*  no memory copy here ~! */
+		bt.child	= child_pack.row(c).colRange(0,nodes.at<int>(c,0));
+		bt.weights	= weights_pack.row(c).colRange(0,nodes.at<int>(c,0));
+		bt.hs		= hs_pack.row(c).colRange(0,nodes.at<int>(c,0));		
+		bt.thrs     = thrs_pack.row(c).colRange(0,nodes.at<int>(c,0));
+		bt.depth	= depth_pack.row(c).colRange(0,nodes.at<int>(c,0));	
 
 		binaryTree bbt;
 		bbt.setTreeModel(bt);
 		m_trees.push_back( bbt);
 	}
 	cout<<"m_trees's size is "<<m_trees.size()<<endl;
-	cout<<"Loading done!"<<endl;
+	cout<<"Loading Model done!"<<endl;
 	return true;
 }
 
