@@ -74,6 +74,8 @@ bool Adaboost::Train(	const Mat &neg_data,				/* in : neg data format-> featured
 
 		double alpha = 1; 
 		double error = bt.getTrainError();
+
+		/*  alpha = 0.5*log( (1-weightederror)/weightederror ) */
 		alpha = std::max( -5.0, std::min(  5.0, 0.5*std::log((1-error)/error)  ));
 		if(m_debug)
 			cout<<"alpha is "<<alpha<<" , error is "<<error<<endl;
@@ -95,9 +97,10 @@ bool Adaboost::Train(	const Mat &neg_data,				/* in : neg data format-> featured
 		}
 
 		/* update cumulative scores H and weights */
-		H0 = H0 + alpha*h0;
+		H0 = H0 + alpha*h0;							/* output of the clf, since F_t(x) = F_t-1(x) + alpha_t*h_t(x) */
 		H1 = H1 + alpha*h1;
 
+		/*  divide by 2--> since we operate neg and pos samples separatly( sum of each weight is 1 potentially) */
 		cv::exp( H0, train_pack.wts0 );       train_pack.wts0 = train_pack.wts0/(2*number_neg_samples);
 		cv::exp( -1.0*H1, train_pack.wts1 );  train_pack.wts1 = train_pack.wts1/(2*number_pos_samples);
 		

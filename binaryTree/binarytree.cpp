@@ -463,6 +463,12 @@ bool binaryTree::Train( data_pack & train_data,			/* input&output : training dat
 	/*  remains double for adaboosting training */
 	convertHsToDouble();
 
+	if(m_debug)
+	{
+		cout<<"errs is "<<endl;
+		cout<<errs<<endl;
+	}
+
 	/*  computing the weighted error */
 	m_error = 0;
 	for(int i=0;i<m_tree.child.rows;i++)

@@ -46,10 +46,10 @@ int main( int argc, char** argv)
 
 	Mat p;
 	bt.Apply( train_neg, p);
-	cout<<"predicted label for train_neg data is "<<p<<endl<<endl;
+	//cout<<"predicted label for train_neg data is "<<p<<endl<<endl;
 
 	bt.Apply( train_pos, p);
-	cout<<"predicted label for train_pos data is "<<p<<endl;
+	//cout<<"predicted label for train_pos data is "<<p<<endl;
 
 
 	/*  train again using weights and quantization from previous step */

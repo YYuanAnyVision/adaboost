@@ -41,7 +41,7 @@ int main( int argc, char** argv)
 	cout<<"neg data dimension : "<<test_neg.rows<<" number : "<<test_neg.cols<<endl;
 
 	Adaboost ab; ab.SetDebug( false );
-	int number_n_weak = 128;
+	int number_n_weak = 256;
 
 	double t = getTickCount();
 
