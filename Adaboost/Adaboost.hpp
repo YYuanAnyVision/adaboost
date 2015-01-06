@@ -88,12 +88,31 @@ class Adaboost
 		/* 
 		 * ===  FUNCTION  ======================================================================
 		 *         Name:  getTreesDepth
-		 *  Description:  get the same depth of the trees, if all of them have the identical depth
-		 *				  than return the depth value, otherwisze -1;
+		 *  Description:  get the number of nodes of each tree, if all of them have the identical nodes
+		 *				  than return the value, otherwisze -1;
 		 *			out:  depth of the trees
 		 * =====================================================================================
 		 */
-		int getTreesDepth() const;
+		int getTreesNodes() const;
+
+
+		/* 
+		 * ===  FUNCTION  ======================================================================
+		 *         Name:  getMaxNUmNodes
+		 *  Description:  return the max number of nodes among all the trees
+		 * =====================================================================================
+		 */
+		int getMaxNumNodes() const;
+
+
+		/* 
+		 * ===  FUNCTION  ======================================================================
+		 *         Name:  getTrees
+		 *  Description:  return the trees for softcascade to combine them
+		 * =====================================================================================
+		 */
+		const vector<binaryTree>& getTrees();
+
 	private:
 		vector<binaryTree> m_trees;
 		bool m_debug;

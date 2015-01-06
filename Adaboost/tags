@@ -3,7 +3,7 @@
 !_TAG_PROGRAM_AUTHOR	Darren Hiebert	/dhiebert@users.sourceforge.net/
 !_TAG_PROGRAM_NAME	Exuberant Ctags	//
 !_TAG_PROGRAM_URL	http://ctags.sourceforge.net	/official site/
-!_TAG_PROGRAM_VERSION	5.9~svn20110310	//
+!_TAG_PROGRAM_VERSION	5.8	//
 ADABOOST_HPP	Adaboost.hpp	2;"	d
 Adaboost	Adaboost.hpp	/^class Adaboost$/;"	c
 Adaboost::Apply	Adaboost.cpp	/^bool Adaboost::Apply( const Mat &test_data,				\/*  in: test data format-> featuredim x numberSample *\/$/;"	f	class:Adaboost	signature:( const Mat &test_data, Mat &predicted_vector) const
@@ -16,8 +16,9 @@ Adaboost::Train	Adaboost.cpp	/^bool Adaboost::Train(	const Mat &neg_data,				\/*
 Adaboost::Train	Adaboost.hpp	/^		bool Train(  const Mat &neg_data,				\/* in : neg data  format-> featuredim x number0 *\/$/;"	p	class:Adaboost	access:public	signature:( const Mat &neg_data, const Mat &pos_data, const int &nWeaks, const tree_para &treepara)
 Adaboost::applyAndGetError	Adaboost.cpp	/^void Adaboost::applyAndGetError( const Mat &neg_data,			\/* in : neg data  format-> featuredim x number0 *\/$/;"	f	class:Adaboost	signature:( const Mat &neg_data, const Mat &pos_data, double &fn, double &fp) const
 Adaboost::applyAndGetError	Adaboost.hpp	/^		void applyAndGetError( const Mat &neg_data,			\/* in : neg data  format-> featuredim x number0 *\/$/;"	p	class:Adaboost	access:public	signature:( const Mat &neg_data, const Mat &pos_data, double &fn, double &fp) const
-Adaboost::getTreesDepth	Adaboost.cpp	/^int Adaboost::getTreesDepth() const$/;"	f	class:Adaboost	signature:() const
-Adaboost::getTreesDepth	Adaboost.hpp	/^		int getTreesDepth() const;$/;"	p	class:Adaboost	access:public	signature:() const
+Adaboost::getMaxNumNodes	Adaboost.hpp	/^		int getMaxNumNodes() const;$/;"	p	class:Adaboost	access:public	signature:() const
+Adaboost::getTreesNodes	Adaboost.cpp	/^int Adaboost::getTreesNodes() const$/;"	f	class:Adaboost	signature:() const
+Adaboost::getTreesNodes	Adaboost.hpp	/^		int getTreesNodes() const;$/;"	p	class:Adaboost	access:public	signature:() const
 Adaboost::loadModel	Adaboost.cpp	/^bool Adaboost::loadModel( string filename )$/;"	f	class:Adaboost	signature:( string filename )
 Adaboost::loadModel	Adaboost.hpp	/^		bool loadModel( string filename );$/;"	p	class:Adaboost	access:public	signature:( string filename )
 Adaboost::m_debug	Adaboost.hpp	/^		bool m_debug;$/;"	m	class:Adaboost	access:private
@@ -102,7 +103,6 @@ endl	Adaboost.cpp	/^		cout<<"tree ne ? tree ne? tree doumeiyou ,nishuo ge mao"<<
 endl	Adaboost.cpp	/^	cout<<"Loading Model done!"<<endl;$/;"	l
 endl	Adaboost.cpp	/^	cout<<"Loading model file "<<endl;$/;"	l
 endl	Adaboost.cpp	/^	cout<<"Loading model file done, now initialize the Models "<<endl;$/;"	l
-endl	Adaboost.cpp	/^	cout<<"max_number_nodes is "<<max_number_nodes<<endl;$/;"	l
 endl	Adaboost.cpp	/^	cout<<"saving done! "<<endl;$/;"	l
 endl	Adaboost.cpp	/^	cout<<"saving the model ..."<<endl;$/;"	l
 endl	test_adaboost.cpp	/^	cout<<"--> False Negative is "<<fn<<endl;$/;"	l
@@ -132,8 +132,9 @@ fp	test_adaboost.cpp	/^	double fp = 0;$/;"	l
 fs	Adaboost.cpp	/^	FileStorage fs( filename, FileStorage::READ );$/;"	p	file:	signature:( filename, FileStorage::READ )
 fs	Adaboost.cpp	/^	FileStorage fs( filename, FileStorage::WRITE);$/;"	p	file:	signature:( filename, FileStorage::WRITE)
 fs	test_adaboost.cpp	/^	FileStorage fs;$/;"	l
-getTreesDepth	Adaboost.cpp	/^int Adaboost::getTreesDepth() const$/;"	f	class:Adaboost	signature:() const
-getTreesDepth	Adaboost.hpp	/^		int getTreesDepth() const;$/;"	p	class:Adaboost	access:public	signature:() const
+getMaxNumNodes	Adaboost.hpp	/^		int getMaxNumNodes() const;$/;"	p	class:Adaboost	access:public	signature:() const
+getTreesNodes	Adaboost.cpp	/^int Adaboost::getTreesNodes() const$/;"	f	class:Adaboost	signature:() const
+getTreesNodes	Adaboost.hpp	/^		int getTreesNodes() const;$/;"	p	class:Adaboost	access:public	signature:() const
 h0	Adaboost.cpp	/^		Mat h0, h1;										\/*  predicted labels *\/$/;"	l
 h1	Adaboost.cpp	/^		Mat h0, h1;										\/*  predicted labels *\/$/;"	l
 hs_pack	Adaboost.cpp	/^	Mat hs_pack			= Mat::zeros(   number_of_trees, max_number_nodes,(*sample).hs.type() );$/;"	l
@@ -183,7 +184,7 @@ saveModel	Adaboost.hpp	/^		bool saveModel( string filename ) const;$/;"	p	class:
 scaleHs	Adaboost.cpp	/^		bt.scaleHs( alpha );$/;"	p	file:	signature:( alpha )
 setTreeModel	Adaboost.cpp	/^		bbt.setTreeModel(bt);$/;"	p	file:	signature:(bt)
 showTreeInfo	Adaboost.cpp	/^			bt.showTreeInfo();$/;"	p	file:	signature:()
-size	Adaboost.cpp	/^				setprecision(6)<<setw(10)<<fn<<". size(learner) "<<setw(5)<<m_trees.size();$/;"	p	file:	signature:()
+size	Adaboost.cpp	/^				setprecision(6)<<setw(12)<<fn<<". size(learner) "<<setw(5)<<m_trees.size();$/;"	p	file:	signature:()
 start	test_adaboost.cpp	/^	tk.start();$/;"	p	file:	signature:()
 stop	test_adaboost.cpp	/^	tk.stop();$/;"	p	file:	signature:()
 svm	test_adaboost.cpp	/^	CvSVM svm;$/;"	l

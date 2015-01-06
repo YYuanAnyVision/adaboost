@@ -77,7 +77,7 @@ bool binaryTree::computeCDF(	const Mat & sampleData,				// in samples	1 x number
 	int number_of_samples = sampleData.cols;
 
 	uchar *p = sampleData.data;										/* just one row ~, same as uchar *p = sampleData.ptr(0) */
-	double *w = (double*)(weights.data);							/*  just one col, also continus */
+	double *w = (double*)(weights.data);							/* just one col, also continus */
 
 	/* for each sample, computing its bin*/
 	for ( int c=0;c<number_of_samples ;c++ ) 

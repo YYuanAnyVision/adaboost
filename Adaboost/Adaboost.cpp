@@ -127,7 +127,7 @@ bool Adaboost::Train(	const Mat &neg_data,				/* in : neg data format-> featured
 			applyAndGetError(neg_data, pos_data, fn, fp );
 			cout<<"Training FP is "<<setprecision(6)<<setw(12)<<fp<<", FN is "<<
 				setprecision(6)<<setw(12)<<fn<<". size(learner) "<<setw(5)<<m_trees.size();
-			cout<<"\terr="<<setprecision(6)<<setw(10)<<errs.at<double>(c,0)<<"\t loss ="<<losses.at<double>(c,0)<<endl;
+			cout<<"\terr="<<setprecision(6)<<setw(10)<<errs.at<double>(c,0)<<"\t loss="<<losses.at<double>(c,0)<<endl;
 		}
 	}
 
@@ -227,7 +227,7 @@ bool Adaboost::ApplyLabel( const Mat &test_data,			/*  in: test data format-> fe
 	return true;
 }
 
-int Adaboost::getTreesDepth() const
+int Adaboost::getTreesNodes() const
 {
 	int nn = m_nodes.at<int>(0,0);
 	for ( int c=0;c<m_nodes.rows ;c++ ) 
@@ -236,6 +236,21 @@ int Adaboost::getTreesDepth() const
 			return -1;
 	}
 	return nn;
+}
+
+const vector<binaryTree>& Adaboost::getTrees()
+{
+	return m_trees;
+}
+
+int Adaboost::getMaxNumNodes() const
+{
+	int max_nn = 0;
+	for ( int c=0;c<m_nodes.rows;c++ ) 
+	{
+		max_nn  = std::max( max_nn, m_nodes.at<int>(c,0) );
+	}
+	return max_nn;
 }
 
 bool Adaboost::saveModel( string filename ) const
@@ -367,6 +382,8 @@ void Adaboost::applyAndGetError( const Mat &neg_data,			/* in : neg data  format
 	fn = 0;
 	for(int c=0;c<predicted_label0.rows;c++)
 		fp += (predicted_label0.at<int>(c,0) > 0?1:0);
+	
+	
 	fp /= predicted_label0.rows;
 
 	for(int c=0;c<predicted_label1.rows;c++)

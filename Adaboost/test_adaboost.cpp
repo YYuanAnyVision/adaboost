@@ -83,8 +83,14 @@ int main( int argc, char** argv)
 	cout<<"--> False Positive is "<<fp<<endl;
 	cout<<"--> False Negative is "<<fn<<endl;
 
-	cout<<"the depth of the tree is "<<ab.getTreesDepth()<<endl;
+	cout<<"the nodes of the tree is "<<ab.getTreesNodes()<<endl;
+	cout<<"tht max number of nodes is "<<ab.getMaxNumNodes()<<endl;
 
+
+	/*  test the getTrees function */
+	const vector<binaryTree> re_trees = ab.getTrees();
+	const biTree *ptr = re_trees[0].getTree();
+	cout<<"sample of fids is "<<(*ptr).fids<<endl;
 
 	/*  compared with opencv' svm  */
 	cout<<"=================== compare with linear svm(RBF) ====================  "<<endl;
