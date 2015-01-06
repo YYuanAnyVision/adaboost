@@ -84,10 +84,21 @@ class Adaboost
 							   double &fn,					/* out: false negative */
 							   double &fp) const;			/* out: false positive */
 
+
+		/* 
+		 * ===  FUNCTION  ======================================================================
+		 *         Name:  getTreesDepth
+		 *  Description:  get the same depth of the trees, if all of them have the identical depth
+		 *				  than return the depth value, otherwisze -1;
+		 *			out:  depth of the trees
+		 * =====================================================================================
+		 */
+		int getTreesDepth() const;
 	private:
 		vector<binaryTree> m_trees;
 		bool m_debug;
 		int  m_feature_dim;
+		Mat  m_nodes;						/* number_of_trees x1 : number of nodes for each tree */
 };
 #endif
 

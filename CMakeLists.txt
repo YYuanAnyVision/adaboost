@@ -7,6 +7,8 @@ find_package(OpenCV REQUIRED)
 #add_executable( test_align main.cpp )
 add_subdirectory( binaryTree )
 add_subdirectory( Adaboost )
+add_subdirectory( misc )
+add_subdirectory( softcascade )
 
 #add_library(dlibsource /home/yuanyang/build/dlib-18.10/dlib/all/source.cpp)
 

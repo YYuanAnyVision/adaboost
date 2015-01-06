@@ -125,10 +125,18 @@ bool Adaboost::Train(	const Mat &neg_data,				/* in : neg data format-> featured
 		{
 			double fn,fp;
 			applyAndGetError(neg_data, pos_data, fn, fp );
-			cout<<"Training FP is "<<setprecision(6)<<setw(10)<<fp<<", FN is "<<
-				setprecision(6)<<setw(10)<<fn<<". size(learner) "<<setw(5)<<m_trees.size();
+			cout<<"Training FP is "<<setprecision(6)<<setw(12)<<fp<<", FN is "<<
+				setprecision(6)<<setw(12)<<fn<<". size(learner) "<<setw(5)<<m_trees.size();
 			cout<<"\terr="<<setprecision(6)<<setw(10)<<errs.at<double>(c,0)<<"\t loss ="<<losses.at<double>(c,0)<<endl;
 		}
+	}
+
+	/*  records the number of nodes of each tree */
+	m_nodes = Mat( m_trees.size(), 1, CV_32S);			/*  number of node of the tree */
+	for( int c=0;c<m_trees.size();c++)
+	{
+		const biTree *ptr = m_trees[c].getTree();
+		m_nodes.at<int>(c,0) = (*ptr).fids.cols;
 	}
 
 	/* --------------------------  output debug information ------------------------------ */
@@ -219,6 +227,16 @@ bool Adaboost::ApplyLabel( const Mat &test_data,			/*  in: test data format-> fe
 	return true;
 }
 
+int Adaboost::getTreesDepth() const
+{
+	int nn = m_nodes.at<int>(0,0);
+	for ( int c=0;c<m_nodes.rows ;c++ ) 
+	{
+		if( m_nodes.at<int>(c,0) != nn)
+			return -1;
+	}
+	return nn;
+}
 
 bool Adaboost::saveModel( string filename ) const
 {
@@ -238,12 +256,9 @@ bool Adaboost::saveModel( string filename ) const
 	/* allocate the mem, not every tree have the identical depth and nodes, some of them stop spliting early
 	 *  results less nodes,  record the nodes and the model data*/
 	int max_number_nodes = 0;
-	Mat nodes( m_trees.size(), 1, CV_32S);			/*  number of node of the tree */
-	for( int c=0;c<m_trees.size();c++)
+	for( int c=0;c<m_nodes.rows;c++)
 	{
-		const biTree *ptr = m_trees[c].getTree();
-		max_number_nodes = std::max( max_number_nodes, (*ptr).fids.cols );
-		nodes.at<int>(c,0) = (*ptr).fids.cols;
+		max_number_nodes = std::max( max_number_nodes, m_nodes.at<int>(c,0) );
 	}
 
 	Mat fids_pack		= Mat::zeros(   number_of_trees, max_number_nodes,(*sample).fids.type() );
@@ -273,7 +288,7 @@ bool Adaboost::saveModel( string filename ) const
 	}
 
 	/* writing data */
-	fs<<"nodes"<<nodes;
+	fs<<"nodes"<<m_nodes;
 	fs<<"fids"<<fids_pack;
 	fs<<"child"<<child_pack;
 	fs<<"hs"<<hs_pack;
@@ -297,7 +312,6 @@ bool Adaboost::loadModel( string filename )
 		return false;
 	}
 
-	Mat nodes;				/* numbers of nodes for each tree    */
 	Mat fids_pack;			/*    ------ tree model ------       */
 	Mat child_pack;			/*	 number_of_trees x node number   */
 	Mat thrs_pack;			/*       see binaryTree.hpp		     */
@@ -305,7 +319,7 @@ bool Adaboost::loadModel( string filename )
 	Mat weights_pack;		/*     						         */
 	Mat depth_pack;			/*    ------ tree model ------       */
 	
-	fs["nodes"] >> nodes;
+	fs["nodes"] >> m_nodes;
 	fs["fids"] >> fids_pack;
 	fs["child"] >> child_pack;
 	fs["hs"] >> hs_pack;
@@ -317,19 +331,19 @@ bool Adaboost::loadModel( string filename )
 	cout<<"Loading model file done, now initialize the Models "<<endl;
 	
 	/*  assign the parameter to each tree model  */
-	int number_of_trees = nodes.rows;
+	int number_of_trees = m_nodes.rows;
 	m_trees.reserve( number_of_trees );
 	for ( int c=0;c<number_of_trees ;c++ )
 	{
 		biTree bt;
 		/*  binaryTree assumes the memory of the tree model is continuous ( pointer operation ) 
 		 *  so it have to be the row format~~*/
-		bt.fids		= fids_pack.row(c).colRange(0,nodes.at<int>(c,0));				/*  no memory copy here ~! */
-		bt.child	= child_pack.row(c).colRange(0,nodes.at<int>(c,0));
-		bt.weights	= weights_pack.row(c).colRange(0,nodes.at<int>(c,0));
-		bt.hs		= hs_pack.row(c).colRange(0,nodes.at<int>(c,0));		
-		bt.thrs     = thrs_pack.row(c).colRange(0,nodes.at<int>(c,0));
-		bt.depth	= depth_pack.row(c).colRange(0,nodes.at<int>(c,0));	
+		bt.fids		= fids_pack.row(c).colRange(0,m_nodes.at<int>(c,0));				/*  no memory copy here ~! */
+		bt.child	= child_pack.row(c).colRange(0,m_nodes.at<int>(c,0));
+		bt.weights	= weights_pack.row(c).colRange(0,m_nodes.at<int>(c,0));
+		bt.hs		= hs_pack.row(c).colRange(0,m_nodes.at<int>(c,0));		
+		bt.thrs     = thrs_pack.row(c).colRange(0,m_nodes.at<int>(c,0));
+		bt.depth	= depth_pack.row(c).colRange(0,m_nodes.at<int>(c,0));	
 
 		binaryTree bbt;
 		bbt.setTreeModel(bt);
@@ -358,6 +372,5 @@ void Adaboost::applyAndGetError( const Mat &neg_data,			/* in : neg data  format
 	for(int c=0;c<predicted_label1.rows;c++)
 		fn += (predicted_label1.at<int>(c,0) < 0?1:0);
 	fn /= predicted_label1.rows;
-
 
 }

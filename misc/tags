@@ -1,0 +1,41 @@
+!_TAG_FILE_FORMAT	2	/extended format; --format=1 will not append ;" to lines/
+!_TAG_FILE_SORTED	1	/0=unsorted, 1=sorted, 2=foldcase/
+!_TAG_PROGRAM_AUTHOR	Darren Hiebert	/dhiebert@users.sourceforge.net/
+!_TAG_PROGRAM_NAME	Exuberant Ctags	//
+!_TAG_PROGRAM_URL	http://ctags.sourceforge.net	/official site/
+!_TAG_PROGRAM_VERSION	5.9~svn20110310	//
+BORDER_REPLICATE	misc.hpp	/^	copyMakeBorder( input_image(target_region_with_pixel), outputImage, top_pad,bot_pad,left_pad,right_pad,BORDER_REPLICATE);$/;"	l
+bbsToRect	misc.hpp	/^Rect bbsToRect( int xmin, int xmax, int ymin, int ymax )$/;"	f	signature:( int xmin, int xmax, int ymin, int ymax )
+bot_pad	misc.hpp	/^	copyMakeBorder( input_image(target_region_with_pixel), outputImage, top_pad,bot_pad,left_pad,right_pad,BORDER_REPLICATE);$/;"	l
+bot_pad	misc.hpp	/^	int bot_pad=0;$/;"	l
+cropImage	misc.hpp	/^Mat cropImage( const Mat &input_image, const Rect &inrect )$/;"	f	signature:( const Mat &input_image, const Rect &inrect )
+d_height	misc.hpp	/^	int d_height = inrect.height * h_ratio;$/;"	l
+d_width	misc.hpp	/^	int d_width = inrect.width * w_ratio;$/;"	l
+d_x	misc.hpp	/^	int d_x = inrect.x + inrect.width\/2 - d_width\/2;$/;"	l
+d_y	misc.hpp	/^	int d_y = inrect.y + inrect.height\/2 - d_height\/2;$/;"	l
+input_image	main.cpp	/^	Mat input_image  = imread("..\/..\/data\/test.png");$/;"	l
+input_image	misc.hpp	/^	copyMakeBorder( input_image(target_region_with_pixel), outputImage, top_pad,bot_pad,left_pad,right_pad,BORDER_REPLICATE);$/;"	p	signature:(target_region_with_pixel)
+left_pad	misc.hpp	/^	copyMakeBorder( input_image(target_region_with_pixel), outputImage, top_pad,bot_pad,left_pad,right_pad,BORDER_REPLICATE);$/;"	l
+left_pad	misc.hpp	/^	int left_pad=0;$/;"	l
+main	main.cpp	/^int main( int argc, char** argv)$/;"	f	signature:( int argc, char** argv)
+nx	misc.hpp	/^	double nx_d = std::sqrt( howManyToSample*x_width\/y_height ); int nx =int( nx_d +0.1);$/;"	l
+nx_d	misc.hpp	/^	double nx_d = std::sqrt( howManyToSample*x_width\/y_height ); int nx =int( nx_d +0.1);$/;"	l
+ny	misc.hpp	/^	double ny_d = howManyToSample\/nx_d; int ny = int( ny_d +0.1);$/;"	l
+ny_d	misc.hpp	/^	double ny_d = howManyToSample\/nx_d; int ny = int( ny_d +0.1);$/;"	l
+outputImage	misc.hpp	/^	Mat outputImage;$/;"	l
+outputImage	misc.hpp	/^	copyMakeBorder( input_image(target_region_with_pixel), outputImage, top_pad,bot_pad,left_pad,right_pad,BORDER_REPLICATE);$/;"	l
+push_back	misc.hpp	/^			outputRects.push_back( tmp);$/;"	p	signature:( tmp)
+reserve	misc.hpp	/^	outputRects.reserve( nx*ny );$/;"	p	signature:( nx*ny )
+resize	misc.hpp	/^	outputRects.resize( howManyToSample);$/;"	p	signature:( howManyToSample)
+resizeBbox	misc.hpp	/^Rect resizeBbox( const Rect &inrect, double h_ratio, double w_ratio )$/;"	f	signature:( const Rect &inrect, double h_ratio, double w_ratio )
+right_pad	misc.hpp	/^	copyMakeBorder( input_image(target_region_with_pixel), outputImage, top_pad,bot_pad,left_pad,right_pad,BORDER_REPLICATE);$/;"	l
+right_pad	misc.hpp	/^	int right_pad=0;$/;"	l
+sampleRects	misc.hpp	/^void sampleRects( int howManyToSample, Size imageSize, Size objectSize, vector<Rect> &outputRects)$/;"	f	signature:( int howManyToSample, Size imageSize, Size objectSize, vector<Rect> &outputRects)
+target_region_with_pixel	misc.hpp	/^	Rect target_region_with_pixel = imgRect & inrect;$/;"	l
+tmp	misc.hpp	/^			Rect tmp( x_step*i, y_step*j, objectSize.width, objectSize.height );$/;"	p	signature:( x_step*i, y_step*j, objectSize.width, objectSize.height )
+top_pad	misc.hpp	/^	copyMakeBorder( input_image(target_region_with_pixel), outputImage, top_pad,bot_pad,left_pad,right_pad,BORDER_REPLICATE);$/;"	l
+top_pad	misc.hpp	/^	int top_pad=0;$/;"	l
+x_step	misc.hpp	/^	int x_step = (imageSize.width - objectSize.width)\/ nx;$/;"	l
+x_width	misc.hpp	/^	double x_width  = objectSize.width*1.0;$/;"	l
+y_height	misc.hpp	/^	double y_height = objectSize.height*1.0;$/;"	l
+y_step	misc.hpp	/^	int y_step = (imageSize.height - objectSize.height) \/ ny;$/;"	l

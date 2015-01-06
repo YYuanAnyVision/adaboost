@@ -1,0 +1,46 @@
+!_TAG_FILE_FORMAT	2	/extended format; --format=1 will not append ;" to lines/
+!_TAG_FILE_SORTED	1	/0=unsorted, 1=sorted, 2=foldcase/
+!_TAG_PROGRAM_AUTHOR	Darren Hiebert	/dhiebert@users.sourceforge.net/
+!_TAG_PROGRAM_NAME	Exuberant Ctags	//
+!_TAG_PROGRAM_URL	http://ctags.sourceforge.net	/official site/
+!_TAG_PROGRAM_VERSION	5.9~svn20110310	//
+Apply	softcascade.hpp	/^		bool Apply( const Mat &input_data,		\/*  in: featuredim x number_of_samples *\/$/;"	p	class:softcascade	access:public	signature:( const Mat &input_data, Mat &predicted_result )
+Load	softcascade.hpp	/^		bool Load( string path_to_model );		\/* in : path of the model, shoule be a xml file saved by opencv FileStorage *\/$/;"	p	class:softcascade	access:public	signature:( string path_to_model )
+SOFTCASCADE	softcascade.hpp	2;"	d
+Save	softcascade.hpp	/^		bool Save( string path_to_model );		\/*  in: where to save the model, models is saved by opencv FileStorage *\/$/;"	p	class:softcascade	access:public	signature:( string path_to_model )
+cascCal	softcascade.hpp	/^	double cascCal;						\/* [.005] cascade calibration (affects speed\/accuracy) *\/$/;"	m	struct:cascadeParameter	access:public
+cascThr	softcascade.hpp	/^	double cascThr;						\/* [-1] constant cascade threshold (affects speed\/accuracy)*\/$/;"	m	struct:cascadeParameter	access:public
+cascadeParameter	softcascade.hpp	/^	cascadeParameter()$/;"	f	struct:cascadeParameter	access:public	signature:()
+cascadeParameter	softcascade.hpp	/^struct cascadeParameter$/;"	s
+cascadeParameter::cascCal	softcascade.hpp	/^	double cascCal;						\/* [.005] cascade calibration (affects speed\/accuracy) *\/$/;"	m	struct:cascadeParameter	access:public
+cascadeParameter::cascThr	softcascade.hpp	/^	double cascThr;						\/* [-1] constant cascade threshold (affects speed\/accuracy)*\/$/;"	m	struct:cascadeParameter	access:public
+cascadeParameter::cascadeParameter	softcascade.hpp	/^	cascadeParameter()$/;"	f	struct:cascadeParameter	access:public	signature:()
+cascadeParameter::filter	softcascade.hpp	/^	vector<int> filter;					\/* de-correlation filter parameters, eg [5 5]  *\/$/;"	m	struct:cascadeParameter	access:public
+cascadeParameter::infos	softcascade.hpp	/^	string infos;						\/* other informations~~ *\/$/;"	m	struct:cascadeParameter	access:public
+cascadeParameter::modelDs	softcascade.hpp	/^	Size modelDs;						\/* model height+width without padding (eg [100 41]) *\/$/;"	m	struct:cascadeParameter	access:public
+cascadeParameter::modelDsPad	softcascade.hpp	/^	Size modelDsPad;					\/* model height+width with padding (eg [128 64])*\/$/;"	m	struct:cascadeParameter	access:public
+cascadeParameter::nAccNeg	softcascade.hpp	/^	int nAccNeg;						\/* [10000] max number of neg windows to accumulate*\/$/;"	m	struct:cascadeParameter	access:public
+cascadeParameter::nNeg	softcascade.hpp	/^	int nNeg;							\/* [5000] max number of neg windows to sample*\/$/;"	m	struct:cascadeParameter	access:public
+cascadeParameter::nPerNeg	softcascade.hpp	/^	int nPerNeg;						\/* [25]  max number of neg windows to sample per image*\/$/;"	m	struct:cascadeParameter	access:public
+cascadeParameter::nPos	softcascade.hpp	/^	int nPos;							\/* [-1 -> inf] max number of pos windows to sample *\/						$/;"	m	struct:cascadeParameter	access:public
+cascadeParameter::nWeaks	softcascade.hpp	/^	vector<int> nWeaks;					\/* [128] vector defining number weak clfs per stagemodel eg[64 128 256 1024]*\/$/;"	m	struct:cascadeParameter	access:public
+cascadeParameter::pBoost_nweaks	softcascade.hpp	/^	int pBoost_nweaks;					\/* parameters for boosting *\/$/;"	m	struct:cascadeParameter	access:public
+cascadeParameter::pBoost_pTree	softcascade.hpp	/^	tree_para pBoost_pTree;				\/* parameters for boosting *\/$/;"	m	struct:cascadeParameter	access:public
+cascadeParameter::stride	softcascade.hpp	/^	int stride;							\/* [4] spatial stride between detection windows *\/$/;"	m	struct:cascadeParameter	access:public
+filter	softcascade.hpp	/^	vector<int> filter;					\/* de-correlation filter parameters, eg [5 5]  *\/$/;"	m	struct:cascadeParameter	access:public
+infos	softcascade.hpp	/^	string infos;						\/* other informations~~ *\/$/;"	m	struct:cascadeParameter	access:public
+main	main.cpp	/^int main( int argc, char** argv)$/;"	f	signature:( int argc, char** argv)
+modelDs	softcascade.hpp	/^	Size modelDs;						\/* model height+width without padding (eg [100 41]) *\/$/;"	m	struct:cascadeParameter	access:public
+modelDsPad	softcascade.hpp	/^	Size modelDsPad;					\/* model height+width with padding (eg [128 64])*\/$/;"	m	struct:cascadeParameter	access:public
+nAccNeg	softcascade.hpp	/^	int nAccNeg;						\/* [10000] max number of neg windows to accumulate*\/$/;"	m	struct:cascadeParameter	access:public
+nNeg	softcascade.hpp	/^	int nNeg;							\/* [5000] max number of neg windows to sample*\/$/;"	m	struct:cascadeParameter	access:public
+nPerNeg	softcascade.hpp	/^	int nPerNeg;						\/* [25]  max number of neg windows to sample per image*\/$/;"	m	struct:cascadeParameter	access:public
+nPos	softcascade.hpp	/^	int nPos;							\/* [-1 -> inf] max number of pos windows to sample *\/						$/;"	m	struct:cascadeParameter	access:public
+nWeaks	softcascade.hpp	/^	vector<int> nWeaks;					\/* [128] vector defining number weak clfs per stagemodel eg[64 128 256 1024]*\/$/;"	m	struct:cascadeParameter	access:public
+pBoost_nweaks	softcascade.hpp	/^	int pBoost_nweaks;					\/* parameters for boosting *\/$/;"	m	struct:cascadeParameter	access:public
+pBoost_pTree	softcascade.hpp	/^	tree_para pBoost_pTree;				\/* parameters for boosting *\/$/;"	m	struct:cascadeParameter	access:public
+softcascade	softcascade.hpp	/^class softcascade$/;"	c
+softcascade::Apply	softcascade.hpp	/^		bool Apply( const Mat &input_data,		\/*  in: featuredim x number_of_samples *\/$/;"	p	class:softcascade	access:public	signature:( const Mat &input_data, Mat &predicted_result )
+softcascade::Load	softcascade.hpp	/^		bool Load( string path_to_model );		\/* in : path of the model, shoule be a xml file saved by opencv FileStorage *\/$/;"	p	class:softcascade	access:public	signature:( string path_to_model )
+softcascade::Save	softcascade.hpp	/^		bool Save( string path_to_model );		\/*  in: where to save the model, models is saved by opencv FileStorage *\/$/;"	p	class:softcascade	access:public	signature:( string path_to_model )
+stride	softcascade.hpp	/^	int stride;							\/* [4] spatial stride between detection windows *\/$/;"	m	struct:cascadeParameter	access:public

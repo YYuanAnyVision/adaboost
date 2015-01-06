@@ -49,7 +49,7 @@ int main( int argc, char** argv)
 
 	tree_para train_paras;
 	train_paras.nBins = 256;
-	train_paras.maxDepth = 2;
+	train_paras.maxDepth = 3;
 
 	/*  Train function will change the data  */
 	ab.Train( train_neg, train_pos, number_n_weak, train_paras);
@@ -82,6 +82,8 @@ int main( int argc, char** argv)
 	cout<<"Results on the training data is :"<<endl;
 	cout<<"--> False Positive is "<<fp<<endl;
 	cout<<"--> False Negative is "<<fn<<endl;
+
+	cout<<"the depth of the tree is "<<ab.getTreesDepth()<<endl;
 
 
 	/*  compared with opencv' svm  */
