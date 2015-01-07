@@ -49,7 +49,7 @@ int main( int argc, char** argv)
 
 	tree_para train_paras;
 	train_paras.nBins = 256;
-	train_paras.maxDepth = 3;
+	train_paras.maxDepth = 2;
 
 	/*  Train function will change the data  */
 	ab.Train( train_neg, train_pos, number_n_weak, train_paras);

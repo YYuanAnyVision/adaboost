@@ -9,6 +9,8 @@ endif()
 
 add_library( softcascade softcascade.hpp softcascade.cpp )
 add_executable( train_softcascade main.cpp)
+add_executable( test test.cpp)
 
 target_link_libraries(  train_softcascade  ${OpenCV_LIBS}  softcascade adaboost binaryTree)
+target_link_libraries(  test  ${OpenCV_LIBS}  softcascade adaboost binaryTree)
 

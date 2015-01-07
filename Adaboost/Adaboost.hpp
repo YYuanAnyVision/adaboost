@@ -113,6 +113,15 @@ class Adaboost
 		 */
 		const vector<binaryTree>& getTrees();
 
+
+		/* 
+		 * ===  FUNCTION  ======================================================================
+		 *         Name:  getNodes
+		 *  Description:  return the number of nodes of every tree
+		 * =====================================================================================
+		 */
+		const Mat& getNodes();
+
 	private:
 		vector<binaryTree> m_trees;
 		bool m_debug;

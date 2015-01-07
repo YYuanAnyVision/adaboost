@@ -33,12 +33,12 @@ struct tree_para
 /*  struct of the binary tree , save and load */
 struct biTree
 {
-	Mat fids;		/* 1xK feature index for each node , K for number of nodes*/
-	Mat thrs;		/* 1xK thresholds for each node */
-	Mat child;		/* 1xK child index for each node */
-	Mat hs;			/* 1xK log ratio (.5*log(p/(1-p)) at each node, used later to decide polarity */
-	Mat weights;	/* 1xK total sample weight at each node */
-	Mat depth;		/* 1xK depth of node*/
+	Mat fids;		/* 1xK 32S feature index for each node , K for number of nodes*/
+	Mat thrs;		/* 1xK 64F thresholds for each node */
+	Mat child;		/* 1xK 32S child index for each node */
+	Mat hs;			/* 1xK 64F log ratio (.5*log(p/(1-p)) at each node, used later to decide polarity */
+	Mat weights;	/* 1xK 64F total sample weight at each node */
+	Mat depth;		/* 1xK 32S depth of node*/
 };
 
 

@@ -311,8 +311,15 @@ bool Adaboost::saveModel( string filename ) const
 	fs<<"depth"<<depth_pack;
 	fs<<"thrs"<<thrs_pack;
 	fs<<"featureDim"<<m_feature_dim;
+	fs.release();
 	cout<<"saving done! "<<endl;
 	return true;
+}
+
+
+const Mat& Adaboost::getNodes()
+{
+	return m_nodes;
 }
 
 bool Adaboost::loadModel( string filename )
@@ -342,7 +349,7 @@ bool Adaboost::loadModel( string filename )
 	fs["depth"] >> depth_pack;
 	fs["thrs"] >> thrs_pack;
 	fs["featureDim"] >> m_feature_dim;
-
+	fs.release();
 	cout<<"Loading model file done, now initialize the Models "<<endl;
 	
 	/*  assign the parameter to each tree model  */

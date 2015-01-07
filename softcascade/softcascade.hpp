@@ -17,6 +17,10 @@ struct cascadeParameter
 	vector<int> filter;					/* de-correlation filter parameters, eg [5 5]  */
 	Size modelDs;						/* model height+width without padding (eg [100 41]) */
 	Size modelDsPad;					/* model height+width with padding (eg [128 64])*/
+	
+
+	int shrink;							/* ----------> should be provided by the chnPyramid */
+
 
 	/* ---> TODO non maximun suppression parameters ... */
 
@@ -48,6 +52,8 @@ struct cascadeParameter
 		nNeg = 5000;
 		nPerNeg = 25;
 		nAccNeg = 10000;
+
+		shrink = 4;
 	}
 };
 
@@ -69,13 +75,44 @@ class softcascade
 		 *         Name:  Apply
 		 *  Description:  predict the result giving data
 		 *           in:  input_data, column vectors, same type as training data
-		 *          out:  predicted_result
+		 *          out:  detect result
 		 * =====================================================================================
 		 */
-		bool Apply( const Mat &input_data,		/*  in: featuredim x number_of_samples */
-				    Mat &predicted_result );	/* out: number_of_samples x 1 */
+		bool Apply( const Mat &input_data,		    /*  in: featuredim x number_of_samples */
+				    vector<Rect> &results ) const;	/* out: detect results on image */
 
-		
+
+		/* 
+		 * ===  FUNCTION  ======================================================================
+		 *         Name:  Predict
+		 *  Description:  test a single sample
+		 *			 in:  data
+		 *			out:  predicted score ( hs ) 
+		 *			      !!! this function shoule not be used in sliding window search, since the
+		 *			      memory is not continuous for each window Rect
+		 * =====================================================================================
+		 */
+		template < typename T> bool Predict(  T *data, double &score) const
+		{
+			if(!checkModel())
+				return false;
+			double h = 0;
+			for( int c=0;c<m_number_of_trees;c++)
+			{
+				int position   = 0;
+				const int *t_child   = m_child.ptr<int>(c);
+				const int *t_fids    = m_fids.ptr<int>(c);
+				const double *t_thrs = m_thrs.ptr<double>(c);
+				const double *t_hs   = m_hs.ptr<double>(c);
+				while( t_child[position] )  /*  iterate the tree */
+				{
+					position = (( data[t_fids[position]] < t_thrs[position]) ? t_child[position]: t_child[position] + 1);
+				}
+				h += t_hs[position];
+			}
+			score = h;
+		}
+			
 		/* 
 		 * ===  FUNCTION  ======================================================================
 		 *         Name:  Save
@@ -96,13 +133,25 @@ class softcascade
 		bool Combine( vector<Adaboost> &ads );
 
 
+		/* 
+		 * ===  FUNCTION  ======================================================================
+		 *         Name:  checkModel
+		 *  Description:  check if the model is loaded right
+		 * =====================================================================================
+		 */
+		bool checkModel() const;
+
 		private:
-			Mat m_fids;			/* nxK feature index for each node , n -> number of trees, K -> number of nodes*/
-			Mat m_thrs;			/* nxK thresholds for each node */
-			Mat m_child;		/* nxK child index for each node */
-			Mat m_hs;			/* nxK log ratio (.5*log(p/(1-p)) at each node  */
-			Mat m_weights;		/* nxK total sample weight at each node */
-			Mat m_depth;		/* nxK depth of node*/
+			Mat m_fids;							/* nxK 32S feature index for each node , n -> number of trees, K -> number of nodes*/
+			Mat m_thrs;							/* nxK 64F thresholds for each node */
+			Mat m_child;						/* nxK 32S child index for each node */
+			Mat m_hs;							/* nxK 64F log ratio (.5*log(p/(1-p)) at each node  */
+			Mat m_weights;						/* nxK 64F total sample weight at each node */
+			Mat m_depth;						/* nxK 32S depth of node*/
+			Mat m_nodes;						/* nx1 32S number of nodes of each tree */
+			bool m_debug;						/* wanna output? */
+			cascadeParameter m_opts;            /* detectot options  */
+			int m_number_of_trees;				/* . */
 
 };
 #endif
