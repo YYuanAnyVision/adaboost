@@ -97,18 +97,40 @@ class softcascade
 			if(!checkModel())
 				return false;
 			double h = 0;
-			for( int c=0;c<m_number_of_trees;c++)
+			if(m_tree_depth != 0)
 			{
-				int position   = 0;
-				const int *t_child   = m_child.ptr<int>(c);
-				const int *t_fids    = m_fids.ptr<int>(c);
-				const double *t_thrs = m_thrs.ptr<double>(c);
-				const double *t_hs   = m_hs.ptr<double>(c);
-				while( t_child[position] )  /*  iterate the tree */
+				for( int t=0;t<m_number_of_trees;t++)
 				{
-					position = (( data[t_fids[position]] < t_thrs[position]) ? t_child[position]: t_child[position] + 1);
+					int position = 0;
+					
+					const int *t_child   = m_child.ptr<int>(t);
+					const int *t_fids    = m_fids.ptr<int>(t);
+					const double *t_thrs = m_thrs.ptr<double>(t);
+					const double *t_hs   = m_hs.ptr<double>(t);
+
+					while( t_child[position])
+					{
+						position = (( data[t_fids[position]] < t_thrs[position]) ? position*2+1:position*2+2);
+					}
+					h += t_hs[position];
 				}
-				h += t_hs[position];
+
+			}
+			else
+			{
+				for( int c=0;c<m_number_of_trees;c++)
+				{
+					int position   = 0;
+					const int *t_child   = m_child.ptr<int>(c);
+					const int *t_fids    = m_fids.ptr<int>(c);
+					const double *t_thrs = m_thrs.ptr<double>(c);
+					const double *t_hs   = m_hs.ptr<double>(c);
+					while( t_child[position] )  /*  iterate the tree */
+					{
+						position = (( data[t_fids[position]] < t_thrs[position]) ? t_child[position]: t_child[position] + 1);
+					}
+					h += t_hs[position];
+				}
 			}
 			score = h;
 		}
@@ -141,17 +163,29 @@ class softcascade
 		 */
 		bool checkModel() const;
 
-		private:
-			Mat m_fids;							/* nxK 32S feature index for each node , n -> number of trees, K -> number of nodes*/
-			Mat m_thrs;							/* nxK 64F thresholds for each node */
-			Mat m_child;						/* nxK 32S child index for each node */
-			Mat m_hs;							/* nxK 64F log ratio (.5*log(p/(1-p)) at each node  */
-			Mat m_weights;						/* nxK 64F total sample weight at each node */
-			Mat m_depth;						/* nxK 32S depth of node*/
-			Mat m_nodes;						/* nx1 32S number of nodes of each tree */
-			bool m_debug;						/* wanna output? */
-			cascadeParameter m_opts;            /* detectot options  */
-			int m_number_of_trees;				/* . */
+	private:
+
+		/* 
+		 * ===  FUNCTION  ======================================================================
+		 *         Name:  setTreeDepth
+		 *  Description:  get the depth of all leaf nodes, 0 if leaf depth varies
+		 * =====================================================================================
+		 */
+		bool setTreeDepth();
+
+	private:
+		Mat m_fids;							/* nxK 32S feature index for each node , n -> number of trees, K -> number of nodes*/
+		Mat m_thrs;							/* nxK 64F thresholds for each node */
+		Mat m_child;						/* nxK 32S child index for each node */
+		Mat m_hs;							/* nxK 64F log ratio (.5*log(p/(1-p)) at each node  */
+		Mat m_weights;						/* nxK 64F total sample weight at each node */
+		Mat m_depth;						/* nxK 32S depth of node*/
+		Mat m_nodes;						/* nx1 32S number of nodes of each tree */
+		bool m_debug;						/* wanna output? */
+		cascadeParameter m_opts;            /* detectot options  */
+		int m_number_of_trees;				/* . */
+		int m_tree_nodes;					/* if all the tree have the same structure, this will be the number of the nodes of each tree, otherwise -1*/
+		int m_tree_depth;					/* depth of all leaf nodes (or 0 if leaf depth varies) */
 
 };
 #endif

@@ -37,6 +37,9 @@ int main( int argc, char** argv)
 
 	cout<<"test_neg, number of sample "<<test_pos.rows<<" feature dim "<<test_pos.cols<<endl;
 
+
+	cv::TickMeter tk;
+	tk.start();
 	int fn = 0;
 	int fp = 0;
 	for ( int c=0; c<test_pos.rows;c++ ) 
@@ -58,5 +61,10 @@ int main( int argc, char** argv)
 			fp++;
 	}
 	cout<<"False Positive is "<<fp*1.0/test_neg.rows<<endl;
+	tk.stop();
+	cout<<"time ----> "<<tk.getTimeSec()<<endl;
+
+	/*  test Save And Load */
+	sc.Save("sc.xml");
 	return 0;
 }

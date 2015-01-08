@@ -9,12 +9,14 @@ Apply	softcascade.hpp	/^		bool Apply( const Mat &input_data,		    \/*  in: featu
 Combine	softcascade.cpp	/^bool softcascade::Combine(vector<Adaboost> &ads )$/;"	f	class:softcascade	signature:(vector<Adaboost> &ads )
 Combine	softcascade.hpp	/^		bool Combine( vector<Adaboost> &ads );$/;"	p	class:softcascade	access:public	signature:( vector<Adaboost> &ads )
 Combine	test.cpp	/^	sc.Combine( abs);$/;"	p	file:	signature:( abs)
+Load	softcascade.cpp	/^bool softcascade::Load( string path_to_model )		\/* in : path of the model, shoule be a xml file saved by opencv FileStorage *\/$/;"	f	class:softcascade	signature:( string path_to_model )
 Load	softcascade.hpp	/^		bool Load( string path_to_model );		\/* in : path of the model, shoule be a xml file saved by opencv FileStorage *\/$/;"	p	class:softcascade	access:public	signature:( string path_to_model )
 Predict	softcascade.hpp	/^		template < typename T> bool Predict(  T *data, double &score) const$/;"	f	class:softcascade	access:public	signature:( T *data, double &score) const
 Predict	test.cpp	/^		sc.Predict( pp, h );$/;"	p	file:	signature:( pp, h )
 SOFTCASCADE	softcascade.hpp	2;"	d
+Save	softcascade.cpp	/^bool softcascade::Save( string path_to_model )		\/*  in: where to save the model, models is saved by opencv FileStorage *\/$/;"	f	class:softcascade	signature:( string path_to_model )
 Save	softcascade.hpp	/^		bool Save( string path_to_model );		\/*  in: where to save the model, models is saved by opencv FileStorage *\/$/;"	p	class:softcascade	access:public	signature:( string path_to_model )
-_apply	softcascade.cpp	/^template <typename T> void _apply( const T *input_data,		        	\/* in : (nchannels*nheight)x(nwidth) channels feature *\/$/;"	f	signature:( const T *input_data, const int nwidth, const int nheight, const int nchannels, const Mat &fids, const Mat &child, const Mat &thrs, const Mat &hs, const cascadeParameter &opts, vector<Rect> results)
+_apply	softcascade.cpp	/^template <typename T> void _apply( const T *input_data,		        	\/* in : (nchannels*nheight)x(nwidth) channels feature, already been scaled with shrink*\/$/;"	f	signature:( const T *input_data, const int &in_width, const int &in_height, const int &nchannels, const Mat &fids, const Mat &child, const Mat &thrs, const Mat &hs, const cascadeParameter &opts, const int &tree_nodes, vector<Rect> &results, vector<double> &confidence )
 ab1	test.cpp	/^	Adaboost ab1,ab2,ab3;$/;"	l
 ab2	test.cpp	/^	Adaboost ab1,ab2,ab3;$/;"	l
 ab3	test.cpp	/^	Adaboost ab1,ab2,ab3;$/;"	l
@@ -46,6 +48,7 @@ cascadeParameter::shrink	softcascade.hpp	/^	int shrink;							\/* ----------> sh
 cascadeParameter::stride	softcascade.hpp	/^	int stride;							\/* [4] spatial stride between detection windows *\/$/;"	m	struct:cascadeParameter	access:public
 checkModel	softcascade.cpp	/^bool softcascade::checkModel() const$/;"	f	class:softcascade	signature:() const
 checkModel	softcascade.hpp	/^		bool checkModel() const;$/;"	p	class:softcascade	access:public	signature:() const
+cids	softcascade.cpp	/^	unsigned int *cids = new unsigned int[total_dim];$/;"	l
 copyTo	softcascade.cpp	/^			(*ptr).child.copyTo( m_child.row(counter).colRange(0,nodes_info.at<int>(i,0)) );$/;"	p	file:	signature:( m_child.row(counter).colRange(0,nodes_info.at<int>(i,0)) )
 copyTo	softcascade.cpp	/^			(*ptr).depth.copyTo( m_depth.row(counter).colRange(0,nodes_info.at<int>(i,0)) );$/;"	p	file:	signature:( m_depth.row(counter).colRange(0,nodes_info.at<int>(i,0)) )
 copyTo	softcascade.cpp	/^			(*ptr).fids.copyTo( m_fids.row(counter).colRange(0,nodes_info.at<int>(i,0)) );$/;"	p	file:	signature:( m_fids.row(counter).colRange(0,nodes_info.at<int>(i,0)) )
@@ -53,32 +56,60 @@ copyTo	softcascade.cpp	/^			(*ptr).hs.copyTo( m_hs.row(counter).colRange(0,nodes
 copyTo	softcascade.cpp	/^			(*ptr).thrs.copyTo( m_thrs.row(counter).colRange(0,nodes_info.at<int>(i,0)) );$/;"	p	file:	signature:( m_thrs.row(counter).colRange(0,nodes_info.at<int>(i,0)) )
 copyTo	softcascade.cpp	/^			(*ptr).weights.copyTo( m_weights.row(counter).colRange(0,nodes_info.at<int>(i,0)) );$/;"	p	file:	signature:( m_weights.row(counter).colRange(0,nodes_info.at<int>(i,0)) )
 counter	softcascade.cpp	/^	int counter = 0;$/;"	l
+counter	softcascade.cpp	/^	int counter=0;$/;"	l
 endl	main.cpp	/^		cout<<"Training Stage No "<<stage<<endl;$/;"	l
 endl	softcascade.cpp	/^			cout<<"<softcascade::Combine><error> Adaboost struct is empty .. "<<endl;$/;"	l
 endl	softcascade.cpp	/^		cout<<"<softcascade::Apply><error> input_data shoule be continuous ~"<<endl;$/;"	l
+endl	softcascade.cpp	/^		cout<<"<softcascade::Load><error> Can not load model file "<<path_to_model<<endl;$/;"	l
+endl	softcascade.cpp	/^		cout<<"<softcascade::Save><error> can not open file "<<path_to_model<<" for writing ."<<endl;$/;"	l
 endl	softcascade.cpp	/^		cout<<"<softcascade::checkModel><error> Model is empty "<<endl;$/;"	l
 endl	softcascade.cpp	/^		cout<<"<softcascade::checkModel><error> Model is not continuous "<<endl;$/;"	l
 endl	softcascade.cpp	/^		cout<<"Making model from adaboost structure ..."<<endl;$/;"	l
 endl	softcascade.cpp	/^		cout<<"max_number_of_nodes is \\n"<<max_number_of_nodes<<endl;$/;"	l
 endl	softcascade.cpp	/^		cout<<"number_of_trees is \\n"<<number_of_trees<<endl;$/;"	l
 endl	softcascade.cpp	/^		cout<<"tree_nodes is \\n"<<tree_nodes<<endl;$/;"	l
+endl	softcascade.cpp	/^	cout<<"Loading Model Done "<<endl;$/;"	l
+endl	softcascade.cpp	/^	cout<<"Saving Model Done "<<endl;$/;"	l
 filter	softcascade.hpp	/^	vector<int> filter;					\/* de-correlation filter parameters, eg [5 5]  *\/$/;"	m	struct:cascadeParameter	access:public
 fn	test.cpp	/^	int fn = 0;$/;"	l
 fp	test.cpp	/^	int fp = 0;$/;"	l
+fs	softcascade.cpp	/^	FileStorage fs( path_to_model, FileStorage::WRITE);$/;"	p	file:	signature:( path_to_model, FileStorage::WRITE)
+fs	softcascade.cpp	/^	FileStorage fs(path_to_model, FileStorage::READ );$/;"	p	file:	signature:(path_to_model, FileStorage::READ )
 fs	test.cpp	/^	FileStorage fs;$/;"	l
+h	softcascade.cpp	/^			double h=0;$/;"	l
 h	softcascade.hpp	/^			double h = 0;$/;"	l
 h	test.cpp	/^		double h = 0;$/;"	l
 infos	softcascade.hpp	/^	string infos;						\/* other informations~~ *\/$/;"	m	struct:cascadeParameter	access:public
-m_child	softcascade.hpp	/^			Mat m_child;						\/* nxK 32S child index for each node *\/$/;"	m	class:softcascade	access:private
-m_debug	softcascade.hpp	/^			bool m_debug;						\/* wanna output? *\/$/;"	m	class:softcascade	access:private
-m_depth	softcascade.hpp	/^			Mat m_depth;						\/* nxK 32S depth of node*\/$/;"	m	class:softcascade	access:private
-m_fids	softcascade.hpp	/^			Mat m_fids;							\/* nxK 32S feature index for each node , n -> number of trees, K -> number of nodes*\/$/;"	m	class:softcascade	access:private
-m_hs	softcascade.hpp	/^			Mat m_hs;							\/* nxK 64F log ratio (.5*log(p\/(1-p)) at each node  *\/$/;"	m	class:softcascade	access:private
-m_nodes	softcascade.hpp	/^			Mat m_nodes;						\/* nx1 32S number of nodes of each tree *\/$/;"	m	class:softcascade	access:private
-m_number_of_trees	softcascade.hpp	/^			int m_number_of_trees;				\/* . *\/$/;"	m	class:softcascade	access:private
-m_opts	softcascade.hpp	/^			cascadeParameter m_opts;            \/* detectot options  *\/$/;"	m	class:softcascade	access:private
-m_thrs	softcascade.hpp	/^			Mat m_thrs;							\/* nxK 64F thresholds for each node *\/$/;"	m	class:softcascade	access:private
-m_weights	softcascade.hpp	/^			Mat m_weights;						\/* nxK 64F total sample weight at each node *\/$/;"	m	class:softcascade	access:private
+m_child	softcascade.cpp	/^	fs<<"m_child"<<m_child;$/;"	l
+m_child	softcascade.cpp	/^	fs["m_child"]>>m_child;$/;"	l
+m_child	softcascade.hpp	/^		Mat m_child;						\/* nxK 32S child index for each node *\/$/;"	m	class:softcascade	access:private
+m_debug	softcascade.hpp	/^		bool m_debug;						\/* wanna output? *\/$/;"	m	class:softcascade	access:private
+m_depth	softcascade.cpp	/^	fs<<"m_depth"<<m_depth;$/;"	l
+m_depth	softcascade.cpp	/^	fs["m_depth"] >> m_depth;$/;"	l
+m_depth	softcascade.hpp	/^		Mat m_depth;						\/* nxK 32S depth of node*\/$/;"	m	class:softcascade	access:private
+m_fids	softcascade.cpp	/^	fs<<"m_fids"<<m_fids;$/;"	l
+m_fids	softcascade.cpp	/^	fs["m_fids"]>>m_fids;$/;"	l
+m_fids	softcascade.hpp	/^		Mat m_fids;							\/* nxK 32S feature index for each node , n -> number of trees, K -> number of nodes*\/$/;"	m	class:softcascade	access:private
+m_hs	softcascade.cpp	/^	fs<<"m_hs"<<m_hs;$/;"	l
+m_hs	softcascade.cpp	/^	fs["m_hs"]>>m_hs;$/;"	l
+m_hs	softcascade.hpp	/^		Mat m_hs;							\/* nxK 64F log ratio (.5*log(p\/(1-p)) at each node  *\/$/;"	m	class:softcascade	access:private
+m_nodes	softcascade.cpp	/^	fs<<"m_nodes"<<m_nodes;$/;"	l
+m_nodes	softcascade.cpp	/^	fs["m_nodes"]>>m_nodes;$/;"	l
+m_nodes	softcascade.hpp	/^		Mat m_nodes;						\/* nx1 32S number of nodes of each tree *\/$/;"	m	class:softcascade	access:private
+m_number_of_trees	softcascade.cpp	/^	fs<<"m_number_of_trees"<<m_number_of_trees;$/;"	l
+m_number_of_trees	softcascade.cpp	/^	fs["m_number_of_trees"]>>m_number_of_trees;$/;"	l
+m_number_of_trees	softcascade.hpp	/^		int m_number_of_trees;				\/* . *\/$/;"	m	class:softcascade	access:private
+m_opts	softcascade.hpp	/^		cascadeParameter m_opts;            \/* detectot options  *\/$/;"	m	class:softcascade	access:private
+m_thrs	softcascade.cpp	/^	fs<<"m_thrs"<<m_thrs;$/;"	l
+m_thrs	softcascade.cpp	/^	fs["m_thrs"]>>m_thrs;$/;"	l
+m_thrs	softcascade.hpp	/^		Mat m_thrs;							\/* nxK 64F thresholds for each node *\/$/;"	m	class:softcascade	access:private
+m_tree_depth	softcascade.hpp	/^		int m_tree_depth;					\/* depth of all leaf nodes (or 0 if leaf depth varies) *\/$/;"	m	class:softcascade	access:private
+m_tree_nodes	softcascade.cpp	/^	fs<<"m_tree_nodes"<<m_tree_nodes;$/;"	l
+m_tree_nodes	softcascade.cpp	/^	fs["m_tree_nodes"]>>m_tree_nodes;$/;"	l
+m_tree_nodes	softcascade.hpp	/^		int m_tree_nodes;					\/* if all the tree have the same structure, this will be the number of the nodes of each tree, otherwise -1*\/$/;"	m	class:softcascade	access:private
+m_weights	softcascade.cpp	/^	fs<<"m_weights"<<m_weights;$/;"	l
+m_weights	softcascade.cpp	/^	fs["m_weights"]>>m_weights;$/;"	l
+m_weights	softcascade.hpp	/^		Mat m_weights;						\/* nxK 64F total sample weight at each node *\/$/;"	m	class:softcascade	access:private
 main	main.cpp	/^int main( int argc, char** argv)$/;"	f	signature:( int argc, char** argv)
 main	test.cpp	/^int main( int argc, char** argv)$/;"	f	signature:( int argc, char** argv)
 max_number_of_nodes	softcascade.cpp	/^	int max_number_of_nodes = 0;$/;"	l
@@ -91,18 +122,27 @@ nNeg	softcascade.hpp	/^	int nNeg;							\/* [5000] max number of neg windows to 
 nPerNeg	softcascade.hpp	/^	int nPerNeg;						\/* [25]  max number of neg windows to sample per image*\/$/;"	m	struct:cascadeParameter	access:public
 nPos	softcascade.hpp	/^	int nPos;							\/* [-1 -> inf] max number of pos windows to sample *\/						$/;"	m	struct:cascadeParameter	access:public
 nWeaks	softcascade.hpp	/^	vector<int> nWeaks;					\/* [128] vector defining number weak clfs per stagemodel eg[64 128 256 1024]*\/$/;"	m	struct:cascadeParameter	access:public
+n_height	softcascade.cpp	/^	int n_height = (int) ceil((in_height*shrink-modelHeight+1)\/stride);$/;"	l
+n_width	softcascade.cpp	/^	int n_width  = (int) ceil((in_width*shrink-modelWidth+1)\/stride);$/;"	l
 nodes_info	softcascade.cpp	/^		Mat nodes_info = ads[c].getNodes();$/;"	l
+number_of_nodes	softcascade.cpp	/^	const int number_of_nodes = fids.cols;$/;"	l
 number_of_trees	softcascade.cpp	/^	const int number_of_trees = fids.rows;$/;"	l
 number_of_trees	softcascade.cpp	/^	int number_of_trees = 0;$/;"	l
 pBoost_nweaks	softcascade.hpp	/^	int pBoost_nweaks;					\/* parameters for boosting *\/$/;"	m	struct:cascadeParameter	access:public
 pBoost_pTree	softcascade.hpp	/^	tree_para pBoost_pTree;				\/* parameters for boosting *\/$/;"	m	struct:cascadeParameter	access:public
+position	softcascade.cpp	/^				int position = 0;$/;"	l
 position	softcascade.hpp	/^				int position   = 0;$/;"	l
 pp	test.cpp	/^		double* pp = test_neg.ptr<double>(c);$/;"	l
 pp	test.cpp	/^		double* pp = test_pos.ptr<double>(c);$/;"	l
+probe_feature_starter	softcascade.cpp	/^			T *probe_feature_starter = input_data + (h*stride\/shrink)*in_width + (w*stride\/shrink);$/;"	l
 ptr	softcascade.cpp	/^			const biTree *ptr = bts[i].getTree();		$/;"	l
+push_back	softcascade.cpp	/^				confidence.push_back( h );$/;"	p	file:	signature:( h )
+push_back	softcascade.cpp	/^				results.push_back( tmp );$/;"	p	file:	signature:( tmp )
 push_back	test.cpp	/^	abs.push_back( ab1 );$/;"	p	file:	signature:( ab1 )
+release	softcascade.cpp	/^	fs.release();$/;"	p	file:	signature:()
 release	test.cpp	/^	fs.release();$/;"	p	file:	signature:()
 sc	test.cpp	/^	softcascade sc;$/;"	l
+setTreeDepth	softcascade.hpp	/^		void setTreeDepth();$/;"	p	class:softcascade	access:private	signature:()
 shrink	softcascade.cpp	/^	const int shrink = opts.shrink;$/;"	l
 shrink	softcascade.hpp	/^	int shrink;							\/* ----------> should be provided by the chnPyramid *\/$/;"	m	struct:cascadeParameter	access:public
 softcascade	softcascade.hpp	/^class softcascade$/;"	c
@@ -110,23 +150,28 @@ softcascade::Apply	softcascade.cpp	/^bool softcascade::Apply( const Mat &input_d
 softcascade::Apply	softcascade.hpp	/^		bool Apply( const Mat &input_data,		    \/*  in: featuredim x number_of_samples *\/$/;"	p	class:softcascade	access:public	signature:( const Mat &input_data, vector<Rect> &results ) const
 softcascade::Combine	softcascade.cpp	/^bool softcascade::Combine(vector<Adaboost> &ads )$/;"	f	class:softcascade	signature:(vector<Adaboost> &ads )
 softcascade::Combine	softcascade.hpp	/^		bool Combine( vector<Adaboost> &ads );$/;"	p	class:softcascade	access:public	signature:( vector<Adaboost> &ads )
+softcascade::Load	softcascade.cpp	/^bool softcascade::Load( string path_to_model )		\/* in : path of the model, shoule be a xml file saved by opencv FileStorage *\/$/;"	f	class:softcascade	signature:( string path_to_model )
 softcascade::Load	softcascade.hpp	/^		bool Load( string path_to_model );		\/* in : path of the model, shoule be a xml file saved by opencv FileStorage *\/$/;"	p	class:softcascade	access:public	signature:( string path_to_model )
 softcascade::Predict	softcascade.hpp	/^		template < typename T> bool Predict(  T *data, double &score) const$/;"	f	class:softcascade	access:public	signature:( T *data, double &score) const
+softcascade::Save	softcascade.cpp	/^bool softcascade::Save( string path_to_model )		\/*  in: where to save the model, models is saved by opencv FileStorage *\/$/;"	f	class:softcascade	signature:( string path_to_model )
 softcascade::Save	softcascade.hpp	/^		bool Save( string path_to_model );		\/*  in: where to save the model, models is saved by opencv FileStorage *\/$/;"	p	class:softcascade	access:public	signature:( string path_to_model )
 softcascade::checkModel	softcascade.cpp	/^bool softcascade::checkModel() const$/;"	f	class:softcascade	signature:() const
 softcascade::checkModel	softcascade.hpp	/^		bool checkModel() const;$/;"	p	class:softcascade	access:public	signature:() const
 softcascade::h	softcascade.hpp	/^			double h = 0;$/;"	l
-softcascade::m_child	softcascade.hpp	/^			Mat m_child;						\/* nxK 32S child index for each node *\/$/;"	m	class:softcascade	access:private
-softcascade::m_debug	softcascade.hpp	/^			bool m_debug;						\/* wanna output? *\/$/;"	m	class:softcascade	access:private
-softcascade::m_depth	softcascade.hpp	/^			Mat m_depth;						\/* nxK 32S depth of node*\/$/;"	m	class:softcascade	access:private
-softcascade::m_fids	softcascade.hpp	/^			Mat m_fids;							\/* nxK 32S feature index for each node , n -> number of trees, K -> number of nodes*\/$/;"	m	class:softcascade	access:private
-softcascade::m_hs	softcascade.hpp	/^			Mat m_hs;							\/* nxK 64F log ratio (.5*log(p\/(1-p)) at each node  *\/$/;"	m	class:softcascade	access:private
-softcascade::m_nodes	softcascade.hpp	/^			Mat m_nodes;						\/* nx1 32S number of nodes of each tree *\/$/;"	m	class:softcascade	access:private
-softcascade::m_number_of_trees	softcascade.hpp	/^			int m_number_of_trees;				\/* . *\/$/;"	m	class:softcascade	access:private
-softcascade::m_opts	softcascade.hpp	/^			cascadeParameter m_opts;            \/* detectot options  *\/$/;"	m	class:softcascade	access:private
-softcascade::m_thrs	softcascade.hpp	/^			Mat m_thrs;							\/* nxK 64F thresholds for each node *\/$/;"	m	class:softcascade	access:private
-softcascade::m_weights	softcascade.hpp	/^			Mat m_weights;						\/* nxK 64F total sample weight at each node *\/$/;"	m	class:softcascade	access:private
+softcascade::m_child	softcascade.hpp	/^		Mat m_child;						\/* nxK 32S child index for each node *\/$/;"	m	class:softcascade	access:private
+softcascade::m_debug	softcascade.hpp	/^		bool m_debug;						\/* wanna output? *\/$/;"	m	class:softcascade	access:private
+softcascade::m_depth	softcascade.hpp	/^		Mat m_depth;						\/* nxK 32S depth of node*\/$/;"	m	class:softcascade	access:private
+softcascade::m_fids	softcascade.hpp	/^		Mat m_fids;							\/* nxK 32S feature index for each node , n -> number of trees, K -> number of nodes*\/$/;"	m	class:softcascade	access:private
+softcascade::m_hs	softcascade.hpp	/^		Mat m_hs;							\/* nxK 64F log ratio (.5*log(p\/(1-p)) at each node  *\/$/;"	m	class:softcascade	access:private
+softcascade::m_nodes	softcascade.hpp	/^		Mat m_nodes;						\/* nx1 32S number of nodes of each tree *\/$/;"	m	class:softcascade	access:private
+softcascade::m_number_of_trees	softcascade.hpp	/^		int m_number_of_trees;				\/* . *\/$/;"	m	class:softcascade	access:private
+softcascade::m_opts	softcascade.hpp	/^		cascadeParameter m_opts;            \/* detectot options  *\/$/;"	m	class:softcascade	access:private
+softcascade::m_thrs	softcascade.hpp	/^		Mat m_thrs;							\/* nxK 64F thresholds for each node *\/$/;"	m	class:softcascade	access:private
+softcascade::m_tree_depth	softcascade.hpp	/^		int m_tree_depth;					\/* depth of all leaf nodes (or 0 if leaf depth varies) *\/$/;"	m	class:softcascade	access:private
+softcascade::m_tree_nodes	softcascade.hpp	/^		int m_tree_nodes;					\/* if all the tree have the same structure, this will be the number of the nodes of each tree, otherwise -1*\/$/;"	m	class:softcascade	access:private
+softcascade::m_weights	softcascade.hpp	/^		Mat m_weights;						\/* nxK 64F total sample weight at each node *\/$/;"	m	class:softcascade	access:private
 softcascade::position	softcascade.hpp	/^				int position   = 0;$/;"	l
+softcascade::setTreeDepth	softcascade.hpp	/^		void setTreeDepth();$/;"	p	class:softcascade	access:private	signature:()
 softcascade::t_child	softcascade.hpp	/^				const int *t_child   = m_child.ptr<int>(c);$/;"	l
 softcascade::t_fids	softcascade.hpp	/^				const int *t_fids    = m_fids.ptr<int>(c);$/;"	l
 softcascade::t_hs	softcascade.hpp	/^				const double *t_hs   = m_hs.ptr<double>(c);$/;"	l
@@ -135,13 +180,19 @@ start	main.cpp	/^		tk.start();$/;"	p	file:	signature:()
 stop	main.cpp	/^		tk.stop();$/;"	p	file:	signature:()
 stride	softcascade.cpp	/^	const int stride      = opts.stride;$/;"	l
 stride	softcascade.hpp	/^	int stride;							\/* [4] spatial stride between detection windows *\/$/;"	m	struct:cascadeParameter	access:public
+t_child	softcascade.cpp	/^				const int *t_child   = child.ptr<int>(t);$/;"	l
 t_child	softcascade.hpp	/^				const int *t_child   = m_child.ptr<int>(c);$/;"	l
+t_fids	softcascade.cpp	/^				const int *t_fids    = fids.ptr<int>(t);$/;"	l
 t_fids	softcascade.hpp	/^				const int *t_fids    = m_fids.ptr<int>(c);$/;"	l
+t_hs	softcascade.cpp	/^				const double *t_hs   = hs.ptr<double>(t);$/;"	l
 t_hs	softcascade.hpp	/^				const double *t_hs   = m_hs.ptr<double>(c);$/;"	l
+t_thrs	softcascade.cpp	/^				const double *t_thrs = thrs.ptr<double>(t);$/;"	l
 t_thrs	softcascade.hpp	/^				const double *t_thrs = m_thrs.ptr<double>(c);$/;"	l
 test_neg	test.cpp	/^	Mat test_pos,test_neg;$/;"	l
 test_neg	test.cpp	/^	fs["matrix"] >>test_neg;$/;"	l
 test_pos	test.cpp	/^	Mat test_pos,test_neg;$/;"	l
 test_pos	test.cpp	/^	fs["matrix"] >>test_pos;$/;"	l
 tk	main.cpp	/^		TickMeter tk;$/;"	l
+tmp	softcascade.cpp	/^				Rect tmp( w*stride, h*stride, modelWidth, modelHeight );$/;"	p	file:	signature:( w*stride, h*stride, modelWidth, modelHeight )
+total_dim	softcascade.cpp	/^	int total_dim = modelHeight\/shrink*modelWidth\/shrink*nchannels;$/;"	l
 tree_nodes	softcascade.cpp	/^	int tree_nodes = 0;$/;"	l
