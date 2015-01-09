@@ -36,6 +36,11 @@ struct cascadeParameter
 	int nPerNeg;						/* [25]  max number of neg windows to sample per image*/
 	int nAccNeg;						/* [10000] max number of neg windows to accumulate*/
 
+    string posGtDir;                    /* positive groundtruth directory */
+    string posImgDir;                   /* positive image directory */
+    string negImgDir;                   /* negative image directory */
+
+
 	/* ---> TODO jitter parameters .... */
 	cascadeParameter()
 	{
@@ -54,6 +59,10 @@ struct cascadeParameter
 		nAccNeg = 10000;
 
 		shrink = 4;
+
+        posGtDir = "";
+        posImgDir = "";
+        negImgDir = "";
 	}
 };
 
@@ -163,6 +172,24 @@ class softcascade
 		 */
 		bool checkModel() const;
 
+
+		/* 
+		 * ===  FUNCTION  ======================================================================
+		 *         Name:  getParas
+		 *  Description:  return the parameters
+		 * =====================================================================================
+		 */
+		const cascadeParameter& getParas() const;
+
+
+        /* 
+         * ===  FUNCTION  ======================================================================
+         *         Name:  setParas
+         *  Description:  
+         * =====================================================================================
+         */
+        void setParas( const cascadeParameter &in_par );
+
 	private:
 
 		/* 
@@ -172,6 +199,7 @@ class softcascade
 		 * =====================================================================================
 		 */
 		bool setTreeDepth();
+
 
 	private:
 		Mat m_fids;							/* nxK 32S feature index for each node , n -> number of trees, K -> number of nodes*/

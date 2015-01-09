@@ -81,8 +81,11 @@ int main( int argc, char** argv)
 		vector<Rect> rrs;
 		fs["boxes"]>> rrs;
 
-		
-		for ( int c=0; c<rrs.size();c++ ) {
+			
+		for ( int c=0; c<rrs.size();c++ ) 
+		{
+			rrs[c] = resizeToFixedRatio( rrs[c], 0.41, 1);
+			cout<<"ratio is "<<rrs[c].width*1.0/rrs[c].height<<endl;
 			rectangle( im, rrs[c], Scalar(255,0,0), 2);
 		}
 

@@ -79,3 +79,25 @@ void sampleRects( int howManyToSample, Size imageSize, Size objectSize, vector<R
 	}
 	outputRects.resize( howManyToSample);
 }
+
+Rect resizeToFixedRatio( const Rect &inRect,				/* in : input boudingbox informtion */
+					     double w_h_ratio,					/* in : target ratio */
+						 int flag = 1 )							/* in : respect to width  = 0 
+																	respect to height > 0 */
+{
+	int center_x = inRect.x + inRect.width/2;
+	int center_y = inRect.y + inRect.height/2;
+
+	if( flag > 0)	/* respect to height*/
+	{
+		int target_width = int(inRect.height*w_h_ratio);
+		int target_x = center_x - target_width/2;
+		return Rect( target_x, inRect.y , target_width, inRect.height );
+	}
+	else			/* respect to width */
+	{
+		int target_height = int(inRect.width/ w_h_ratio);
+		int target_y = center_y - target_height/2;
+		return Rect( inRect.x, target_y, inRect.width, target_height );
+	}
+}

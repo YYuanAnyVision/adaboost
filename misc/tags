@@ -12,13 +12,19 @@ JitterParam::dy	jitterImage.h	/^    double dy;  \/\/ offset y$/;"	m	struct:Jitte
 JitterParam::phi	jitterImage.h	/^    double phi; \/\/ rotation degree$/;"	m	struct:JitterParam	access:public
 JitterParam::sx	jitterImage.h	/^    double sx;  \/\/ scaling x$/;"	m	struct:JitterParam	access:public
 JitterParam::sy	jitterImage.h	/^    double sy;  \/\/ scaling y$/;"	m	struct:JitterParam	access:public
+_gt_path	main.cpp	/^	string _gt_path    = "\/media\/yuanyang\/disk1\/libs\/piotr_toolbox\/data\/Inria\/train\/posGt_opencv\/";$/;"	l
+_image_path	main.cpp	/^	string _image_path = "\/media\/yuanyang\/disk1\/libs\/piotr_toolbox\/data\/Inria\/train\/pos\/";$/;"	l
 _jitterImage	jitterImage.cpp	/^cv::Mat _jitterImage(const cv::Mat &img, JitterParam param, int method)$/;"	f	signature:(const cv::Mat &img, JitterParam param, int method)
 _jitterImage	jitterImage.h	/^cv::Mat _jitterImage(const cv::Mat &img, JitterParam param,$/;"	p	signature:(const cv::Mat &img, JitterParam param, int method= cv::INTER_LINEAR)
 affineMat	jitterImage.cpp	/^    cv::Mat affineMat, res;$/;"	l
+basename	main.cpp	/^        string basename = bf::basename( s );$/;"	l
 bbsToRect	misc.hpp	/^Rect bbsToRect( int xmin, int xmax, int ymin, int ymax )$/;"	f	signature:( int xmin, int xmax, int ymin, int ymax )
 bot_pad	misc.hpp	/^	copyMakeBorder( input_image(target_region_with_pixel), outputImage, top_pad,bot_pad,left_pad,right_pad,BORDER_REPLICATE);$/;"	l
 bot_pad	misc.hpp	/^	int bot_pad=0;$/;"	l
+center_x	misc.hpp	/^	int center_x = inRect.x + inRect.width\/2;$/;"	l
+center_y	misc.hpp	/^	int center_y = inRect.y + inRect.height\/2;$/;"	l
 clear	jitterImage.cpp	/^    out.clear();$/;"	p	file:	signature:()
+counter	main.cpp	/^	int counter = 0;$/;"	l
 cropImage	misc.hpp	/^Mat cropImage( const Mat &input_image, const Rect &inrect )$/;"	f	signature:( const Mat &input_image, const Rect &inrect )
 cv::flip	jitterImage.cpp	/^            cv::flip(res, res, 1);$/;"	p	class:cv	file:	signature:(res, res, 1)
 cv::randShuffle	jitterImage.cpp	/^        cv::randShuffle(indice);$/;"	p	class:cv	file:	signature:(indice)
@@ -29,10 +35,16 @@ d_x	misc.hpp	/^	int d_x = inrect.x + inrect.width\/2 - d_width\/2;$/;"	l
 d_y	misc.hpp	/^	int d_y = inrect.y + inrect.height\/2 - d_height\/2;$/;"	l
 dx	jitterImage.h	/^    double dx;  \/\/ offset x$/;"	m	struct:JitterParam	access:public
 dy	jitterImage.h	/^    double dy;  \/\/ offset y$/;"	m	struct:JitterParam	access:public
+end_it	main.cpp	/^	bf::directory_iterator end_it;$/;"	l
+endl	main.cpp	/^		cout<<"not a path "<<image_path<<endl;$/;"	l
+extname	main.cpp	/^		string extname  = bf::extension( s );$/;"	l
 flip	jitterImage.cpp	/^            cv::flip(res, res, 1);$/;"	p	class:cv	file:	signature:(res, res, 1)
+fs	main.cpp	/^		FileStorage fs( gt_file_path, FileStorage::READ | FileStorage::FORMAT_XML);$/;"	p	file:	signature:( gt_file_path, FileStorage::READ | FileStorage::FORMAT_XML)
+gt_file_path	main.cpp	/^		string gt_file_path = _gt_path + basename + ".txt";$/;"	l
+im	main.cpp	/^		Mat im = imread( pathname );$/;"	l
+image_path	main.cpp	/^	bf::path image_path( _image_path );$/;"	p	file:	signature:( _image_path )
 ind	jitterImage.cpp	/^    int ind=0, numParam;$/;"	l
 indice	jitterImage.cpp	/^    cv::Mat indice(numParam, 1, CV_32S);$/;"	p	file:	signature:(numParam, 1, CV_32S)
-input_image	main.cpp	/^	Mat input_image  = imread("..\/..\/data\/test.png");$/;"	l
 input_image	misc.hpp	/^	copyMakeBorder( input_image(target_region_with_pixel), outputImage, top_pad,bot_pad,left_pad,right_pad,BORDER_REPLICATE);$/;"	p	signature:(target_region_with_pixel)
 jitterImage	jitterImage.cpp	/^void jitterImage(const cv::Mat &img,$/;"	f	signature:(const cv::Mat &img, std::vector<cv::Mat> &out, cv::Size jsiz, int maxn, bool flip, int nTrn, double mTrn, int nPhi, double mPhi, cv::Mat scls, int method)
 jitterImage	jitterImage.h	/^void jitterImage(const cv::Mat &img,$/;"	p	signature:(const cv::Mat &img, std::vector<cv::Mat> &out, cv::Size jsiz, int maxn = -1, bool flip = false, int nTrn = 0, double mTrn = 0.0, int nPhi = 0, double mPhi = 0.0, cv::Mat scls = cv::Mat(), int method = cv::INTER_LINEAR )
@@ -46,9 +58,9 @@ ny	misc.hpp	/^	double ny_d = howManyToSample\/nx_d; int ny = int( std::ceil(ny_d
 ny_d	misc.hpp	/^	double ny_d = howManyToSample\/nx_d; int ny = int( std::ceil(ny_d +0.1));$/;"	l
 outputImage	misc.hpp	/^	Mat outputImage;$/;"	l
 outputImage	misc.hpp	/^	copyMakeBorder( input_image(target_region_with_pixel), outputImage, top_pad,bot_pad,left_pad,right_pad,BORDER_REPLICATE);$/;"	l
-outs	main.cpp	/^	vector<Mat> outs;$/;"	l
 param	jitterImage.cpp	/^    JitterParam param;$/;"	l
 params	jitterImage.cpp	/^    std::vector<JitterParam> params;$/;"	l
+pathname	main.cpp	/^        string pathname = file_iter->path().string();$/;"	l
 phi	jitterImage.h	/^    double phi; \/\/ rotation degree$/;"	m	struct:JitterParam	access:public
 push_back	jitterImage.cpp	/^            out.push_back(res.clone());$/;"	p	file:	signature:(res.clone())
 push_back	jitterImage.cpp	/^        out.push_back(res.clone());$/;"	p	file:	signature:(res.clone())
@@ -60,15 +72,23 @@ reserve	misc.hpp	/^	outputRects.reserve( nx*ny );$/;"	p	signature:( nx*ny )
 resize	jitterImage.cpp	/^    params.resize(numParam);$/;"	p	file:	signature:(numParam)
 resize	misc.hpp	/^	outputRects.resize( howManyToSample);$/;"	p	signature:( howManyToSample)
 resizeBbox	misc.hpp	/^Rect resizeBbox( const Rect &inrect, double h_ratio, double w_ratio )$/;"	f	signature:( const Rect &inrect, double h_ratio, double w_ratio )
+resizeToFixedRatio	misc.hpp	/^Rect resizeToFixedRatio( const Rect &inRect,				\/* in : input boudingbox informtion *\/$/;"	f	signature:( const Rect &inRect, double w_h_ratio, int flag = 1 )
 right_pad	misc.hpp	/^	copyMakeBorder( input_image(target_region_with_pixel), outputImage, top_pad,bot_pad,left_pad,right_pad,BORDER_REPLICATE);$/;"	l
 right_pad	misc.hpp	/^	int right_pad=0;$/;"	l
+rrs	main.cpp	/^		fs["boxes"]>> rrs;$/;"	l
+rrs	main.cpp	/^		vector<Rect> rrs;$/;"	l
+s	main.cpp	/^		bf::path s = *(file_iter);$/;"	l
 sampleRects	misc.hpp	/^void sampleRects( int howManyToSample, Size imageSize, Size objectSize, vector<Rect> &outputRects)$/;"	f	signature:( int howManyToSample, Size imageSize, Size objectSize, vector<Rect> &outputRects)
 stepPhi	jitterImage.cpp	/^    double stepTrn, stepPhi;$/;"	l
 stepTrn	jitterImage.cpp	/^    double stepTrn, stepPhi;$/;"	l
 subRect	jitterImage.cpp	/^    cv::Rect subRect;$/;"	l
 sx	jitterImage.h	/^    double sx;  \/\/ scaling x$/;"	m	struct:JitterParam	access:public
 sy	jitterImage.h	/^    double sy;  \/\/ scaling y$/;"	m	struct:JitterParam	access:public
+target_height	misc.hpp	/^		int target_height = int(inRect.width\/ w_h_ratio);$/;"	l
 target_region_with_pixel	misc.hpp	/^	Rect target_region_with_pixel = imgRect & inrect;$/;"	l
+target_width	misc.hpp	/^		int target_width = int(inRect.height*w_h_ratio);$/;"	l
+target_x	misc.hpp	/^		int target_x = center_x - target_width\/2;$/;"	l
+target_y	misc.hpp	/^		int target_y = center_y - target_height\/2;$/;"	l
 tmp	misc.hpp	/^			Rect tmp( x_step*i, y_step*j, objectSize.width, objectSize.height );$/;"	p	signature:( x_step*i, y_step*j, objectSize.width, objectSize.height )
 top_pad	misc.hpp	/^	copyMakeBorder( input_image(target_region_with_pixel), outputImage, top_pad,bot_pad,left_pad,right_pad,BORDER_REPLICATE);$/;"	l
 top_pad	misc.hpp	/^	int top_pad=0;$/;"	l
