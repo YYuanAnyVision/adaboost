@@ -10,12 +10,28 @@
 #include "../Adaboost/Adaboost.hpp"
 #include "../misc/misc.hpp"
 #include "softcascade.hpp"
+#include "../chnfeature/Pyramid.h"
 
 using namespace std;
 using namespace cv;
 
 namespace bf = boost::filesystem;
 namespace bl = boost::lambda;
+
+void makeTrainData( vector<Mat> &in_data, Mat &output_data, Size modelDs, int shrink)
+{
+	int w_in_data = in_data[0].width;
+	int h_in_data = in_data[0].height;
+
+	int w_f = modelDs.widht/shrink;
+	int h_f = modelDs.height/shrink;
+
+	for( int c=0;c < in_data.size(); c++)
+	{
+		
+	}
+	
+}
 
 size_t getNumberOfFilesInDir( string in_path )
 {
@@ -75,7 +91,7 @@ bool sampleWins(    const softcascade &sc, 	    /*  in: detector */
             string pathname = file_iter->path().string();
             string extname  = bf::extension( s );
             
-            cout<<"reading and cropping image "<<pathname<<endl;
+            cout<<"reading and cropping image "<<file_counter++<<" "<<pathname<<endl;
 
             /* read the gt according to the image name */
             string gt_file_path = opts.posGtDir + basename + ".txt";
@@ -115,12 +131,73 @@ bool sampleWins(    const softcascade &sc, 	    /*  in: detector */
                 cv::resize( target_obj, target_obj, cv::Size(modelDsBig_width, modelDsBig_height), 0, 0, INTER_AREA);
                 origsamples.push_back( target_obj );
             }
-
-            
         }
     }
     else
     {
+		bf::path neg_img_path(opts.negImgDir);
+		int number_target_per_image = opts.nPerNeg;
+
+		if(!bf::exists(neg_img_path))
+		{
+			cout<<"negative image folder path "<<neg_img_path<<" dose not exist "<<endl;
+			return false;
+		}
+		int number_of_neg_images = 	getNumberOfFilesInDir( opts.negImgDir );
+		
+		/* shuffle the path */
+		vector<string> neg_paths;
+        bf::directory_iterator end_it; int file_counter = 0;int number_target = 0;
+        for( bf::directory_iterator file_iter(neg_img_path); file_iter!=end_it; file_iter++)
+		{
+            string pathname = file_iter->path().string();
+			neg_paths.push_back( pathname );
+		}
+
+		std::random_shuffle( neg_paths.begin(), neg_paths.end() );
+		
+		int limited_number = std::min( (int)neg_paths.size(), number_to_sample );
+		for( int c=0;c<limited_number;c++)
+		{
+			cout<<"reading image "<<c<<" "<<neg_paths[c]<<endl;
+			vector<Rect> target_rects;
+
+			Mat img = imread( neg_paths[c] );
+			if(img.empty())
+			{
+				cout<<"can not read image "<<neg_paths[c]<<endl;
+				return false;
+			}
+			/*  inf stage == 0, first time just sample the image, otherwise add the "hard sample" */
+			if( stage==0 )
+			{
+				sampleRects( number_target_per_image, img.size(), opts.modelDs, target_rects );
+			}
+			else
+			{
+
+			}
+			
+            /*  resize the rect to fixed widht / height ratio, for pedestrain det , is 41/100 for INRIA database */
+            for ( int i=0;i<target_rects.size();i++) 
+            {
+                target_rects[i] = resizeToFixedRatio( target_rects[i], opts.modelDs.width*1.0/opts.modelDs.height, 1); /* respect to height */
+                /* grow it a little bit */
+                int modelDsBig_width = std::max( 8*opts.shrink, opts.modelDsPad.width)+std::max(2, 64/opts.shrink)*opts.shrink;
+                int modelDsBig_height = std::max( 8*opts.shrink,opts.modelDsPad.height)+std::max(2,64/opts.shrink)*opts.shrink;
+                
+
+                double w_ratio = modelDsBig_width*1.0/opts.modelDs.width;
+                double h_ratio = modelDsBig_height*1.0/opts.modelDs.height;
+                target_rects[i] = resizeBbox( target_rects[i], h_ratio, w_ratio);
+                
+
+                /* finally crop the image */
+                Mat target_obj = cropImage( img, target_rects[i]);
+                cv::resize( target_obj, target_obj, cv::Size(modelDsBig_width, modelDsBig_height), 0, 0, INTER_AREA);
+                origsamples.push_back( target_obj );
+            }
+		}
 
     }
 }
@@ -137,21 +214,42 @@ int main( int argc, char** argv)
 	 *-----------------------------------------------------------------------------*/
     softcascade sc;
 	cascadeParameter cas_para;
-    cas_para.posGtDir  = "/media/yuanyang/disk1/libs/piotr_toolbox/data/Inria/train/posGt_opencv/";
-    cas_para.posImgDir = "/media/yuanyang/disk1/libs/piotr_toolbox/data/Inria/train/pos/"; 
+    cas_para.posGtDir  = "/mnt/disk1/data/INRIAPerson/Train/posGT/";
+    cas_para.posImgDir = "/mnt/disk1/data/INRIAPerson/Train/pos"; 
+	cas_para.negImgDir = "/mnt/disk1/data/INRIAPerson/Train/neg/";
     sc.setParas( cas_para);
     
 
-    vector<Mat> samples;
-    vector<Mat> origsamples;
-    sampleWins( sc, 0, true, samples, origsamples);
-    cout<<"the number of samples is "<<origsamples.size()<<endl;
+    vector<Mat> neg_samples;
+    vector<Mat> neg_origsamples;
+    sampleWins( sc, 0, false, neg_samples, neg_origsamples);
     
-    for ( int c=0;c<origsamples.size();c++) 
-    {
-        imshow("sample", origsamples[c] );
-        waitKey(0);
-    }
+    //for ( int c=0;c<origsamples.size();c++) 
+    //{
+    //    imshow("sample", origsamples[c] );
+    //    waitKey(0);
+    //}
+	
+    vector<Mat> pos_samples;
+    vector<Mat> pos_origsamples;
+    sampleWins( sc, 0, true, pos_samples, pos_origsamples);
+	
+	cout<<"neg sample number -> "<<neg_origsamples.size()<<endl;
+	cout<<"pos sample number -> "<<pos_origsamples.size()<<endl;
+
+	cout<<"computing features ..."<<endl;
+
+	vector<Mat> feas;
+	feature_Pyramids ff;
+	ff.computeChannels( pos_origsamples[0], feas, Size(0,0), Size(0,0), 6, 1 );
+	
+	cout<<"size of single feature is "<<pos_origsamples[0].size()<<endl;
+
+	int feature_dim = feas[0].cols*feas[0].rows*feas.size();
+	cout<<"feature dim is "<<feature_dim<<endl;
+
+
+
 
 
 	/*-----------------------------------------------------------------------------
