@@ -16,7 +16,7 @@ using namespace std;
 using namespace cv;
 
 
-void feature_Pyramids::convTri( const Mat &src, Mat &dst, const Mat &Km)
+void feature_Pyramids::convTri( const Mat &src, Mat &dst,Mat const &Km)
 {
 	
 	filter2D(src,dst,src.depth(),Km,Point(-1,-1),0,IPL_BORDER_REFLECT);
@@ -24,15 +24,13 @@ void feature_Pyramids::convTri( const Mat &src, Mat &dst, const Mat &Km)
 	
 	//return 0;
 }
-void feature_Pyramids::computeGradient(const Mat &img, 
-										Mat& grad, 
-										Mat& qangle,
-										Size paddingTL, 
-										Size paddingBR,
-										int nbins) 
+void feature_Pyramids::computeGradient(const Mat &img, Mat& grad, Mat& qangle,
+										Size paddingTL, Size paddingBR,int nbins) 
 {
 	bool gammaCorrection = false;
+	//int nbins = 9;
 
+	//CV_Assert( img.type() == CV_8U || img.type() == CV_8UC3 );
 	CV_Assert( img.type() == CV_32F || img.type() == CV_32FC3 );
 
 	Size gradsize(img.cols + paddingTL.width + paddingBR.width,
@@ -229,30 +227,17 @@ void feature_Pyramids::computeGradient(const Mat &img,
 	}
 
 }
-void feature_Pyramids::computeChannels(const Mat &image,
-									   vector<Mat>& channels,
-									   Size paddingTL,
-									   Size paddingBR,
-									   int nbins,
-									   int binsize)
+void feature_Pyramids::computeChannels(const Mat &image,vector<Mat>& channels,Size paddingTL,
+									   Size paddingBR,int nbins,int binsize)
 {
 
 	/* compute luv and push */
 	Mat_<float> grad;
 	Mat_<float> angles;
 	Mat gray,src,luv;
-
-	/*check the binsize para,   TODO */
-
 	int channels_addr_rows=(image.rows+binsize-1)/binsize;
 	int channels_addr_cols=(image.cols+binsize-1)/binsize;
-
 	Mat channels_addr=Mat::zeros((nbins+4)*channels_addr_rows,channels_addr_cols,CV_32FC1);
-
-	//cout<<"channels rows is "<<channels_addr_rows<<endl;
-	//cout<<"channels cols is "<<channels_addr_cols<<endl;
-	//cout<<"binsize is "<<binsize<<endl;
-	
 	if(image.channels() > 1)
 	{
 		src = Mat(image.rows, image.cols, CV_32FC3);
@@ -265,7 +250,6 @@ void feature_Pyramids::computeChannels(const Mat &image,
 		src.copyTo(gray);
 	}
 	channels.clear();
-
 	if(image.channels() > 1)
 	{
 		Mat luv_channels[3];
@@ -279,62 +263,48 @@ void feature_Pyramids::computeChannels(const Mat &image,
 		for( int i = 0; i < 3; ++i )
 		{
 			Mat channels_tmp=channels_addr.rowRange(i*channels_addr_rows,(i+1)*channels_addr_rows);
-		    resize(luv_channels[i],channels_tmp,channels_tmp.size(),0.0,0.0, INTER_AREA);
+		    resize(luv_channels[i],channels_tmp,channels_tmp.size(),0.0,0.0,1);
 			channels.push_back(channels_tmp);
 		}
 	}
 
-
-
 	/*compute gradient*/
-	Mat mag = channels_addr.rowRange( 3*channels_addr_rows, 4*channels_addr_rows);
-	Mat mag_sum,ori;
-
+	Mat mag,ori;
+	Mat mag_tmp;
+	Mat mag_sum=channels_addr.rowRange(3*channels_addr_rows,4*channels_addr_rows);
 	computeGradient(src, mag, ori,paddingTL, paddingBR,nbins);
+	resize(mag,mag_tmp,mag_sum.size(),0.0,0.0,1);
 	vector<Mat> mag_split;
-	cv::split(mag, mag_split);
+	cv::split(mag_tmp, mag_split);
 	mag_sum=mag_split[0]+mag_split[1];
 	channels.push_back(mag_sum);
-
-	//cout<<"src size is "<<src.size()<<endl;
-	//cout<<"size of mag_sum is "<<mag_sum.size()<<endl;
 
 	/*compute grad_hist*/
 	vector<Mat> bins_mat;
 	int bins_mat_rows=(mag.rows+binsize-1)/binsize;
 	int bins_mat_cols=(mag.cols+binsize-1)/binsize;
-
-	for( int s=0;s<nbins;s++)
-	{
+	for( int s=0;s<nbins;s++){
 		Mat channels_tmp=channels_addr.rowRange((s+4)*channels_addr_rows,(s+5)*channels_addr_rows);
-		bins_mat.push_back(channels_tmp);
-	}
-
+		bins_mat.push_back(channels_tmp);}
 	/*split*/
 #define GH \
-	bins_mat[ori.at<Vec2b>(row,col)[0]].at<float>(row/binsize,col/binsize)+=mag.at<Vec2f>(row,col)[0];\
-	bins_mat[ori.at<Vec2b>(row,col)[1]].at<float>(row/binsize,col/binsize)+=mag.at<Vec2f>(row,col)[1];
-	for(int row=0;row<mag.rows;row++)
-	{
-		for(int col=0;col<mag.cols;col++){GH;}
-	}
-
+	bins_mat[ori.at<Vec2b>(row,col)[0]].at<float>((row)/binsize,(col)/binsize)+=mag.at<Vec2f>(row,col)[0];\
+	bins_mat[ori.at<Vec2b>(row,col)[1]].at<float>((row)/binsize,(col)/binsize)+=mag.at<Vec2f>(row,col)[1];
+	for(int row=0;row<mag.rows;row++){
+		for(int col=0;col<mag.cols;col++){GH;}}
 	/*push*/
-	for (int c=0;c < (int)bins_mat.size();c++)
-	{
+	for (int c=0;c < (int)bins_mat.size();c++){
+
 		channels.push_back(bins_mat[c]);
 	}
-
-
 	/*  check the pointer */
 	//float *add1 = (float*)channels[0].data;
 	//for( int c=1;c<channels.size();c++)
 	//{
-	//	cout<<"pointer "<<static_cast<void*>(channels[c].data)<<" should equ "<<static_cast<void*>(add1+c*channels_addr_rows*channels_addr_cols)<<endl;
+	//	cout<<"pointer "<<(static_cast<void*>(channels[c].data) == (static_cast<void*>(add1+c*channels_addr_rows*channels_addr_cols))? true :false)<<endl;
 	//}
-
 }
-void feature_Pyramids::chnsPyramid(Mat img,  vector<vector<Mat> > &approxPyramid,detector_opt opt)
+void feature_Pyramids:: chnsPyramid(Mat img,  vector<vector<Mat> > &approxPyramid,detector_opt opt)
 {
 	int nPerOct =opt.nPerOct;
 	int nOctUp =opt.nOctUp;
@@ -356,7 +326,11 @@ void feature_Pyramids::chnsPyramid(Mat img,  vector<vector<Mat> > &approxPyramid
 	float d1=(float)max(img.rows,img.cols);
 	for (float s=0;s<nscales;s++)
 	{
-		if (((int)s%(nApprox+1)==0)||(s==(nscales-1)))
+		if (((int)s%(nApprox+1)==0))
+		{
+			real_scal.push_back((int)s);
+		}
+		if ((s==(nscales-1)&&(s>real_scal[real_scal.size()-1])&&(s-real_scal[real_scal.size()-1]>(nApprox+1)/2)))
 		{
 			real_scal.push_back((int)s);
 		}
@@ -377,9 +351,9 @@ void feature_Pyramids::chnsPyramid(Mat img,  vector<vector<Mat> > &approxPyramid
 			}
 		}
 		scales.push_back(val);
-		/*save apsize*/
-		ap_tmp_size.height=cvRound(img.rows*val/shrink);
-		ap_tmp_size.width=cvRound(img.cols*val/shrink);
+		/*save apsize*///error
+		ap_tmp_size.height=cvRound(((img.rows+binsize-1)/binsize)*val/shrink);
+		ap_tmp_size.width=cvRound(((img.cols+binsize-1)/binsize)*val/shrink);
 		ap_size.push_back(ap_tmp_size);
 	}
 	//compute real 
@@ -475,10 +449,10 @@ feature_Pyramids::feature_Pyramids()
 		opt.nOctUp=0 ;
 		opt.shrink=4;
 		opt.smooth =1;
-		opt.diam=Size(200,200) ;
+		opt.diam=Size(16,16) ;
 		opt.nbins=6;
-		opt.binsize=1;
-		opt.nApprox=7;
+		opt.binsize=2;
+		opt.nApprox=3;
 
 	
 }

@@ -102,7 +102,7 @@ int main( int argc, char** argv)
 	
 
 	vector<Mat> ff;
-	feature.computeChannels( image, ff, Size(0,0), Size(0,0), 6, 4 );
+	feature.computeChannels( image, ff, Size(0,0), Size(0,0), 6, 1 );
 	cout<<"size of feature "<<ff[0].size()<<endl;
 	
 

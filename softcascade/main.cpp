@@ -20,15 +20,44 @@ namespace bl = boost::lambda;
 
 void makeTrainData( vector<Mat> &in_data, Mat &output_data, Size modelDs, int shrink)
 {
-	int w_in_data = in_data[0].width;
-	int h_in_data = in_data[0].height;
+    assert( output_data.type() == CV_32F);
+    assert( in_data[0].type() == CV_32F);
 
-	int w_f = modelDs.widht/shrink;
+	int w_in_data = in_data[0].cols;
+	int h_in_data = in_data[0].rows;
+
+	int w_f = modelDs.width/shrink;
 	int h_f = modelDs.height/shrink;
+
+    int cc=0;
+
+    float *p_end = (float*)in_data[0].ptr() + h_in_data*w_in_data*in_data.size();
 
 	for( int c=0;c < in_data.size(); c++)
 	{
-		
+        float *ptr=(float*)in_data[c].ptr() + (h_in_data - h_f)/2*w_in_data + (w_in_data - w_f)/2;
+        for( int j=0;j<h_f;j++)
+        {
+            float *pp = ptr + j*w_in_data;
+            for( int i=0;i<w_f;i++)
+            {
+                if( pp > p_end )
+                {
+                    cout<<" > visit c "<<c<<" j "<<j<<" i "<<i<<endl;
+                    cout<<"################### error ##################"<<endl;
+                    return;
+                }
+                if( pp <(float*)in_data[0].ptr())
+                {
+                    cout<<"< visit c "<<c<<" j "<<j<<" i "<<i<<endl;
+                    cout<<"#################### error #################"<<endl;
+                    return;
+
+                }
+                output_data.at<float>(cc++,0) = pp[i];    
+            }
+        }
+
 	}
 	
 }
@@ -214,9 +243,12 @@ int main( int argc, char** argv)
 	 *-----------------------------------------------------------------------------*/
     softcascade sc;
 	cascadeParameter cas_para;
-    cas_para.posGtDir  = "/mnt/disk1/data/INRIAPerson/Train/posGT/";
-    cas_para.posImgDir = "/mnt/disk1/data/INRIAPerson/Train/pos"; 
-	cas_para.negImgDir = "/mnt/disk1/data/INRIAPerson/Train/neg/";
+    //cas_para.posGtDir  = "/mnt/disk1/data/INRIAPerson/Train/posGT/";
+    cas_para.posGtDir  = "/media/yuanyang/disk1/libs/piotr_toolbox/data/Inria/train/posGt_opencv/";
+    //cas_para.posImgDir = "/mnt/disk1/data/INRIAPerson/Train/pos"; 
+    cas_para.posImgDir = "/media/yuanyang/disk1/libs/piotr_toolbox/data/Inria/train/pos/"; 
+	//cas_para.negImgDir = "/mnt/disk1/data/INRIAPerson/Train/neg/";
+	cas_para.negImgDir = "/media/yuanyang/disk1/libs/piotr_toolbox/data/Inria/train/neg/";
     sc.setParas( cas_para);
     
 
@@ -224,9 +256,11 @@ int main( int argc, char** argv)
     vector<Mat> neg_origsamples;
     sampleWins( sc, 0, false, neg_samples, neg_origsamples);
     
-    //for ( int c=0;c<origsamples.size();c++) 
+    /*  show samples  */
+    //for ( int c=0;c<neg_origsamples.size();c++) 
     //{
-    //    imshow("sample", origsamples[c] );
+    //    imshow("sample", neg_origsamples[c] );
+    //    imwrite("sample.png", neg_origsamples[c]);
     //    waitKey(0);
     //}
 	
@@ -237,19 +271,47 @@ int main( int argc, char** argv)
 	cout<<"neg sample number -> "<<neg_origsamples.size()<<endl;
 	cout<<"pos sample number -> "<<pos_origsamples.size()<<endl;
 
-	cout<<"computing features ..."<<endl;
 
-	vector<Mat> feas;
-	feature_Pyramids ff;
-	ff.computeChannels( pos_origsamples[0], feas, Size(0,0), Size(0,0), 6, 1 );
-	
-	cout<<"size of single feature is "<<pos_origsamples[0].size()<<endl;
+    /*  ------------------------- test Adaboost for one stage --------------------------- */
+    Size modelDsPad = cas_para.modelDsPad;
+    int n_channels = 10;
+    int n_shrink = 4;
+    int final_feature_dim = modelDsPad.width/n_shrink*modelDsPad.height/n_shrink*n_channels;
 
-	int feature_dim = feas[0].cols*feas[0].rows*feas.size();
-	cout<<"feature dim is "<<feature_dim<<endl;
+    Mat pos_train_data = Mat::zeros( final_feature_dim, pos_origsamples.size(), CV_32F);
+    Mat neg_train_data = Mat::zeros( final_feature_dim, neg_origsamples.size(), CV_32F);
+
+    feature_Pyramids ff1;
+    
+    cout<<"computing features for file "<<endl;
+    for ( int c=0;c<pos_origsamples.size();c++) 
+    {
+        vector<Mat> feas;
+        ff1.computeChannels( pos_origsamples[c], feas, Size(0,0), Size(0,0), 6, 4);
+        Mat tmp = pos_train_data.col(c);
+        makeTrainData( feas, tmp , cas_para.modelDsPad, 4);
+    }
 
 
+    for ( int c=0;c<neg_origsamples.size();c++)
+    {
+        vector<Mat> feas;
+        ff1.computeChannels( neg_origsamples[c], feas, Size(0,0), Size(0,0), 6, 4);
+        Mat tmp = neg_train_data.col(c);
+        makeTrainData( feas, tmp , cas_para.modelDsPad, 4);
+    }
+    cout<<"computing features done..."<<endl;
 
+    Adaboost ab;ab.SetDebug(false);
+    tree_para ad_para;
+    ad_para.nBins = 256;
+    ad_para.maxDepth = 2;
+    ad_para.fracFtrs = 0.0625;
+
+    ab.Train( neg_train_data, pos_train_data, 64, ad_para );
+    
+
+    /*  ------------------------- test Adaboost for one stage --------------------------- */
 
 
 	/*-----------------------------------------------------------------------------

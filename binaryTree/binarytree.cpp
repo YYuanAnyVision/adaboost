@@ -298,6 +298,7 @@ bool binaryTree::Train( data_pack & train_data,			/* input&output : training dat
 	Mat quan_neg_data( neg_data.size(), CV_64F );
 	Mat quan_pos_data( pos_data.size(), CV_64F );
 
+
 	if( neg_data.type() == CV_8U)
 	{
 		quan_neg_data = neg_data;
@@ -308,14 +309,32 @@ bool binaryTree::Train( data_pack & train_data,			/* input&output : training dat
 		// data quantization, range [0 paras.nbins]
 		for ( int i=0;i<neg_data.cols ;i++ ) 
 		{
-			Mat tmp = (neg_data.col(i) - Xmin)/Xstep; /*  Mat expression used in assignment, no mem copy here */
-			tmp.copyTo( quan_neg_data.col(i));		
+            if(neg_data.type() == Xmin.type())
+            {
+                Mat tmp = (neg_data.col(i) - Xmin)/Xstep;
+                tmp.copyTo( quan_neg_data.col(i));
+            }
+            else
+            {
+                Mat tmp = neg_data.col(i);tmp.convertTo( tmp, Xmin.type());
+                tmp=(tmp-Xmin)/Xstep;
+                tmp.copyTo( quan_neg_data.col(i));
+            }
 		}
 		
 		for ( int i=0;i<pos_data.cols ;i++ ) 
 		{
-			Mat tmp = (pos_data.col(i) - Xmin)/Xstep;
-			tmp.copyTo( quan_pos_data.col(i));
+            if(neg_data.type() == Xmin.type())
+            {
+                Mat tmp = (pos_data.col(i) - Xmin)/Xstep;
+                tmp.copyTo( quan_pos_data.col(i));
+            }
+            else
+            {
+                Mat tmp = pos_data.col(i);tmp.convertTo(tmp,Xmin.type());
+                tmp = (tmp -Xmin)/Xstep;
+                tmp.copyTo( quan_pos_data.col(i));
+            }
 		}
 		/*  convert to uint8  */
 		quan_pos_data.convertTo( quan_pos_data, CV_8U);
@@ -325,9 +344,10 @@ bool binaryTree::Train( data_pack & train_data,			/* input&output : training dat
 		 * !!!! this will change the original data !!!! */
 		train_data.neg_data = quan_neg_data;
 		train_data.pos_data = quan_pos_data;
+        if(m_debug)
+            cout<<"quantization done "<<endl;
 	}
 	
-	//cout<<"quantization data "<<quan_neg_data.col(308)<<endl;
 	/*  K--> max number of split */
 	int K = 2*( num_neg_samples + num_pos_samples);
 	m_tree.thrs    = Mat::zeros( 1,K,CV_64F);
@@ -355,6 +375,8 @@ bool binaryTree::Train( data_pack & train_data,			/* input&output : training dat
 
 	while( k < K)
 	{
+        if(m_debug)
+            cout<<"spliting the tree in node "<<k<<endl;
 		/* get node wrights and prior */
 		Mat *weight0 = wtsAll0[k]; 
 		Scalar tmp_sum=cv::sum(*weight0); double w0=tmp_sum.val[0]; /* delete weight0 later */
