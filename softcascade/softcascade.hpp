@@ -39,6 +39,7 @@ struct cascadeParameter
     string posGtDir;                    /* positive groundtruth directory */
     string posImgDir;                   /* positive image directory */
     string negImgDir;                   /* negative image directory */
+    int    nchannels;                   /* number of channels, usually 1 */
 
 
 	/* ---> TODO jitter parameters .... */
@@ -63,6 +64,7 @@ struct cascadeParameter
         posGtDir = "";
         posImgDir = "";
         negImgDir = "";
+        nchannels = 10;
 	}
 };
 
@@ -87,8 +89,9 @@ class softcascade
 		 *          out:  detect result
 		 * =====================================================================================
 		 */
-		bool Apply( const Mat &input_data,		    /*  in: featuredim x number_of_samples */
-				    vector<Rect> &results ) const;	/* out: detect results on image */
+		bool Apply( const Mat &input_data,		        /*  in: featuredim x number_of_samples */
+				    vector<Rect> &results,              /* out: detect results */
+                    vector<double> &confidence) const;	/* out: detect confidence */
 
 
 		/* 

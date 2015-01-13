@@ -94,15 +94,16 @@ int main( int argc, char** argv)
     Mat image = imread(argv[1]);
 	//resize(image,image,Size(640,640));
 	vector<vector<Mat> > approxPyramid;
-	feature_Pyramids feature;
 	cv::TickMeter tm2;
 	tm2.start();
-	feature.chnsPyramid(image,approxPyramid,feature.opt);
+    
+    feature_Pyramids feature;
+	feature.chnsPyramid(image,approxPyramid );
 	tm2.stop();
 	
 
 	vector<Mat> ff;
-	feature.computeChannels( image, ff, Size(0,0), Size(0,0), 6, 1 );
+	feature.computeChannels( image, ff );
 	cout<<"size of feature "<<ff[0].size()<<endl;
 	
 

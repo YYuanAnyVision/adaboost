@@ -11,6 +11,105 @@
 using namespace cv;
 using namespace std;
 
+template <typename T> void _apply( const T *input_data,                 /* in : (nchannels*nheight)x(nwidth) channels feature, already been scaled with shrink*/
+                                   const int &in_width,                 /* in : width of a single channel image */
+                                   const int &in_height,                /* in : height of a single channel image */
+                                   const Mat &fids,                     /* in : (number_of_trees)x(number_of_nodes) fids matrix */
+                                   const Mat &child,                    /* in : child .. same */
+                                   const Mat &thrs,                     /* in : thrs */
+                                   const Mat &hs,                       /* in : hs  */
+                                   const cascadeParameter &opts,        /* in : detector options */
+                                   const int &tree_depth,               /* in : 0 if tree varies, number of nodes otherwise */
+                                   vector<Rect> &results,               /* out: detected results */
+                                   vector<double> &confidence )         /* out: detection confidence, same size as results */
+{
+    cout<<"m tree depth is "<<tree_depth<<endl;
+
+    const int shrink = opts.shrink;
+    const int modelHeight = opts.modelDsPad.height;
+    const int modelWidth  = opts.modelDsPad.width;
+    const int stride      = opts.stride;
+    const double cascThr  = opts.cascThr;
+    const double cascCal  = opts.cascCal;
+    const int nchannels   = opts.nchannels;
+    
+    const int number_of_trees = fids.rows;
+    const int number_of_nodes = fids.cols;
+
+    /* calculate the scan step on rows and cols */
+    int n_height = (int) ceil((in_height*shrink-modelHeight+1)/stride);
+    int n_width  = (int) ceil((in_width*shrink-modelWidth+1)/stride);
+
+    /* generate the feature index array */
+    int total_dim = modelHeight/shrink*modelWidth/shrink*nchannels;
+    unsigned int *cids = new unsigned int[total_dim];
+    int counter=0;
+    
+    for( int c=0;c<nchannels;c++)
+        for(int h=0;h<modelHeight/shrink;h++)
+            for(int w=0;w<modelWidth/shrink;w++)
+                cids[counter++] = c*in_width*in_height+in_width*h + w;
+
+    /*  apply classifier to each block */
+    for(int c=0;c<n_height;c++)
+    {
+        for(int w=0;w<n_width;w++)
+        {
+            const T *probe_feature_starter = input_data + (c*stride/shrink)*in_width + (w*stride/shrink);
+            double h=0;
+            
+            /*  full tree case, save the look up operation with t_child*/
+            if( tree_depth != 0)
+            {
+                for( int t=0;t<number_of_trees;t++)
+                {
+                    int position = 0;
+                    
+                    const int *t_child   = child.ptr<int>(t);
+                    const int *t_fids    = fids.ptr<int>(t);
+                    const double *t_thrs = thrs.ptr<double>(t);
+                    const double *t_hs   = hs.ptr<double>(t);
+
+                    while( t_child[position])
+                    {
+                        position = (( probe_feature_starter[cids[t_fids[position]]] < t_thrs[position]) ? position*2+1 : position*2+2);
+                    }
+                    h += t_hs[position];
+                    if( h < opts.cascThr)       /* reject once the score is less than cascade threshold */
+                        break;
+                }
+            }
+            else
+            {
+                for( int t=0;t<number_of_trees;t++)
+                {
+                    /*  using ptr() here is very efficient as opencv suggested, changing it to pure pointer operation
+                     *  gains little */
+                    int position = 0;
+                    
+                    const int *t_child   = child.ptr<int>(t);
+                    const int *t_fids    = fids.ptr<int>(t);
+                    const double *t_thrs = thrs.ptr<double>(t);
+                    const double *t_hs   = hs.ptr<double>(t);
+                    while( t_child[position])
+                    {
+                        position = (( probe_feature_starter[cids[t_fids[position]]] < t_thrs[position]) ? t_child[position]: t_child[position] + 1);
+                    }
+                    h += t_hs[position];
+                    if( h < opts.cascThr)       /* reject once the score is less than cascade threshold */
+                        break;
+                }
+            }
+            /* add detection result */
+            if( h>opts.cascThr)
+            {
+                Rect tmp( w*stride, c*stride, modelWidth, modelHeight );
+                results.push_back( tmp );
+                confidence.push_back( h );
+            }
+        }
+    }
+}
 bool softcascade::Combine(vector<Adaboost> &ads )
 {
     /*  ==================== get informations ==================== */
@@ -172,8 +271,9 @@ bool softcascade::checkModel() const
     return true;
 }
 
-bool softcascade::Apply( const Mat &input_data,         /*  in: featuredim x number_of_samples */
-                         vector<Rect> &results ) const  /* out: results */
+bool softcascade::Apply( const Mat &input_data,                 /*  in: featuredim x number_of_samples */
+                         vector<Rect> &results,                 /* out: results */ 
+                         vector<double> &confidence) const      /* out: confidence */
 {
     if(!checkModel())
         return false;
@@ -182,105 +282,9 @@ bool softcascade::Apply( const Mat &input_data,         /*  in: featuredim x num
         cout<<"<softcascade::Apply><error> input_data shoule be continuous ~"<<endl;
         return false;
     }
+    _apply( (const float*)input_data.data, input_data.cols, input_data.rows, m_fids, m_child, m_thrs, m_hs, m_opts, m_tree_depth, results, confidence);
 }
 
-template <typename T> void _apply( const T *input_data,                 /* in : (nchannels*nheight)x(nwidth) channels feature, already been scaled with shrink*/
-                                   const int &in_width,                 /* in : width of a single channel image */
-                                   const int &in_height,                /* in : height of a single channel image */
-                                   const int &nchannels,                /* in : number of the channel */
-                                   const Mat &fids,                     /* in : (number_of_trees)x(number_of_nodes) fids matrix */
-                                   const Mat &child,                    /* in : child .. same */
-                                   const Mat &thrs,                     /* in : thrs */
-                                   const Mat &hs,                       /* in : hs  */
-                                   const cascadeParameter &opts,        /* in : detector options */
-                                   const int &tree_depth,               /* in : 0 if tree varies, number of nodes otherwise */
-                                   vector<Rect> &results,               /* out: detected results */
-                                   vector<double> &confidence )         /* out: detection confidence, same size as results */
-{
-    const int shrink = opts.shrink;
-    const int modelHeight = opts.modelDsPad.height;
-    const int modelWidth  = opts.modelDsPad.width;
-    const int stride      = opts.stride;
-    const double cascThr  = opts.cascThr;
-    const double cascCal  = opts.cascCal;
-    
-    const int number_of_trees = fids.rows;
-    const int number_of_nodes = fids.cols;
-
-    /* calculate the scan step on rows and cols */
-    int n_height = (int) ceil((in_height*shrink-modelHeight+1)/stride);
-    int n_width  = (int) ceil((in_width*shrink-modelWidth+1)/stride);
-    
-    /* generate the feature index array */
-    int total_dim = modelHeight/shrink*modelWidth/shrink*nchannels;
-    unsigned int *cids = new unsigned int[total_dim];
-    int counter=0;
-    
-    for( int c=0;c<nchannels;c++)
-        for(int h=0;h<modelHeight/shrink;h++)
-            for(int w=0;w<modelWidth/shrink;w++)
-                cids[counter++] = c*in_width*in_height+in_width*h + w;
-
-    /*  apply classifier to each block */
-    for(int h=0;h<n_height;h++)
-    {
-        for(int w=0;w<n_width;w++)
-        {
-            T *probe_feature_starter = input_data + (h*stride/shrink)*in_width + (w*stride/shrink);
-            double h=0;
-            
-            /*  full tree case, save the look up operation with t_child*/
-            if( tree_depth != 0)
-            {
-                for( int t=0;t<number_of_trees;t++)
-                {
-                    int position = 0;
-                    
-                    const int *t_child   = child.ptr<int>(t);
-                    const int *t_fids    = fids.ptr<int>(t);
-                    const double *t_thrs = thrs.ptr<double>(t);
-                    const double *t_hs   = hs.ptr<double>(t);
-
-                    while( t_child[position])
-                    {
-                        position = (( probe_feature_starter[cids[t_fids[position]]] < t_thrs[position]) ? position<<1+1 : position<<1+2);
-                    }
-                    h += t_hs[position];
-                    if( h < opts.cascThr)       /* reject once the score is less than cascade threshold */
-                        break;
-                }
-            }
-            else
-            {
-                for( int t=0;t<number_of_trees;t++)
-                {
-                    /*  using ptr() here is very efficient as opencv suggested, changing it to pure pointer operation
-                     *  gains little */
-                    int position = 0;
-                    
-                    const int *t_child   = child.ptr<int>(t);
-                    const int *t_fids    = fids.ptr<int>(t);
-                    const double *t_thrs = thrs.ptr<double>(t);
-                    const double *t_hs   = hs.ptr<double>(t);
-                    while( t_child[position])
-                    {
-                        position = (( probe_feature_starter[cids[t_fids[position]]] < t_thrs[position]) ? t_child[position]: t_child[position] + 1);
-                    }
-                    h += t_hs[position];
-                    if( h < opts.cascThr)       /* reject once the score is less than cascade threshold */
-                        break;
-                }
-            }
-            /* add detection result */
-            if( h>opts.cascThr)
-            {
-                Rect tmp( w*stride, h*stride, modelWidth, modelHeight );
-                results.push_back( tmp );
-                confidence.push_back( h );
-            }
-        }
-    }
-}
 
 
 bool softcascade::Save( string path_to_model )      /*  in: where to save the model, models is saved by opencv FileStorage */
