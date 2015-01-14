@@ -13,6 +13,7 @@
 #include "../misc/misc.hpp"
 #include "softcascade.hpp"
 #include "../chnfeature/Pyramid.h"
+#include "../misc/NonMaxSupress.h"
 
 #include <omp.h>
 
@@ -40,7 +41,6 @@ void makeTrainData( vector<Mat> &in_data, Mat &output_data, Size modelDs, int sh
 
     float *p_end = (float*)in_data[0].ptr() + h_in_data*w_in_data*in_data.size();
 
-	int Nthreads = omp_get_max_threads();
 	for( int c=0;c < in_data.size(); c++)
 	{
         float *ptr=(float*)in_data[c].ptr() + (h_in_data - h_f)/2*w_in_data + (w_in_data - w_f)/2;
@@ -54,7 +54,6 @@ void makeTrainData( vector<Mat> &in_data, Mat &output_data, Size modelDs, int sh
         }
 
 	}
-	
 }
 
 size_t getNumberOfFilesInDir( string in_path )
@@ -80,6 +79,8 @@ bool sampleWins(    const softcascade &sc, 	    /*  in: detector */
                     vector<Mat> &samples,       /* out: target objects, flipped */
                     vector<Mat> &origsamples)   /* out: original target */
 {
+	int Nthreads = omp_get_max_threads();
+
     origsamples.clear();
     samples.clear();
 
@@ -102,35 +103,42 @@ bool sampleWins(    const softcascade &sc, 	    /*  in: detector */
             return false;
         }
         int number_pos_img = getNumberOfFilesInDir( opts.posGtDir );
+
         /* iterate the folder*/
-        bf::directory_iterator end_it; int file_counter = 0;int number_target = 0;
+        bf::directory_iterator end_it;
+        vector<string> image_path_vector;
+        vector<string> gt_path_vector;
+
         for( bf::directory_iterator file_iter(pos_img_path); file_iter!=end_it; file_iter++)
         {
-            /*  number_to_sample < 0  means inf, don't stop */
-            if( number_to_sample > 0 && number_target>number_to_sample )
-                break;
-
             bf::path s = *(file_iter);
             string basename = bf::basename( s );
             string pathname = file_iter->path().string();
             string extname  = bf::extension( s );
 
+            image_path_vector.push_back( pathname );
             /* read the gt according to the image name */
-            string gt_file_path = opts.posGtDir + basename + ".txt";
-            Mat im = imread(pathname);
-            if(im.empty())
-            {
-                cout<<"can not read image file "<<pathname<<endl;
-                return false;
-            }
+            gt_path_vector.push_back(opts.posGtDir + basename + ".txt");
+        }
+
+        #pragma omp parallel for num_threads(Nthreads) /* openmp -->but no error check in runtime ... */
+        for( int i=0;i<image_path_vector.size();i++)
+        {
+            Mat im = imread( image_path_vector[i]);
+            /* can not return from openmp body !*/
+            //if(im.empty())
+            //{
+            //    cout<<"can not read image file "<<image_path_vector[i]<<endl;
+            //    return false;
+            //}
 
             vector<Rect> target_rects;
-            FileStorage fst( gt_file_path, FileStorage::READ | FileStorage::FORMAT_XML);
-            if(!fst.isOpened())
-            {
-                cout<<"can not read gt file "<<gt_file_path<<endl;
-                return false;
-            }
+            FileStorage fst( gt_path_vector[i], FileStorage::READ | FileStorage::FORMAT_XML);
+            //if(!fst.isOpened())
+            //{
+            //    cout<<"can not read gt file "<<gt_path_vector[i]<<endl;
+            //    return false;
+            //}
             fst["boxes"]>>target_rects;
             fst.release();
 
@@ -141,27 +149,38 @@ bool sampleWins(    const softcascade &sc, 	    /*  in: detector */
                 /* grow it a little bit */
                 int modelDsBig_width = std::max( 8*opts.shrink, opts.modelDsPad.width)+std::max(2, 64/opts.shrink)*opts.shrink;
                 int modelDsBig_height = std::max( 8*opts.shrink,opts.modelDsPad.height)+std::max(2,64/opts.shrink)*opts.shrink;
-                
-
                 double w_ratio = modelDsBig_width*1.0/opts.modelDs.width;
                 double h_ratio = modelDsBig_height*1.0/opts.modelDs.height;
                 target_rects[i] = resizeBbox( target_rects[i], h_ratio, w_ratio);
                 
-
                 /* finally crop the image */
                 Mat target_obj = cropImage( im, target_rects[i]);
                 cv::resize( target_obj, target_obj, cv::Size(modelDsBig_width, modelDsBig_height), 0, 0, INTER_AREA);
-                origsamples.push_back( target_obj );
-
-                /*  adding flipped version of the image */
-                Mat flipped_target;
-                cv::flip( target_obj, flipped_target, 1 );
-                origsamples.push_back( flipped_target );
-
+                #pragma omp critical
+                {
+                    origsamples.push_back( target_obj );
+                }
             }
         }
+
+        /* sample target if n_target > number_to_sample */
+        if( origsamples.size() > number_to_sample)
+        {
+            std::random_shuffle( origsamples.begin(), origsamples.end());
+            origsamples.resize( number_to_sample);
+        }
+        
+        samples.resize( origsamples.size()*2); int copy_offset = origsamples.size();
+        for(int i = 0; i<origsamples.size(); i++ )
+        {
+            samples[i] = origsamples[i].clone();
+            Mat flipped_target; cv::flip( origsamples[i], flipped_target, 1 );
+            samples[i+copy_offset] = flipped_target;
+        }
+
+        
     }
-    else
+    else /* for negative samples */
     {
 		bf::path neg_img_path(opts.negImgDir);
 		int number_target_per_image = opts.nPerNeg;
@@ -175,7 +194,7 @@ bool sampleWins(    const softcascade &sc, 	    /*  in: detector */
 		
 		/* shuffle the path */
 		vector<string> neg_paths;
-        bf::directory_iterator end_it; int file_counter = 0;int number_target = 0;
+        bf::directory_iterator end_it;int number_target = 0;
         for( bf::directory_iterator file_iter(neg_img_path); file_iter!=end_it; file_iter++)
 		{
             string pathname = file_iter->path().string();
@@ -184,28 +203,26 @@ bool sampleWins(    const softcascade &sc, 	    /*  in: detector */
 
 		std::random_shuffle( neg_paths.begin(), neg_paths.end() );
 		
-        
+        #pragma omp parallel for num_threads(Nthreads) /* openmp -->but no error check in runtime ... */
 		for( int c=0;c<neg_paths.size() ;c++)
 		{
 			vector<Rect> target_rects;
-
 			Mat img = imread( neg_paths[c] );
-			if(img.empty())
-			{
-				cout<<"can not read image "<<neg_paths[c]<<endl;
-				return false;
-			}
+			//if(img.empty())
+			//{
+			//	cout<<"can not read image "<<neg_paths[c]<<endl;
+			//	return false;
+			//}
 			/*  inf stage == 0, first time just sample the image, otherwise add the "hard sample" */
 			if( stage==0 )
 			{
                 /*  sampling and shuffle  */
 				sampleRects( number_target_per_image*2, img.size(), opts.modelDs, target_rects );
                 std::random_shuffle( target_rects.begin(), target_rects.end() );
-
 			}
 			else
 			{
-
+                /* boostrap the negative samples */
 			}
 			
             /*  resize the rect to fixed widht / height ratio, for pedestrain det , is 41/100 for INRIA database */
@@ -215,23 +232,25 @@ bool sampleWins(    const softcascade &sc, 	    /*  in: detector */
                 /* grow it a little bit */
                 int modelDsBig_width = std::max( 8*opts.shrink, opts.modelDsPad.width)+std::max(2, 64/opts.shrink)*opts.shrink;
                 int modelDsBig_height = std::max( 8*opts.shrink,opts.modelDsPad.height)+std::max(2,64/opts.shrink)*opts.shrink;
-                
 
                 double w_ratio = modelDsBig_width*1.0/opts.modelDs.width;
                 double h_ratio = modelDsBig_height*1.0/opts.modelDs.height;
                 target_rects[i] = resizeBbox( target_rects[i], h_ratio, w_ratio);
                 
-
                 /* finally crop the image */
                 Mat target_obj = cropImage( img, target_rects[i]);
                 cv::resize( target_obj, target_obj, cv::Size(modelDsBig_width, modelDsBig_height), 0, 0, INTER_AREA);
-                origsamples.push_back( target_obj );
+
+                #pragma omp critical  
+                {
+                    origsamples.push_back( target_obj );
+                }
             }
 		}
 
         /* random shuffle and sampling  */
         if(origsamples.size() > number_to_sample)
-            origsamples.resize( number_to_sample);
+            origsamples.resize( number_to_sample );
     }
 }
 
@@ -257,7 +276,9 @@ int main( int argc, char** argv)
     cas_para.posImgDir = "/media/yuanyang/disk1/libs/piotr_toolbox/data/Inria/train/pos/"; 
 	//cas_para.negImgDir = "/mnt/disk1/data/INRIAPerson/Train/neg/";
 	cas_para.negImgDir = "/media/yuanyang/disk1/libs/piotr_toolbox/data/Inria/train/neg/";
+    cas_para.infos = "2015-1-14, YuanYang, Test";
     sc.setParas( cas_para);
+    sc.setDebug( false);
     
 
     vector<Mat> neg_samples;
@@ -280,7 +301,7 @@ int main( int argc, char** argv)
     tk.stop();
 	cout<<"# sampling time consuming is "<<tk.getTimeSec()<<" seconds "<<endl;
 	cout<<"neg sample number -> "<<neg_origsamples.size()<<endl;
-	cout<<"pos sample number -> "<<pos_origsamples.size()<<endl;
+	cout<<"pos sample number -> "<<pos_samples.size()<<endl;
 
 
     /*  ------------------------- test Adaboost for one stage --------------------------- */
@@ -289,7 +310,7 @@ int main( int argc, char** argv)
     int n_shrink = 4;
     int final_feature_dim = modelDsPad.width/n_shrink*modelDsPad.height/n_shrink*n_channels;
 
-    Mat pos_train_data = Mat::zeros( final_feature_dim, pos_origsamples.size(), CV_32F);
+    Mat pos_train_data = Mat::zeros( final_feature_dim, pos_samples.size(), CV_32F);
     Mat neg_train_data = Mat::zeros( final_feature_dim, neg_origsamples.size(), CV_32F);
 
     feature_Pyramids ff1;
@@ -307,7 +328,7 @@ int main( int argc, char** argv)
         if(c==0)
         {
             cout<<"channels is "<<feas.size()<<endl;
-            cout<<"feature dim col "<<feas[c].cols<<" "<<feas[c].rows<<" final size "<<endl;
+            cout<<"feature dim col "<<feas[c].cols<<" "<<feas[c].rows<<" final size "<<final_feature_dim<<endl;
         }
     }
 
@@ -320,7 +341,7 @@ int main( int argc, char** argv)
         makeTrainData( feas, tmp , cas_para.modelDsPad, 4);
     }
     tk.stop();
-    cout<<" #time consuming "<<tk.getTimeSec()<<" seconds, computing features done for "<<neg_origsamples.size() + pos_origsamples.size()<<" targets "<<endl;
+    cout<<"#time consuming "<<tk.getTimeSec()<<" seconds, computing features done for "<<neg_origsamples.size() + pos_origsamples.size()<<" targets "<<endl;
 
 
     Adaboost ab;ab.SetDebug(false);
@@ -335,6 +356,10 @@ int main( int argc, char** argv)
     v_ab.push_back( ab);
     sc.Combine( v_ab );
 
+    
+    /*  save and load */
+    sc.Save( "test.xml" );
+    sc.Load( "test.xml");
     
     /*  check softcascade combining  */
     pos_train_data = pos_train_data.t();
@@ -357,21 +382,43 @@ int main( int argc, char** argv)
     vector<Mat> f_chns;
     vector<Rect> rs;vector<double> conf;
 
+
+    vector< vector<Mat> > approPyramid;
+    vector<float> appro_scales;
+    ff1.chnsPyramid( test_apply, approPyramid, appro_scales);
+    
+    //for ( int c=0; c<appro_scales.size();c++ ) 
+    //{
+    //    cout<<"scale "<<c<<" is "<<appro_scales[c]<<endl;
+    //}
+
+    sc.setFeatureGen( ff1 );
     tk.reset();tk.start();
-    ff1.computeChannels( test_apply, f_chns);
-    sc.Apply( f_chns[0], rs, conf);
+    //sc.Apply( test_apply, rs, conf);
+    sc.detectMultiScale( test_apply, rs, conf );
     tk.stop();
-    cout<<"# det all, time consuming "<<tk.getTimeSec()<<endl;
+
+    cout<<"# time computing featuers and running the classifier is "<<tk.getTimeSec()<<endl;
+
     cout<<"det size "<<rs.size()<<endl;
+    Mat draw1  = test_apply.clone();
+    Mat draw2  = test_apply.clone();
     for(int c=0;c<rs.size(); c++)
     {
-        if( conf[c]> 3)
-            rectangle( test_apply, rs[c], Scalar(255,0,128));
+        rectangle( draw1, rs[c], Scalar(255,0,128));
     }
 
-    imshow( "s", test_apply);
+    imshow( "before", draw1);
+
+    NonMaxSupress( rs, conf );
+
+    for(int c=0;c<rs.size(); c++)
+    {
+        rectangle( draw2, rs[c], Scalar(255,0,128));
+    }
+    cout<<"remained "<<rs.size()<<endl;
+    imshow("after", draw2);
     waitKey(0);
-    
 
     /*  ------------------------- test Adaboost for one stage --------------------------- */
 
@@ -388,7 +435,7 @@ int main( int argc, char** argv)
 		//{
 		//}
 
-		/* TODO compute local decorrelation filters if needed */
+		/* TODO compute local decorrelaton filters if needed */
 
 		/* TODO compute lambdas */
 

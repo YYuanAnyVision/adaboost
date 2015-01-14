@@ -25,17 +25,17 @@ struct detector_opt
 	int nbins;  //number of orientation channels
 	int binsize;//spatial bin size
 	int nApprox;// number of approx
-	Size diam ; //minimum image size for channel computation
+	Size minDS ; //minimum image size for channel computation
 	detector_opt()
 	{
 		nPerOct=8 ;
-		nApprox=7;
 		nOctUp=0 ;
-		smooth =1;
 		shrink=4;
-		diam=Size(16,16) ;
+		smooth =1;
+		minDS=Size(16,16) ;
 		nbins=6;
 		binsize=4;
+		nApprox=7;
 	}
 };
 class feature_Pyramids
@@ -46,13 +46,15 @@ public:
 
 	~feature_Pyramids();
 
-	void chnsPyramid(const Mat &img,  vector<vector<Mat> > &approxPyramid);
+	void chnsPyramid(const Mat &img, vector<float> &lambdas, vector<vector<Mat> > &approxPyramid,vector<float> &scales,vector<float> &scalesh,vector<float> &scalesw) const;
 
-	void convTri(const Mat &src, Mat &dst, const Mat &Km);
+	void chnsPyramid(const Mat &img,  vector<vector<Mat> > &approxPyramid,vector<float> &scales) const;
 
-	void computeChannels( const Mat &image,vector<Mat>& channels);
+	void convTri(const Mat &src, Mat &dst, const Mat &Km) const;
 
-	void computeGradient(const Mat &img, Mat& grad, Mat& qangle);	
+	void computeChannels( const Mat &image,vector<Mat>& channels) const;
+
+	void computeGradient(const Mat &img, Mat& grad, Mat& qangle) const;	
 
 	void setParas (const  detector_opt &in_para ) ;
 

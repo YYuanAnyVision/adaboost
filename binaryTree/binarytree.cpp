@@ -387,9 +387,6 @@ bool binaryTree::Train( data_pack & train_data,			/* input&output : training dat
 		m_tree.weights.at<double>(0,k) = w; errs.at<double>(0,k)=std::min( prior, 1-prior);
 		m_tree.hs.at<double>(0,k)=std::max( -4.0, std::min(4.0, 0.5*std::log(prior/(1-prior))));
 
-		//cout<<"prior is "<<prior<<endl;
-		//cout<<m_tree.weights.at<double>(0,k)<<endl;
-		//cout<<m_tree.hs.at<double>(0,k)<<endl;
 		
 		/*  if nearly pure node ot insufficient data --> don't train split */
 		if( prior < 1e-3 || prior > 1-1e-3 || m_tree.depth.at<int>(0,k) >= paras.maxDepth || w < paras.minWeight)

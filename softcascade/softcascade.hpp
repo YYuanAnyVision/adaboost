@@ -8,6 +8,8 @@
 #include "../Adaboost/Adaboost.hpp"
 #include "../binaryTree/binarytree.hpp"
 
+#include "../chnfeature/Pyramid.h"
+
 using namespace std;
 using namespace cv;
 
@@ -18,11 +20,6 @@ struct cascadeParameter
 	Size modelDs;						/* model height+width without padding (eg [100 41]) */
 	Size modelDsPad;					/* model height+width with padding (eg [128 64])*/
 	
-
-	int shrink;							/* ----------> should be provided by the chnPyramid */
-
-
-	/* ---> TODO non maximun suppression parameters ... */
 
 	int stride;							/* [4] spatial stride between detection windows */
 	double cascThr;						/* [-1] constant cascade threshold (affects speed/accuracy)*/
@@ -39,10 +36,10 @@ struct cascadeParameter
     string posGtDir;                    /* positive groundtruth directory */
     string posImgDir;                   /* positive image directory */
     string negImgDir;                   /* negative image directory */
-    int    nchannels;                   /* number of channels, usually 1 */
 
+    int    nchannels;                   /* ----------> number of channels, usually 1 */
+	int shrink;							/* ----------> should be provided by the chnPyramid */
 
-	/* ---> TODO jitter parameters .... */
 	cascadeParameter()
 	{
 		modelDs    = Size(41, 100);
@@ -89,10 +86,33 @@ class softcascade
 		 *          out:  detect result
 		 * =====================================================================================
 		 */
-		bool Apply( const Mat &input_data,		        /*  in: featuredim x number_of_samples */
+		bool Apply( const vector<Mat> &input_data,		/*  in: channel features, input_data.size() == nchannels */
 				    vector<Rect> &results,              /* out: detect results */
                     vector<double> &confidence) const;	/* out: detect confidence */
+    
 
+        /* 
+         * ===  FUNCTION  ======================================================================
+         *         Name:  Apply overload
+         *  Description:  same as above, only computes the feature inside
+         * =====================================================================================
+         */
+        bool Apply( const Mat &input_image,             /*  in: !!! image !!! */
+				    vector<Rect> &results,              /* out: detect results */
+                    vector<double> &confidence);	/* out: detect confidence */
+        
+        /* 
+         * ===  FUNCTION  ======================================================================
+         *         Name:  detectMultiScale
+         *  Description:  detect targets in a given image using sliding windows
+         * =====================================================================================
+         */
+        bool detectMultiScale( const Mat &image,
+                               vector<Rect> &targets,
+                               vector<double> &confidence,
+                               int stride = 4,
+                               int minSize = 32,
+                               int maxSize = 300) const;
 
 		/* 
 		 * ===  FUNCTION  ======================================================================
@@ -176,6 +196,14 @@ class softcascade
 		bool checkModel() const;
 
 
+        /* 
+         * ===  FUNCTION  ======================================================================
+         *         Name:  setDebug
+         *  Description:  wanna output
+         * =====================================================================================
+         */
+        void setDebug( bool m_d );
+
 		/* 
 		 * ===  FUNCTION  ======================================================================
 		 *         Name:  getParas
@@ -193,12 +221,24 @@ class softcascade
          */
         void setParas( const cascadeParameter &in_par );
 
+
+        /* 
+         * ===  FUNCTION  ======================================================================
+         *         Name:  setFeatureGen
+         *  Description:  set the feature generator, feature_Pyramids has a simple data structure
+         * =====================================================================================
+         */
+        void setFeatureGen( const feature_Pyramids &in_fea_gen )
+        {
+            m_feature_gen = in_fea_gen;
+        }
+
 	private:
 
 		/* 
 		 * ===  FUNCTION  ======================================================================
 		 *         Name:  setTreeDepth
-		 *  Description:  get the depth of all leaf nodes, 0 if leaf depth varies
+		 *  Description:  set the depth of all leaf nodes, 0 if leaf depth varies
 		 * =====================================================================================
 		 */
 		bool setTreeDepth();
@@ -213,10 +253,11 @@ class softcascade
 		Mat m_depth;						/* nxK 32S depth of node*/
 		Mat m_nodes;						/* nx1 32S number of nodes of each tree */
 		bool m_debug;						/* wanna output? */
-		cascadeParameter m_opts;            /* detectot options  */
 		int m_number_of_trees;				/* . */
 		int m_tree_nodes;					/* if all the tree have the same structure, this will be the number of the nodes of each tree, otherwise -1*/
 		int m_tree_depth;					/* depth of all leaf nodes (or 0 if leaf depth varies) */
 
+		cascadeParameter m_opts;            /* detectot options  */
+        feature_Pyramids m_feature_gen;     /*  feature generator */
 };
 #endif

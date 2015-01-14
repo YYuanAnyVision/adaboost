@@ -21,7 +21,7 @@ void jitterImage(const cv::Mat &img,
     } else {
         nTrn = 1;
         stepTrn = 1.0;
-        maxn = 0.0;
+        mTrn = 0.0;
     }
 
     // safety check

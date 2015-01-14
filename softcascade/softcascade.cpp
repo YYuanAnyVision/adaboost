@@ -23,15 +23,19 @@ template <typename T> void _apply( const T *input_data,                 /* in : 
                                    vector<Rect> &results,               /* out: detected results */
                                    vector<double> &confidence )         /* out: detection confidence, same size as results */
 {
-    cout<<"m tree depth is "<<tree_depth<<endl;
-
-    const int shrink = opts.shrink;
+    
+    const int shrink      = opts.shrink;
     const int modelHeight = opts.modelDsPad.height;
     const int modelWidth  = opts.modelDsPad.width;
+    const int modelW_fit  = opts.modelDs.width;
+    const int modelH_fit  = opts.modelDs.height;
+    const int modelW_shift= (modelWidth - opts.modelDs.width)/2;
+    const int modelH_shift= (modelHeight- opts.modelDs.height)/2;
     const int stride      = opts.stride;
     const double cascThr  = opts.cascThr;
     const double cascCal  = opts.cascCal;
     const int nchannels   = opts.nchannels;
+
     
     const int number_of_trees = fids.rows;
     const int number_of_nodes = fids.cols;
@@ -103,7 +107,7 @@ template <typename T> void _apply( const T *input_data,                 /* in : 
             /* add detection result */
             if( h>opts.cascThr)
             {
-                Rect tmp( w*stride, c*stride, modelWidth, modelHeight );
+                Rect tmp( w*stride+modelW_shift, c*stride+modelH_shift, modelW_fit, modelH_fit );
                 results.push_back( tmp );
                 confidence.push_back( h );
             }
@@ -271,18 +275,62 @@ bool softcascade::checkModel() const
     return true;
 }
 
-bool softcascade::Apply( const Mat &input_data,                 /*  in: featuredim x number_of_samples */
-                         vector<Rect> &results,                 /* out: results */ 
-                         vector<double> &confidence) const      /* out: confidence */
+bool softcascade::Apply( const vector<Mat> &input_data,      /*  in: channels feature which has a continuous mem like nchannelsxfeature_widthxfeature_height*/
+                         vector<Rect> &results,              /* out: results */ 
+                         vector<double> &confidence) const   /* out: confidence */
 {
+    /*  --------------------------- check --------------------------------*/
     if(!checkModel())
         return false;
-    if(!input_data.isContinuous())
+
+    if(!input_data[0].isContinuous())
     {
         cout<<"<softcascade::Apply><error> input_data shoule be continuous ~"<<endl;
         return false;
     }
-    _apply( (const float*)input_data.data, input_data.cols, input_data.rows, m_fids, m_child, m_thrs, m_hs, m_opts, m_tree_depth, results, confidence);
+
+    if( m_opts.nchannels != input_data.size())
+    {
+        cout<<"<softcascade::Apply><error> input_data's size should equ nchannels "<<endl;
+        return false;
+    }
+
+    /* the nchannel features shoule be continuous in memory, check the pointer, for various type*/
+    if( input_data[0].type() == CV_32F)
+    {
+        if( (const float*)(input_data[0].data) + (m_opts.nchannels-1)*input_data[0].cols*input_data[0].rows != (const float*)input_data[m_opts.nchannels-1].data )
+        {
+            cout<<"<softcascade::Apply><error> input_data's memory not continuous "<<endl;
+            return false;
+        }
+        _apply( (const float*)input_data[0].data,input_data[0].cols,input_data[0].rows,m_fids,m_child,m_thrs,m_hs,m_opts,m_tree_depth,results,confidence);
+    }
+    else if(input_data[0].type() == CV_64F)
+    {
+        if( (const double*)(input_data[0].data)+(m_opts.nchannels-1)*input_data[0].cols*input_data[0].rows!=(const double*)input_data[m_opts.nchannels-1].data )
+        {
+            cout<<"<softcascade::Apply><error> input_data's memory not continuous "<<endl;
+            return false;
+        }
+        _apply( (const double*)input_data[0].data,input_data[0].cols,input_data[0].rows,m_fids,m_child,m_thrs,m_hs,m_opts,m_tree_depth,results,confidence);
+    }
+    else if(input_data[0].type() == CV_32S)
+    {
+        if( (const int*)(input_data[0].data)+(m_opts.nchannels-1)*input_data[0].cols*input_data[0].rows!=(const int*)input_data[m_opts.nchannels-1].data )
+        {
+            cout<<"<softcascade::Apply><error> input_data's memory not continuous "<<endl;
+            return false;
+        }
+        
+        _apply( (const int*)input_data[0].data, input_data[0].cols, input_data[0].rows, m_fids, m_child, m_thrs, m_hs, m_opts, m_tree_depth, results, confidence);
+    }
+    else
+    {
+        cout<<"softcascade::Apply><error> unsupported data type, must be one of CV_64F, CV_32F or CV_32S "<<endl;
+        return false;
+    }
+    /*  --------------------------- check done ----------------------------*/
+
 }
 
 
@@ -369,6 +417,7 @@ bool softcascade::Load( string path_to_model )      /* in : path of the model, s
     fs["m_opts_nAccNeg"]>>m_opts.nAccNeg;
     
     cout<<"Loading Model Done "<<endl;
+    cout<<"# Model Info --> "<<m_opts.infos<<endl;
     return true;
 }
 const cascadeParameter& softcascade::getParas() const
@@ -379,4 +428,51 @@ const cascadeParameter& softcascade::getParas() const
 void softcascade::setParas( const cascadeParameter &in_par )
 {
     m_opts = in_par; 
+}
+
+bool softcascade::detectMultiScale( const Mat &image,
+                       vector<Rect> &targets,
+                       vector<double> &confidence,
+                       int stride,
+                       int minSize,
+                       int maxSize) const
+{
+    
+    vector< vector<Mat> > approPyramid;
+    vector<float> appro_scales;
+    //vector<float> lambdas;
+    //vector<float> scale_w;
+    //vector<float> scale_h;
+
+    m_feature_gen.chnsPyramid( image, approPyramid, appro_scales);
+
+    
+    for( int c=0;c<approPyramid.size();c++)
+    {
+        vector<Rect> t_tar;
+        vector<double> t_conf;
+        Apply( approPyramid[c], t_tar, t_conf);
+        for ( int i=0;i<t_tar.size(); i++) 
+        {
+            Rect s( t_tar[i].x/appro_scales[c], t_tar[i].y/appro_scales[c], t_tar[i].width/appro_scales[c], t_tar[i].height/appro_scales[c]  );
+            targets.push_back( s );
+            confidence.push_back( t_conf[i]);
+        }
+    }
+    
+
+    return true;
+}
+bool softcascade::Apply( const Mat &input_image,        /*  in: !!! image !!! */
+                    vector<Rect> &results,              /* out: detect results */
+                    vector<double> &confidence) 	    /* out: detect confidence */
+{
+    vector<Mat> chns;
+    m_feature_gen.computeChannels( input_image, chns);
+    return Apply( chns, results, confidence);
+}
+
+void softcascade::setDebug( bool m_d )
+{
+    m_debug = m_d;
 }
