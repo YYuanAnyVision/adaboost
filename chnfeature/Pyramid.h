@@ -32,7 +32,7 @@ struct detector_opt
 		nOctUp=0 ;
 		shrink=4;
 		smooth =1;
-		minDS=Size(16,16) ;
+		minDS=Size(41,100) ;
 		nbins=6;
 		binsize=4;
 		nApprox=7;
@@ -46,9 +46,14 @@ public:
 
 	~feature_Pyramids();
 
-	void chnsPyramid(const Mat &img, vector<float> &lambdas, vector<vector<Mat> > &approxPyramid,vector<float> &scales,vector<float> &scalesh,vector<float> &scalesw) const;
+	void chnsPyramid(const Mat &img, 
+                    vector<double> &lambdas, 
+                    vector<vector<Mat> > &approxPyramid,
+                    vector<double> &scales,
+                    vector<double> &scalesh,
+                    vector<double> &scalesw) const;
 
-	void chnsPyramid(const Mat &img,  vector<vector<Mat> > &approxPyramid,vector<float> &scales) const;
+	void chnsPyramid(const Mat &img,  vector<vector<Mat> > &approxPyramid,vector<double> &scales) const;
 
 	void convTri(const Mat &src, Mat &dst, const Mat &Km) const;
 

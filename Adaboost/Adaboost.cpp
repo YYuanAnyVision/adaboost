@@ -167,12 +167,12 @@ bool Adaboost::Train(	const Mat &neg_data,				/* in : neg data format-> featured
 	}
 
 	/*  save the trained model  */
-	if(!saveModel("lastTrain.xml"))
-	{
-		cout<<"the model is saved as lastTrain.xml by default"<<endl;
-		cout<<"can not save the model .."<<endl;
-		return false;
-	}
+	//if(!saveModel("lastTrain.xml"))
+	//{
+	//	cout<<"the model is saved as lastTrain.xml by default"<<endl;
+	//	cout<<"can not save the model .."<<endl;
+	//	return false;
+	//}
 	return true;
 }
 

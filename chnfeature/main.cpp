@@ -91,35 +91,35 @@ void MultiImage_OneWin(const std::string& MultiShow_WinName, const vector<Mat>& 
 int main( int argc, char** argv)
 {
 
-    Mat image = imread(argv[1]);
-	//resize(image,image,Size(640,640));
-	vector<vector<Mat> > approxPyramid;
-	cv::TickMeter tm2;
-	tm2.start();
+//    Mat image = imread(argv[1]);
+//	//resize(image,image,Size(640,640));
+//	vector<vector<Mat> > approxPyramid;
+//	cv::TickMeter tm2;
+//	tm2.start();
     
-    feature_Pyramids feature;
-	feature.chnsPyramid(image,approxPyramid );
-	tm2.stop();
+//    feature_Pyramids feature;
+//	feature.chnsPyramid(image,approxPyramid );
+//	tm2.stop();
 	
 
-	vector<Mat> ff;
-	feature.computeChannels( image, ff );
-	cout<<"size of feature "<<ff[0].size()<<endl;
+//	vector<Mat> ff;
+//	feature.computeChannels( image, ff );
+//	cout<<"size of feature "<<ff[0].size()<<endl;
 	
 
 	//cout << "computeChannels, ms = " << tm2.getTimeMilli() << std::endl;
 	//cout<<"scales "<<approxPyramid.size()<<endl;
 
 
-	for ( int c=0; c<approxPyramid.size(); c++) 
-	{
-		//cout<<"size of scale "<<c<<" is "<<approxPyramid[c][0].size()<<endl;
-		for (int s=0;s<(int)approxPyramid[0].size();s++)
-		{
-			approxPyramid[c][s].convertTo(approxPyramid[c][s],CV_8U,255);
-		}
+//	for ( int c=0; c<approxPyramid.size(); c++)
+//	{
+//		//cout<<"size of scale "<<c<<" is "<<approxPyramid[c][0].size()<<endl;
+//		for (int s=0;s<(int)approxPyramid[0].size();s++)
+//		{
+//			approxPyramid[c][s].convertTo(approxPyramid[c][s],CV_8U,255);
+//		}
 
-	}
+//	}
 
 	return 0;
 }

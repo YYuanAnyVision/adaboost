@@ -226,13 +226,14 @@ void feature_Pyramids::computeGradient(const Mat &img, Mat& grad, Mat& qangle) c
 }
 void feature_Pyramids::computeChannels(const Mat &image,vector<Mat>& channels) const
 {
+
 	/*set para*/
 	int nbins=m_opt.nbins;
 	int binsize=m_opt.binsize;
 	int shrink =m_opt.shrink;
 	/* compute luv and push */
-	Mat_<float> grad;
-	Mat_<float> angles;
+	Mat_<double> grad;
+	Mat_<double> angles;
 	Mat gray,src,luv;
 
 	//int channels_addr_rows=(image.rows+binsize-1)/binsize;
@@ -287,8 +288,13 @@ void feature_Pyramids::computeChannels(const Mat &image,vector<Mat>& channels) c
 	int bins_mat_tmp_cols=(mag.cols+binsize-1)/binsize;
 	for( int s=0;s<nbins;s++){
 		Mat channels_tmp=channels_addr.rowRange((s+4)*channels_addr_rows,(s+5)*channels_addr_rows);
-		bins_mat.push_back(channels_tmp);
-		bins_mat_tmp.push_back(Mat::zeros(bins_mat_tmp_rows,bins_mat_tmp_rows,CV_32FC1));
+		if (binsize==shrink)
+		{
+			bins_mat_tmp.push_back(channels_tmp);
+		}else{
+			bins_mat.push_back(channels_tmp);
+			bins_mat_tmp.push_back(Mat::zeros(bins_mat_tmp_rows,bins_mat_tmp_rows,CV_64FC1));
+		}
 	}
 	/*split*/
 #define GH \
@@ -297,17 +303,16 @@ void feature_Pyramids::computeChannels(const Mat &image,vector<Mat>& channels) c
 	for(int row=0;row<mag.rows;row++){
 		for(int col=0;col<mag.cols;col++){GH;}}
 	/*push*/
-	for (int c=0;c < (int)bins_mat.size();c++)
+	for (int c=0;c < (int)nbins;c++)
 	{
 		/*resize*/
-		//if (binsize==shrink)
-		//{
+		if (binsize==shrink)
+		{
+			channels.push_back(bins_mat_tmp[c]);
+		}else{
 			resize(bins_mat_tmp[c],bins_mat[c],bins_mat[c].size(),0.0,0.0,1);
 			channels.push_back(bins_mat[c]);
-		/*}else{
-			resize(bins_mat_tmp[c],bins_mat[c],bins_mat[c].size(),0.0,0.0,1);
-			channels.push_back(bins_mat[c]);
-		}*/
+		}
 		
 	}
 	/*  check the pointer */
@@ -317,7 +322,7 @@ void feature_Pyramids::computeChannels(const Mat &image,vector<Mat>& channels) c
 	cout<<"pointer "<<(static_cast<void*>(channels[c].data) == (static_cast<void*>(add1+c*channels_addr_rows*channels_addr_cols))? true :false)<<endl;
 	}*/
 }
-void feature_Pyramids:: chnsPyramid(const Mat &img, vector<float> &lam, vector<vector<Mat> > &approxPyramid,vector<float> &scales,vector<float> &scalesh,vector<float> &scalesw) const
+void feature_Pyramids:: chnsPyramid(const Mat &img, vector<double> &lam, vector<vector<Mat> > &approxPyramid,vector<double> &scales,vector<double> &scalesh,vector<double> &scalesw) const
 {
 	int nPerOct =m_opt.nPerOct;
 	int nOctUp =m_opt.nOctUp;
@@ -328,7 +333,7 @@ void feature_Pyramids:: chnsPyramid(const Mat &img, vector<float> &lam, vector<v
 	int nApprox=m_opt.nApprox;
 	Size diam =m_opt.minDS;
 	/*get scales*/
-	float minDs=(float)min(diam.width,diam.height);
+	double minDs=(double)min(diam.width,diam.height);
 	int nscales=(int)floor(nPerOct*(nOctUp+log(min(img.cols/minDs,img.rows/minDs))/log(2))+1);
 	vector<Size> ap_size;
 	Size ap_tmp_size;
@@ -336,19 +341,19 @@ void feature_Pyramids:: chnsPyramid(const Mat &img, vector<float> &lam, vector<v
 	CV_Assert(nApprox<nscales);
 	/*compute real & approx scales*/
 	vector<int> real_scal;
-	float d0=(float)min(img.rows,img.cols);
-	float d1=(float)max(img.rows,img.cols);
-	for (float s=0;s<nscales;s++)
+	double d0=(double)min(img.rows,img.cols);
+	double d1=(double)max(img.rows,img.cols);
+	for (double s=0;s<nscales;s++)
 	{
 		
 		/*adjust ap_size*/
 		double sc=pow(2.0,(-s)/nPerOct+nOctUp);
 		double s0=(cvRound(d0*sc/shrink)*shrink-0.25*shrink)/d0;
 		double s1=(cvRound(d0*sc/shrink)*shrink+0.25*shrink)/d0;
-		float ss,es1,es2,a=10,val;
+		double ss,es1,es2,a=10,val;
 		for(int c=0;c<101;c++)
 		{
-			ss=(float)((s1-s0)*c/101+s0);
+			ss=(double)((s1-s0)*c/101+s0);
 			es1=abs(d0*ss-cvRound(d0*ss/shrink)*shrink);
 			es2=abs(d1*ss-cvRound(d1*ss/shrink)*shrink);
 			if (max(es1,es2)<a)
@@ -368,8 +373,7 @@ void feature_Pyramids:: chnsPyramid(const Mat &img, vector<float> &lam, vector<v
 			ap_tmp_size.width=cvRound(((img.cols+shrink-1)/shrink)*val);
 			ap_size.push_back(ap_tmp_size);
 
-		}else
-		{
+		}else{
 			if (val!=scales.back())
 			{	
 				/*all scales*/
@@ -396,17 +400,16 @@ void feature_Pyramids:: chnsPyramid(const Mat &img, vector<float> &lam, vector<v
 			real_scal.push_back((int)s);
 		}
 	}
-	
 	//compute the filter
 	Mat Km;
 	Mat img_tmp;
-	float *kern=new float[2*smooth+1];
-	for (int cout=0;cout<=smooth;cout++)
+	double *kern=new double[2*smooth+1];
+	for (int c=0;c<=smooth;c++)
 	{
-		kern[cout]=(float)((cout+1)/((smooth+1.0)*(smooth+1.0)));
-		kern[2*smooth-cout]=kern[cout];
+		kern[c]=(double)((c+1)/((smooth+1.0)*(smooth+1.0)));
+		kern[2*smooth-c]=kern[c];
 	}
-	Km=Mat(1,(2*smooth+1),CV_32FC1,kern); 
+	Km=Mat(1,(2*smooth+1),CV_64FC1,kern); 
 	convTri(img,img_tmp,Km);
 	//compute real 
 	vector<vector<Mat> > chns_Pyramid;
@@ -414,13 +417,13 @@ void feature_Pyramids:: chnsPyramid(const Mat &img, vector<float> &lam, vector<v
 	for (int s_r=0;s_r<(int)real_scal.size();s_r++)
 	{
 		vector<Mat> chns;
-		resize(img_tmp,img_tmp,ap_size[real_scal[s_r]],0.0,0.0,1);
+		resize(img_tmp,img_tmp,ap_size[real_scal[s_r]]*shrink,0.0,0.0,1);
 		computeChannels(img_tmp,chns);
 		chns_num=chns.size();
 		chns_Pyramid.push_back(chns);
 	}
 	//compute lambdas
-	vector<float> lambdas;
+	vector<double> lambdas;
 	lambdas.resize(10);
 	if (lam.empty()) 
 	{
@@ -473,32 +476,42 @@ void feature_Pyramids:: chnsPyramid(const Mat &img, vector<float> &lam, vector<v
 		}
 
 		//compute approxPyramid
-		float ratio;
+		double ratio;
 		for (int ap_id=0;ap_id<(int)approx_scal.size();ap_id++)
 		{
 			vector<Mat> approx_chns;
 			approx_chns.clear();
-
+			/*memory is consistent*/
+			int approx_rows=ap_size[ap_id].height;
+			int approx_cols=ap_size[ap_id].width;
+			Mat approx=Mat::zeros(10*approx_rows,approx_cols,CV_32FC1);//因为chns_Pyramind是32F
 			for(int n_chans=0;n_chans<chns_num;n_chans++)
 			{
-				Mat py;
+				Mat py=approx.rowRange(n_chans*approx_rows,(n_chans+1)*approx_rows);
 				int ma=approx_scal[ap_id]/(nApprox+1);
-				resize(chns_Pyramid[ma][n_chans],py,ap_size[ap_id],0.0,0.0,1);
-				ratio=(float)pow(scales[ap_id]/scales[approx_scal[ap_id]],-lambdas[n_chans]);
+				resize(chns_Pyramid[ma][n_chans],py,py.size(),0.0,0.0,1);
+				ratio=(double)pow(scales[ap_id]/scales[approx_scal[ap_id]],-lambdas[n_chans]);
 				py=py*ratio;
 				//smooth channels, optionally pad and concatenate channels
 				convTri(py,py,Km);
 				approx_chns.push_back(py);
 			} 
+			/*  check the pointer */
+			/*	float *add1 = (float*)approx_chns[0].data;
+				for( int c=1;c<approx_chns.size();c++)
+				{
+					cout<<"pointer "<<static_cast<void*>(approx_chns[c].data)<<" "<< (static_cast<void*>(add1+c*ap_size[ap_id].height*ap_size[ap_id].width))<<endl;
+				cout<<"pointer "<<(static_cast<void*>(approx_chns[c].data) == (static_cast<void*>(add1+c*ap_size[ap_id].height*ap_size[ap_id].width))? true :false)<<endl;
+				}*/
 			approxPyramid.push_back(approx_chns);
 		}
 	delete kern;
     vector<int>().swap(real_scal);
 	vector<int>().swap(approx_scal);
-	vector<float>().swap(lambdas);
+	vector<double>().swap(lambdas);
 	vector<vector<Mat> >().swap(chns_Pyramid);
 }
-void feature_Pyramids:: chnsPyramid(const Mat &img,  vector<vector<Mat> > &chns_Pyramid,vector<float> &scales) const
+void feature_Pyramids:: chnsPyramid(const Mat &img,  vector<vector<Mat> > &chns_Pyramid,vector<double> &scales) const//nApprox==0时
 {
 	int nPerOct =m_opt.nPerOct;
 	int nOctUp =m_opt.nOctUp;
@@ -509,7 +522,7 @@ void feature_Pyramids:: chnsPyramid(const Mat &img,  vector<vector<Mat> > &chns_
 	int nApprox=m_opt.nApprox;
 	Size diam =m_opt.minDS;
 	/*get scales*/
-	float minDs=(float)min(diam.width,diam.height);
+	double minDs=(double)min(diam.width,diam.height);
 	int nscales=(int)floor(nPerOct*(nOctUp+log(min(img.cols/minDs,img.rows/minDs))/log(2))+1);
 	vector<Size> ap_size;
 	Size ap_tmp_size;
@@ -518,18 +531,18 @@ void feature_Pyramids:: chnsPyramid(const Mat &img,  vector<vector<Mat> > &chns_
 	/*compute real & approx scales*/
 	//vector<float> scales;
 	scales.clear();
-	float d0=(float)min(img.rows,img.cols);
-	float d1=(float)max(img.rows,img.cols);
+	double d0=(double)min(img.rows,img.cols);
+	double d1=(double)max(img.rows,img.cols);
 	for (float s=0;s<nscales;s++)
 	{
 		/*adjust ap_size*/
 		double sc=pow(2.0,(-s)/nPerOct+nOctUp);
 		double s0=(cvRound(d0*sc/shrink)*shrink-0.25*shrink)/d0;
 		double s1=(cvRound(d0*sc/shrink)*shrink+0.25*shrink)/d0;
-		float ss,es1,es2,a=10,val;
+		double ss,es1,es2,a=10,val;
 		for(int c=0;c<101;c++)
 		{
-			ss=(float)((s1-s0)*c/101+s0);
+			ss=(double)((s1-s0)*c/101+s0);
 			es1=abs(d0*ss-cvRound(d0*ss/shrink)*shrink);
 			es2=abs(d1*ss-cvRound(d1*ss/shrink)*shrink);
 			if (max(es1,es2)<a)
@@ -542,8 +555,8 @@ void feature_Pyramids:: chnsPyramid(const Mat &img,  vector<vector<Mat> > &chns_
 		{
 			scales.push_back(val);
 			/*save ap_size*/
-			ap_tmp_size.height=cvRound((img.rows*val));
-			ap_tmp_size.width=cvRound((img.cols*val));
+			ap_tmp_size.height=cvRound((img.rows*val)/shrink);
+			ap_tmp_size.width=cvRound((img.cols*val)/shrink);
 			ap_size.push_back(ap_tmp_size);
 			
 		}else
@@ -553,8 +566,8 @@ void feature_Pyramids:: chnsPyramid(const Mat &img,  vector<vector<Mat> > &chns_
 				//printf("3d=%f\n",val);
 				scales.push_back(val);
 				/*save ap_size*/
-				ap_tmp_size.height=cvRound((img.rows*val));
-				ap_tmp_size.width=cvRound((img.cols*val));
+				ap_tmp_size.height=cvRound((img.rows*val)/shrink);
+				ap_tmp_size.width=cvRound((img.cols*val)/shrink);
 				ap_size.push_back(ap_tmp_size);
 			}
 		}		
@@ -563,19 +576,19 @@ void feature_Pyramids:: chnsPyramid(const Mat &img,  vector<vector<Mat> > &chns_
 	//compute the filter
 	Mat Km;
 	Mat img_tmp;
-	float *kern=new float[2*smooth+1];
+	double *kern=new double[2*smooth+1];
 	for (int cout=0;cout<=smooth;cout++)
 	{
-		kern[cout]=(float)((cout+1)/((smooth+1.0)*(smooth+1.0)));
+		kern[cout]=(double)((cout+1)/((smooth+1.0)*(smooth+1.0)));
 		kern[2*smooth-cout]=kern[cout];
 	}
-	Km=Mat(1,(2*smooth+1),CV_32FC1,kern); 
+	Km=Mat(1,(2*smooth+1),CV_64FC1,kern); 
 	convTri(img,img_tmp,Km);
 	//compute real 
 	for (int s_r=0;s_r<(int)scales.size();s_r++)
 	{
 		vector<Mat> chns;
-		resize(img_tmp,img_tmp,ap_size[s_r],0.0,0.0,1);
+		resize(img_tmp,img_tmp,ap_size[s_r]*shrink,0.0,0.0,1);
 		computeChannels(img_tmp,chns);
 		chns_Pyramid.push_back(chns);
 	}

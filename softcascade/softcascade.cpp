@@ -7,6 +7,7 @@
 #include "softcascade.hpp"
 #include "../binaryTree/binarytree.hpp"
 #include "../Adaboost/Adaboost.hpp"
+#include "../misc/NonMaxSupress.h"
 
 using namespace cv;
 using namespace std;
@@ -439,7 +440,7 @@ bool softcascade::detectMultiScale( const Mat &image,
 {
     
     vector< vector<Mat> > approPyramid;
-    vector<float> appro_scales;
+    vector<double> appro_scales;
     //vector<float> lambdas;
     //vector<float> scale_w;
     //vector<float> scale_h;
@@ -460,6 +461,8 @@ bool softcascade::detectMultiScale( const Mat &image,
         }
     }
     
+    /*  non max supression */
+     NonMaxSupress( targets, confidence );
 
     return true;
 }

@@ -50,7 +50,8 @@ void NonMaxSupress(std::vector<cv::Rect> &boxes, std::vector<double> &scores,
     int idx1, idx2;
     double area, ratio;
     std::vector<int> idx;
-    std::vector< cv::Rect > res;
+    std::vector<cv::Rect> resBoxes;
+    std::vector<double> resScores;
     std::vector<double> areas;
     std::vector<bool> supress;  // supress[i] set to TRUE is boxes[i] is supressed
     cv::Rect rect1, rect2;
@@ -75,7 +76,10 @@ void NonMaxSupress(std::vector<cv::Rect> &boxes, std::vector<double> &scores,
         idx1 = idx[i];
         rect1 = boxes[idx1];
         if ( !supress[idx1] )
-            res.push_back( rect1 );
+        {
+            resBoxes.push_back( rect1 );
+            resScores.push_back( scores[idx1]);
+        }
 
         for (int j = i-1; j>=0; j--)
         {
@@ -101,5 +105,6 @@ void NonMaxSupress(std::vector<cv::Rect> &boxes, std::vector<double> &scores,
         }
     }
 
-    boxes = res;
+    boxes = resBoxes;
+    scores = resScores;
 }
