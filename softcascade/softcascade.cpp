@@ -80,7 +80,7 @@ template <typename T> void _apply( const T *input_data,                 /* in : 
                         position = (( probe_feature_starter[cids[t_fids[position]]] < t_thrs[position]) ? position*2+1 : position*2+2);
                     }
                     h += t_hs[position];
-                    if( h < opts.cascThr)       /* reject once the score is less than cascade threshold */
+                    if( h <=opts.cascThr)       /* reject once the score is less than cascade threshold */
                         break;
                 }
             }
@@ -101,7 +101,7 @@ template <typename T> void _apply( const T *input_data,                 /* in : 
                         position = (( probe_feature_starter[cids[t_fids[position]]] < t_thrs[position]) ? t_child[position]: t_child[position] + 1);
                     }
                     h += t_hs[position];
-                    if( h < opts.cascThr)       /* reject once the score is less than cascade threshold */
+                    if( h <=opts.cascThr)       /* reject once the score is less than cascade threshold */
                         break;
                 }
             }
@@ -114,6 +114,7 @@ template <typename T> void _apply( const T *input_data,                 /* in : 
             }
         }
     }
+    delete [] cids;
 }
 bool softcascade::Combine(vector<Adaboost> &ads )
 {
@@ -172,6 +173,11 @@ bool softcascade::Combine(vector<Adaboost> &ads )
     m_weights =  Mat::zeros( number_of_trees,max_number_of_nodes, CV_64F);
     m_nodes   =  Mat::zeros( number_of_trees, 1, CV_32S);
     m_number_of_trees = number_of_trees;
+
+    /*  shift the hs */
+    m_hs = m_hs + m_opts.cascCal;
+
+    cout<<"softcascade : number of trees "<<m_number_of_trees<<endl;
 
     int counter = 0;
     for ( int c=0;c<ads.size();c++) 
@@ -442,12 +448,18 @@ bool softcascade::detectMultiScale( const Mat &image,
     vector< vector<Mat> > approPyramid;
     vector<double> appro_scales;
     //vector<float> lambdas;
-    //vector<float> scale_w;
-    //vector<float> scale_h;
+    vector<double> scale_w;
+    vector<double> scale_h;
 
-    m_feature_gen.chnsPyramid( image, approPyramid, appro_scales);
+    m_feature_gen.chnsPyramid( image, approPyramid, appro_scales, scale_h, scale_w);
+    //m_feature_gen.chnsPyramid( image, approPyramid, appro_scales );
 
-    
+
+    for( int c=0;c<approPyramid[0].size();c++)
+    {
+        cout<<"feature "<<c<<" is "<<approPyramid[0][c]<<endl;
+    }
+
     for( int c=0;c<approPyramid.size();c++)
     {
         vector<Rect> t_tar;
@@ -455,14 +467,15 @@ bool softcascade::detectMultiScale( const Mat &image,
         Apply( approPyramid[c], t_tar, t_conf);
         for ( int i=0;i<t_tar.size(); i++) 
         {
-            Rect s( t_tar[i].x/appro_scales[c], t_tar[i].y/appro_scales[c], t_tar[i].width/appro_scales[c], t_tar[i].height/appro_scales[c]  );
+            Rect s( t_tar[i].x/appro_scales[c], t_tar[i].y/appro_scales[c], t_tar[i].width/scale_w[c], t_tar[i].height/scale_h[c]  );
+            //Rect s( t_tar[i].x/appro_scales[c], t_tar[i].y/appro_scales[c], t_tar[i].width/appro_scales[c], t_tar[i].height/scale_h[c]  );
             targets.push_back( s );
             confidence.push_back( t_conf[i]);
         }
     }
     
     /*  non max supression */
-     NonMaxSupress( targets, confidence );
+    NonMaxSupress( targets, confidence );
 
     return true;
 }

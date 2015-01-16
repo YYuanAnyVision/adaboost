@@ -24,7 +24,7 @@ struct tree_para
 		nBins = 256;
 		maxDepth = 2;
 		minWeight = 0.01;
-		fracFtrs = 0.8;
+		fracFtrs = 0.0625;
 		nThreads = 8;
 	}
 };

@@ -12,20 +12,20 @@ using namespace cv;
 int main( int argc, char** argv)
 {
 	FileStorage fs;
-	fs.open( "../../data/train_neg.xml" , FileStorage::READ);
+    fs.open( "../../data/train_neg.xml" , FileStorage::READ);
 	Mat train_neg, train_pos, test_pos, test_neg;
 	fs["matrix"]>>train_neg;
 	fs.release();
 
-	fs.open( "../../data/train_pos.xml", FileStorage::READ);
+    fs.open( "../../data/train_pos.xml", FileStorage::READ);
 	fs["matrix"] >>train_pos;
 	fs.release();
 
-	fs.open( "../../data/test_pos.xml", FileStorage::READ);
+    fs.open( "../../data/test_pos.xml", FileStorage::READ);
 	fs["matrix"] >>test_pos;
 	fs.release();
 
-	fs.open( "../../data/test_neg.xml", FileStorage::READ);
+    fs.open( "../../data/test_neg.xml", FileStorage::READ);
 	fs["matrix"] >>test_neg;
 	fs.release();
 
@@ -43,7 +43,7 @@ int main( int argc, char** argv)
 	cout<<"neg data dimension : "<<test_neg.rows<<" number : "<<test_neg.cols<<endl;
 
 	Adaboost ab; ab.SetDebug( false );
-	int number_n_weak = 256;
+	int number_n_weak = 32;
 
 	double t = getTickCount();
 
@@ -93,54 +93,54 @@ int main( int argc, char** argv)
 	cout<<"sample of fids is "<<(*ptr).fids<<endl;
 
 	/*  compared with opencv' svm  */
-	cout<<"=================== compare with linear svm(RBF) ====================  "<<endl;
-	train_pos = train_pos.t();
-	train_neg = train_neg.t();
-	test_neg = test_neg.t();
-	test_pos = test_pos.t();
-	
-	Mat traindata = Mat::zeros( train_pos.rows+train_neg.rows, train_pos.cols, train_pos.type() );
-	Mat trainlabel= Mat::ones( traindata.rows, 1 , CV_32S);
+	//cout<<"=================== compare with linear svm(RBF) ====================  "<<endl;
+	//train_pos = train_pos.t();
+	//train_neg = train_neg.t();
+	//test_neg = test_neg.t();
+	//test_pos = test_pos.t();
+	//
+	//Mat traindata = Mat::zeros( train_pos.rows+train_neg.rows, train_pos.cols, train_pos.type() );
+	//Mat trainlabel= Mat::ones( traindata.rows, 1 , CV_32S);
 
-	train_pos.copyTo( traindata.rowRange(0,train_pos.rows) );
-	train_neg.copyTo( traindata.rowRange( train_pos.rows, traindata.rows));
-	trainlabel.rowRange(train_pos.rows, traindata.rows) = -1;
-	traindata.convertTo( traindata, CV_32FC1);
+	//train_pos.copyTo( traindata.rowRange(0,train_pos.rows) );
+	//train_neg.copyTo( traindata.rowRange( train_pos.rows, traindata.rows));
+	//trainlabel.rowRange(train_pos.rows, traindata.rows) = -1;
+	//traindata.convertTo( traindata, CV_32FC1);
 
-	CvSVMParams params;
-	params.svm_type = SVM::C_SVC;
-	params.C = 0.1;
-	params.kernel_type = SVM::RBF;
-	params.gamma = 0.1;
-	params.term_crit =  TermCriteria(CV_TERMCRIT_ITER, (int)1e7, 1e-6);
-	
-	CvSVM svm;
-	cv::TickMeter tk;
-	tk.start();
-	svm.train( traindata, trainlabel, Mat(), Mat(), params );
-	tk.stop();
-	cout<<"finished svm training "<<endl;
-	cout<<"Svm training time consuming is "<<tk.getTimeSec()<<" s "<<endl;
-	
-	test_neg.convertTo( test_neg, CV_32FC1);
-	fp = 0;
-	for( int c=0;c<test_neg.rows;c++)
-	{
-		float response = svm.predict( test_neg.row(c) );
-		if( response > 0 )
-			fp+=1;
-	}
-	cout<<"--> False Positive is "<<fp/test_neg.rows<<endl;
+	//CvSVMParams params;
+	//params.svm_type = SVM::C_SVC;
+	//params.C = 0.1;
+    //params.kernel_type = SVM::LINEAR;
+	//params.gamma = 0.1;
+	//params.term_crit =  TermCriteria(CV_TERMCRIT_ITER, (int)1e7, 1e-6);
+	//
+	//CvSVM svm;
+	//cv::TickMeter tk;
+	//tk.start();
+	//svm.train( traindata, trainlabel, Mat(), Mat(), params );
+	//tk.stop();
+    //cout<<"finished svm training "<<endl;
+	//cout<<"Svm training time consuming is "<<tk.getTimeSec()<<" s "<<endl;
+	//
+	//test_neg.convertTo( test_neg, CV_32FC1);
+	//fp = 0;
+	//for( int c=0;c<test_neg.rows;c++)
+	//{
+	//	float response = svm.predict( test_neg.row(c) );
+	//	if( response > 0 )
+	//		fp+=1;
+	//}
+	//cout<<"--> False Positive is "<<fp/test_neg.rows<<endl;
 
-	test_pos.convertTo( test_pos, CV_32FC1);
-	fn = 0;
-	for( int c=0;c<test_pos.rows;c++)
-	{
-		float response = svm.predict( test_pos.row(c) );
-		if( response < 0 )
-			fn+=1;
-	}
-	cout<<"--> False Negative is "<<fn/test_pos.rows<<endl;
+	//test_pos.convertTo( test_pos, CV_32FC1);
+	//fn = 0;
+	//for( int c=0;c<test_pos.rows;c++)
+	//{
+	//	float response = svm.predict( test_pos.row(c) );
+	//	if( response < 0 )
+	//		fn+=1;
+	//}
+	//cout<<"--> False Negative is "<<fn/test_pos.rows<<endl;
 
 	return 0;
 }

@@ -361,8 +361,8 @@ bool binaryTree::Train( data_pack & train_data,			/* input&output : training dat
 	/* store the weight of all nodes, initialize weight in the root node( index 0 )
 	 * delete corresponding item after the node split 
 	 * the tree splits in a breath-first manner */
-	vector<Mat*> wtsAll0;wtsAll0.reserve(K);wtsAll0[0] = wts0;
-	vector<Mat*> wtsAll1;wtsAll1.reserve(K);wtsAll1[0] = wts1;
+    vector<Mat*> wtsAll0(K,NULL);wtsAll0[0] = wts0;
+    vector<Mat*> wtsAll1(K,NULL);wtsAll1[0] = wts1;
 	
 	int k=0;    /* k is the index now processing ... */
 	K=1;		/* increasing in the training process */
@@ -445,7 +445,6 @@ bool binaryTree::Train( data_pack & train_data,			/* input&output : training dat
 			wtsAll0[K]   = newWeight0;				/* left node */
 			wtsAll0[K+1] = newWeight0plus;			/* right node, index+1*/
 			delete wtsAll0[k]; wtsAll0[k] = NULL;	/* works on node k is done, release the memory */
-
 			Mat left1_double; left1.convertTo( left1_double, CV_64F);
 			Mat *newWeight1 = new Mat( (*weight1).mul(left1_double.t()) );
 			Mat *newWeight1plus = new Mat( (*weight1).mul(1-left1_double.t()) );
@@ -467,6 +466,22 @@ bool binaryTree::Train( data_pack & train_data,			/* input&output : training dat
 
 		k++;
 	}
+
+    /* clear the momory*/
+    for( int c=0;c<wtsAll0.size();c++)
+    {
+        if( wtsAll0[c])
+        {
+            delete wtsAll0[c];wtsAll0[c]=NULL;
+        }
+    }
+    for( int c=0;c<wtsAll1.size();c++)
+    {
+        if( wtsAll1[c])
+        {
+            delete wtsAll1[c];wtsAll1[c]=NULL;
+        }
+    }
 
 	/* ############################# training result ############################# */
 	/*  crop the infos , only need top K elements */
@@ -521,7 +536,7 @@ bool  _apply( double* inds,				/* out: predicted label 1 or -1 */
 			 int number_of_samples )	/* in : feature dimension, only used for error check*/
 {
 	int Nthreads = std::min( 16, omp_get_max_threads());
-	//#pragma omp parallel for num_threads(Nthreads)
+    #pragma omp parallel for num_threads(Nthreads)
 	for ( int i=0;i<number_of_samples;i++ )
 	{
 		int k = 0;

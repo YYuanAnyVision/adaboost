@@ -1,6 +1,7 @@
 #include <iostream>
 #include <vector>
 #include <algorithm>
+#include <sstream>
 
 #include "opencv2/contrib/contrib.hpp"
 #include "opencv2/highgui/highgui.hpp"
@@ -79,6 +80,7 @@ bool sampleWins(    const softcascade &sc, 	    /*  in: detector */
                     vector<Mat> &samples,       /* out: target objects, flipped( only for positive)*/
                     vector<Mat> &origsamples)   /* out: original target */
 {
+    cout<<"Sampling ..."<<endl;
 	int Nthreads = omp_get_max_threads();
 
     origsamples.clear();
@@ -203,8 +205,10 @@ bool sampleWins(    const softcascade &sc, 	    /*  in: detector */
 
 		std::random_shuffle( neg_paths.begin(), neg_paths.end() );
 		
+        double ratio_neg_image_to_sample = 0.33;
+        int    shrink_neg_number  = (int) neg_paths.size()*ratio_neg_image_to_sample;
         #pragma omp parallel for num_threads(Nthreads) /* openmp -->but no error check in runtime ... */
-		for( int c=0;c<neg_paths.size() ;c++)
+		for( int c=0;c<shrink_neg_number;c++)
 		{
 			vector<Rect> target_rects;
 			Mat img = imread( neg_paths[c] );
@@ -254,7 +258,10 @@ bool sampleWins(    const softcascade &sc, 	    /*  in: detector */
 
         /* random shuffle and sampling  */
         if(origsamples.size() > number_to_sample)
+        {
+            std::random_shuffle( origsamples.begin(), origsamples.end());
             origsamples.resize( number_to_sample );
+        }
     }
 }
 
@@ -474,6 +481,8 @@ int main( int argc, char** argv)
 		if( stage == 0)
 		{
             sampleWins( sc, stage, true, pos_samples, pos_origsamples);
+            ff1.compute_lambdas( pos_origsamples );
+    
 		}
 
 		/* TODO 2--> compute lambdas */
@@ -510,8 +519,9 @@ int main( int argc, char** argv)
         }
         else
         {
+            vector<Mat>().swap(accu_neg);accu_neg.clear();                      
             int n1 = std::max(cas_para.nAccNeg,cas_para.nNeg)-neg_origsamples.size();   /* how many will be save from previous stage */
-            if( n1 > neg_previousSamples.size())
+            if( n1 < neg_previousSamples.size())
             {
                 std::random_shuffle( neg_previousSamples.begin(), neg_previousSamples.end());
                 neg_previousSamples.resize( n1 );
@@ -519,7 +529,6 @@ int main( int argc, char** argv)
             accu_neg.reserve( neg_previousSamples.size() + neg_origsamples.size() );
             accu_neg.insert( accu_neg.begin(), neg_previousSamples.begin(), neg_previousSamples.end());
             accu_neg.insert( accu_neg.begin(), neg_origsamples.begin(), neg_origsamples.end());    
-
         }
         neg_previousSamples = accu_neg;
         neg_train_data = Mat::zeros( final_feature_dim, accu_neg.size(), CV_32F);
@@ -535,27 +544,45 @@ int main( int argc, char** argv)
         }
         cout<<"done. number : "<<accu_neg.size()<<endl;
 
+        cout<<"neg_train_data's size "<<neg_train_data.size()<<endl;
+        cout<<"pos_train_data's size "<<pos_train_data.size()<<endl;
+
+
 		/* 5-->  train boosted classifiers */
         Adaboost ab;ab.SetDebug(false);  
         cout<<"-- Training with "<<cas_para.nWeaks[stage]<<" weak classifiers."<<endl;
         ab.Train( neg_train_data, pos_train_data, cas_para.nWeaks[stage], tree_par);
         
-        v_ab.push_back( ab );
-        sc.Combine( v_ab );
+
+        vector<Adaboost> t_v;
+        t_v.push_back( ab );
+        sc.Combine( t_v );
 
 
         vector<Rect> re;
         vector<double> confs;
         cout<<"little test ";
-        Mat test_img = imread("guozu.png");
+        Mat test_img = imread("crop001670.png");
         sc.detectMultiScale( test_img, re, confs );
+        cout<<"number of detection is "<<re.size()<<endl;
         for( int c=0;c<re.size();c++)
         {
-            rectangle( test_img, re[c], Scalar(255,0,0) );
+            if( confs[c] < 1 )
+                continue;
+            cout<<"confidence is "<<confs[c]<<endl;
+            rectangle( test_img, re[c], Scalar(255,0,0), 3);
         }
-        imshow("testing result ~~", test_img );
-        waitKey(0);
+        stringstream ss;
+        ss<<stage;
+        string stage_index;
+        ss>>stage_index;
+        
+        imwrite( "test_result_on_stage_"+stage_index+".png", test_img );
+
+        sc.Save( "tt.xml");
 		tk.stop();
+        imshow("show",test_img);
+        waitKey(0);
 		cout<<"Done Stage No "<<stage<<" , time "<<tk.getTimeSec()<<endl<<endl;
 	}
 

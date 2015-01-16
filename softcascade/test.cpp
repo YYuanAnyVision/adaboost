@@ -15,10 +15,10 @@ int main( int argc, char** argv)
 	vector<Adaboost> abs;
 	Adaboost ab1,ab2,ab3;
 	ab1.loadModel( "t_dep2.xml");
-	//ab2.loadModel( "t_dep2.xml");
+	ab2.loadModel( "t_dep2.xml");
 	//ab3.loadModel( "t_dep2.xml");
 	abs.push_back( ab1 );
-	//abs.push_back( ab2 );
+	abs.push_back( ab2 );
 	//abs.push_back( ab3);
 	
 	softcascade sc;
@@ -49,6 +49,7 @@ int main( int argc, char** argv)
 		sc.Predict( pp, h );
 		if( h < 0)
 			fn++;
+        pp=NULL;
 	}
 	cout<<"False Negative is "<<fn*1.0/test_pos.rows<<endl;
 
@@ -59,6 +60,7 @@ int main( int argc, char** argv)
 		sc.Predict( pp, h );
 		if( h > 0)
 			fp++;
+        pp=NULL;
 	}
 	cout<<"False Positive is "<<fp*1.0/test_neg.rows<<endl;
 	tk.stop();

@@ -32,7 +32,7 @@ struct detector_opt
 		nOctUp=0 ;
 		shrink=4;
 		smooth =1;
-		minDS=Size(41,100) ;
+		minDS=Size(16,16) ;
 		nbins=6;
 		binsize=4;
 		nApprox=7;
@@ -47,7 +47,6 @@ public:
 	~feature_Pyramids();
 
 	void chnsPyramid(const Mat &img, 
-                    vector<double> &lambdas, 
                     vector<vector<Mat> > &approxPyramid,
                     vector<double> &scales,
                     vector<double> &scalesh,
@@ -63,11 +62,15 @@ public:
 
 	void setParas (const  detector_opt &in_para ) ;
 
+	void compute_lambdas(const vector<Mat> &fold);
+
 	const detector_opt &getParas() const;
 
   private:
 
 	  detector_opt m_opt;
+	  	
+	  vector<double>lam;
 
 };
 #endif

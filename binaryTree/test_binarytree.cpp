@@ -10,12 +10,12 @@ int main( int argc, char** argv)
 	binaryTree bt;
 	bt.SetDebug( true );
 	FileStorage fs;
-	fs.open( "../../data/train_neg.xml" , FileStorage::READ);
+    fs.open( "../../data/train_neg.xml" , FileStorage::READ);
 	Mat train_neg, train_pos;
 	fs["matrix"]>>train_neg;
 	fs.release();
 
-	fs.open( "../../data/train_pos.xml", FileStorage::READ);
+    fs.open( "../../data/train_pos.xml", FileStorage::READ);
 	fs["matrix"] >>train_pos;
 	fs.release();
 
