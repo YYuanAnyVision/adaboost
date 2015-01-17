@@ -562,7 +562,7 @@ int main( int argc, char** argv)
         vector<Rect> re;
         vector<double> confs;
         cout<<"little test ";
-        Mat test_img = imread("crop001670.png");
+        Mat test_img = imread("crop001573.png");
         sc.detectMultiScale( test_img, re, confs );
         cout<<"number of detection is "<<re.size()<<endl;
         for( int c=0;c<re.size();c++)

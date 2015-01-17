@@ -276,7 +276,23 @@ void feature_Pyramids::computeChannels(const Mat &image,vector<Mat>& channels) c
 	Mat mag_sum=channels_addr.rowRange(3*channels_addr_rows,4*channels_addr_rows);
 	Mat luv_src;
 	luv.convertTo(luv_src,CV_32FC1, 1./255);
+
 	computeGradient(luv_src, mag, ori);//1yue16//mzx
+    /*  revised by YuanYang, test */
+    int t_smooth = 5;
+    double *t_kern=new double[2*t_smooth+1];
+	for (int c=0;c<=t_smooth;c++)
+	{
+		t_kern[c]=(double)((c+1)/((t_smooth+1.0)*(t_smooth+1.0)));
+		t_kern[2*t_smooth-c]=t_kern[c];
+	}
+	Mat t_Km=Mat(1,(2*t_smooth+1),CV_64FC1,t_kern); 
+    Mat dst;
+    convTri( mag, dst, t_Km);
+    mag = mag/( dst + 0.01);
+    delete [] t_kern;
+   
+
 	//test
 	/*Mat mag_sum_tmp;
 	vector<Mat> mag_split_tmp;

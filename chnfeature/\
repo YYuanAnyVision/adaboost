@@ -115,7 +115,7 @@ int main( int argc, char** argv)
     cout<<"dst size "<<dst.size()<<endl;
     cout<<dst;
 
-    Mat norm_mag = approPyramid[0][3]/(dst+0.01);
+    Mat norm_mag = approPyramid[0][3]/(dst+0.005);
     cout<<"\n\nnorm_mag size "<<norm_mag.size()<<endl;
     cout<<norm_mag;
 	

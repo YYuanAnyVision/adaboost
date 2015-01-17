@@ -455,10 +455,7 @@ bool softcascade::detectMultiScale( const Mat &image,
     //m_feature_gen.chnsPyramid( image, approPyramid, appro_scales );
 
 
-    for( int c=0;c<approPyramid[0].size();c++)
-    {
-        cout<<"feature "<<c<<" is "<<approPyramid[0][c]<<endl;
-    }
+    //cout<<"feature 3 is "<<approPyramid[0][3]<<endl;
 
     for( int c=0;c<approPyramid.size();c++)
     {
