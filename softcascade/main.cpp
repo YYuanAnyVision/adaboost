@@ -2,6 +2,7 @@
 #include <vector>
 #include <algorithm>
 #include <sstream>
+#include <ctime>
 
 #include "opencv2/contrib/contrib.hpp"
 #include "opencv2/highgui/highgui.hpp"
@@ -24,6 +25,8 @@ using namespace cv;
 namespace bf = boost::filesystem;
 namespace bl = boost::lambda;
 
+/*  random generator function */
+int myrandom (int i) { return std::rand()%i;}
 
 /* extract the center part of the feature( crossponding to the target) , save it as 
  * clo in output_data(not continuous) */
@@ -39,9 +42,6 @@ void makeTrainData( vector<Mat> &in_data, Mat &output_data, Size modelDs, int sh
 	int h_f = modelDs.height/shrink;
     
     assert( w_in_data > w_f && h_in_data > h_f );
-
-    float *p_end = (float*)in_data[0].ptr() + h_in_data*w_in_data*in_data.size();
-
 	for( int c=0;c < in_data.size(); c++)
 	{
         float *ptr=(float*)in_data[c].ptr() + (h_in_data - h_f)/2*w_in_data + (w_in_data - w_f)/2;
@@ -168,7 +168,7 @@ bool sampleWins(    const softcascade &sc, 	    /*  in: detector */
         /* sample target if n_target > number_to_sample */
         if( origsamples.size() > number_to_sample)
         {
-            std::random_shuffle( origsamples.begin(), origsamples.end());
+            std::random_shuffle( origsamples.begin(), origsamples.end(), myrandom);
             origsamples.resize( number_to_sample);
         }
         
@@ -203,7 +203,7 @@ bool sampleWins(    const softcascade &sc, 	    /*  in: detector */
 			neg_paths.push_back( pathname );
 		}
 
-		std::random_shuffle( neg_paths.begin(), neg_paths.end() );
+		std::random_shuffle( neg_paths.begin(), neg_paths.end(),myrandom);
 		
         double ratio_neg_image_to_sample = 0.33;
         int    shrink_neg_number  = (int) neg_paths.size()*ratio_neg_image_to_sample;
@@ -222,7 +222,7 @@ bool sampleWins(    const softcascade &sc, 	    /*  in: detector */
 			{
                 /*  sampling and shuffle  */
 				sampleRects( number_target_per_image, img.size(), opts.modelDs, target_rects );
-                std::random_shuffle( target_rects.begin(), target_rects.end() );
+                std::random_shuffle( target_rects.begin(), target_rects.end() , myrandom);
 			}
 			else
 			{
@@ -259,7 +259,7 @@ bool sampleWins(    const softcascade &sc, 	    /*  in: detector */
         /* random shuffle and sampling  */
         if(origsamples.size() > number_to_sample)
         {
-            std::random_shuffle( origsamples.begin(), origsamples.end());
+            std::random_shuffle( origsamples.begin(), origsamples.end(), myrandom);
             origsamples.resize( number_to_sample );
         }
     }
@@ -281,6 +281,29 @@ void copySamples( const vector<Mat> &in_samples,
 /* detector parameter define */
 int main( int argc, char** argv)
 {
+    std::srand ( unsigned ( std::time(0) ) );
+
+    int test_vv[]={1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
+    vector<int> test_v(test_vv, test_vv+sizeof(test_vv)/sizeof(int));
+    std::random_shuffle(test_v.begin(), test_v.end(), myrandom);
+
+    for ( int c=0;c<test_v.size() ;c++ ) {
+        cout<<test_v[c]<<" ";
+    }
+    cout<<endl;
+
+
+    Mat Km;
+	Mat img_tmp;
+	double *kern=new double[2*1+1];
+	for (int c=0;c<=1;c++)
+	{
+		kern[c]=(double)((c+1)/((1+1.0)*(1+1.0)));
+		kern[2*1-c]=kern[c];
+	}
+	Km=Mat(1,(2*1+1),CV_64FC1,kern); 
+
+
 
     /* globale paras*/
 	int Nthreads = omp_get_max_threads();
@@ -497,6 +520,12 @@ int main( int argc, char** argv)
             {
                 vector<Mat> feas;
                 ff1.computeChannels( pos_samples[c], feas );
+                
+                for(int i=0;i<feas.size();i++)
+                {
+                    ff1.convTri( feas[i], feas[i], Km );
+                }
+
                 Mat tmp = pos_train_data.col(c);
                 makeTrainData( feas, tmp , cas_para.modelDsPad, cas_para.shrink);
             }
@@ -523,7 +552,7 @@ int main( int argc, char** argv)
             int n1 = std::max(cas_para.nAccNeg,cas_para.nNeg)-neg_origsamples.size();   /* how many will be save from previous stage */
             if( n1 < neg_previousSamples.size())
             {
-                std::random_shuffle( neg_previousSamples.begin(), neg_previousSamples.end());
+                std::random_shuffle( neg_previousSamples.begin(), neg_previousSamples.end(), myrandom);
                 neg_previousSamples.resize( n1 );
             }
             accu_neg.reserve( neg_previousSamples.size() + neg_origsamples.size() );
@@ -539,13 +568,17 @@ int main( int argc, char** argv)
         {
             vector<Mat> feas;
             ff1.computeChannels( accu_neg[c], feas );
+            for(int i=0;i<feas.size();i++)
+            {
+                ff1.convTri( feas[i], feas[i], Km );
+            }
             Mat tmp = neg_train_data.col(c);
             makeTrainData( feas, tmp , cas_para.modelDsPad, cas_para.shrink);
         }
         cout<<"done. number : "<<accu_neg.size()<<endl;
 
-        cout<<"neg_train_data's size "<<neg_train_data.size()<<endl;
-        cout<<"pos_train_data's size "<<pos_train_data.size()<<endl;
+        cout<<"neg_train_data's size "<<neg_train_data.size()<<"feature dim "<<neg_train_data.rows<<endl;
+        cout<<"pos_train_data's size "<<pos_train_data.size()<<"feature dim "<<pos_train_data.rows<<endl;
 
 
 		/* 5-->  train boosted classifiers */

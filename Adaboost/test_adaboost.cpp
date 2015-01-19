@@ -43,13 +43,14 @@ int main( int argc, char** argv)
 	cout<<"neg data dimension : "<<test_neg.rows<<" number : "<<test_neg.cols<<endl;
 
 	Adaboost ab; ab.SetDebug( false );
-	int number_n_weak = 32;
+	int number_n_weak = 256;
 
 	double t = getTickCount();
 
 	tree_para train_paras;
 	train_paras.nBins = 256;
 	train_paras.maxDepth = 2;
+    train_paras.fracFtrs = 1;
 
 	/*  Train function will change the data  */
 	ab.Train( train_neg, train_pos, number_n_weak, train_paras);

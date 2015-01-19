@@ -226,6 +226,16 @@ void feature_Pyramids::computeGradient(const Mat &img, Mat& grad, Mat& qangle) c
 }
 void feature_Pyramids::computeChannels(const Mat &image,vector<Mat>& channels) const
 {
+    Mat Km;
+	Mat img_tmp;
+	double *kern=new double[2*m_opt.smooth+1];
+	for (int c=0;c<=m_opt.smooth;c++)
+	{
+		kern[c]=(double)((c+1)/((m_opt.smooth+1.0)*(m_opt.smooth+1.0)));
+		kern[2*m_opt.smooth-c]=kern[c];
+	}
+	Km=Mat(1,(2*m_opt.smooth+1),CV_64FC1,kern); 
+
 	/*set para*/
 	int nbins=m_opt.nbins;
 	int binsize=m_opt.binsize;
@@ -252,6 +262,7 @@ void feature_Pyramids::computeChannels(const Mat &image,vector<Mat>& channels) c
 		src.copyTo(gray);
 	}
 	channels.clear();
+	Mat luv_src;
 	if(image.channels() > 1)
 	{
 		Mat luv_channels[3];
@@ -262,6 +273,17 @@ void feature_Pyramids::computeChannels(const Mat &image,vector<Mat>& channels) c
 		luv_channels[0] *= 1.0/354;
 		luv_channels[1] = (luv_channels[1]+134)/(354.0);
 		luv_channels[2] = (luv_channels[2]+140)/(354.0);
+        convTri( luv_channels[0], luv_channels[0], Km);
+        convTri( luv_channels[1], luv_channels[1], Km);
+        convTri( luv_channels[2], luv_channels[2], Km);
+        
+        vector<Mat> ttt;
+        ttt.push_back( luv_channels[0]);
+        ttt.push_back( luv_channels[1]);
+        ttt.push_back( luv_channels[2]);
+
+        cv::merge(ttt, luv_src);
+
 		for( int i = 0; i < 3; ++i )
 		{
 			Mat channels_tmp=channels_addr.rowRange(i*channels_addr_rows,(i+1)*channels_addr_rows);
@@ -274,23 +296,12 @@ void feature_Pyramids::computeChannels(const Mat &image,vector<Mat>& channels) c
 	Mat mag,ori;
 	Mat mag_tmp;
 	Mat mag_sum=channels_addr.rowRange(3*channels_addr_rows,4*channels_addr_rows);
-	Mat luv_src;
-	luv.convertTo(luv_src,CV_32FC1, 1./255);
+	
+    luv_src.convertTo(luv_src,CV_32FC1);
 
 	computeGradient(luv_src, mag, ori);//1yue16//mzx
+    
     /*  revised by YuanYang, test */
-    int t_smooth = 5;
-    double *t_kern=new double[2*t_smooth+1];
-	for (int c=0;c<=t_smooth;c++)
-	{
-		t_kern[c]=(double)((c+1)/((t_smooth+1.0)*(t_smooth+1.0)));
-		t_kern[2*t_smooth-c]=t_kern[c];
-	}
-	Mat t_Km=Mat(1,(2*t_smooth+1),CV_64FC1,t_kern); 
-    Mat dst;
-    convTri( mag, dst, t_Km);
-    mag = mag/( dst + 0.01);
-    delete [] t_kern;
    
 
 	//test
@@ -306,6 +317,19 @@ void feature_Pyramids::computeChannels(const Mat &image,vector<Mat>& channels) c
 	cv::split(mag_tmp, mag_split);//test
 	mag_sum=mag_split[0]+mag_split[1];
 	
+    int t_smooth =5;
+    double *t_kern=new double[2*t_smooth+1];
+	for (int c=0;c<=t_smooth;c++)
+	{
+		t_kern[c]=(double)((c+1)/((t_smooth+1.0)*(t_smooth+1.0)));
+		t_kern[2*t_smooth-c]=t_kern[c];
+	}
+	Mat t_Km=Mat(1,(2*t_smooth+1),CV_64FC1,t_kern); 
+    Mat dst;
+    convTri( mag_sum, dst, t_Km);
+    mag_sum = mag_sum/( dst + 0.005);
+    delete [] t_kern;
+    
 	channels.push_back(mag_sum);
 
 	/*compute grad_hist*/
@@ -441,7 +465,8 @@ void feature_Pyramids:: chnsPyramid(const Mat &img,vector<vector<Mat> > &approxP
 		kern[2*smooth-c]=kern[c];
 	}
 	Km=Mat(1,(2*smooth+1),CV_64FC1,kern); 
-	convTri(img,img_tmp,Km);
+	//convTri(img,img_tmp,Km);
+    img_tmp  = img;
 	//compute real 
 	vector<vector<Mat> > chns_Pyramid;
 	int chns_num;
@@ -659,14 +684,15 @@ void feature_Pyramids:: chnsPyramid(const Mat &img,  vector<vector<Mat> > &chns_
 	//compute the filter
 	Mat Km;
 	Mat img_tmp;
-	double *kern=new double[2*smooth+1];
-	for (int cout=0;cout<=smooth;cout++)
+	double *kern=new double[2*m_opt.smooth+1];
+	for (int cout=0;cout<=m_opt.smooth;cout++)
 	{
-		kern[cout]=(double)((cout+1)/((smooth+1.0)*(smooth+1.0)));
-		kern[2*smooth-cout]=kern[cout];
+		kern[cout]=(double)((cout+1)/((m_opt.smooth+1.0)*(m_opt.smooth+1.0)));
+		kern[2*m_opt.smooth-cout]=kern[cout];
 	}
-	Km=Mat(1,(2*smooth+1),CV_64FC1,kern); 
+	Km=Mat(1,(2*m_opt.smooth+1),CV_64FC1,kern); 
 	convTri(img,img_tmp,Km);
+
 	//compute real 
 	for (int s_r=0;s_r<(int)scales.size();s_r++)
 	{
