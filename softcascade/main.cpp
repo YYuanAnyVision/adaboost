@@ -207,10 +207,13 @@ bool sampleWins(    const softcascade &sc, 	    /*  in: detector */
 		
         double ratio_neg_image_to_sample = 0.33;
         int    shrink_neg_number  = (int) neg_paths.size()*ratio_neg_image_to_sample;
+       
         #pragma omp parallel for num_threads(Nthreads) /* openmp -->but no error check in runtime ... */
 		for( int c=0;c<shrink_neg_number;c++)
 		{
 			vector<Rect> target_rects;
+            vector<double> conf_v;
+
 			Mat img = imread( neg_paths[c] );
             //if(img.empty())
             //{
@@ -227,7 +230,6 @@ bool sampleWins(    const softcascade &sc, 	    /*  in: detector */
 			else
 			{
                 /* boostrap the negative samples */
-                vector<double> conf_v;
                 sc.detectMultiScale( img, target_rects, conf_v );
                 if( target_rects.size() > number_target_per_image )
                     target_rects.resize( number_target_per_image);
@@ -248,7 +250,7 @@ bool sampleWins(    const softcascade &sc, 	    /*  in: detector */
                 /* finally crop the image */
                 Mat target_obj = cropImage( img, target_rects[i]);
                 cv::resize( target_obj, target_obj, cv::Size(modelDsBig_width, modelDsBig_height), 0, 0, INTER_AREA);
-
+                
                 #pragma omp critical
                 {
                     origsamples.push_back( target_obj );
@@ -292,18 +294,7 @@ int main( int argc, char** argv)
     }
     cout<<endl;
 
-
-    Mat Km;
-	Mat img_tmp;
-	double *kern=new double[2*1+1];
-	for (int c=0;c<=1;c++)
-	{
-		kern[c]=(double)((c+1)/((1+1.0)*(1+1.0)));
-		kern[2*1-c]=kern[c];
-	}
-	Km=Mat(1,(2*1+1),CV_64FC1,kern); 
-
-
+    Mat Km = get_Km(1);
 
     /* globale paras*/
 	int Nthreads = omp_get_max_threads();
@@ -338,144 +329,6 @@ int main( int argc, char** argv)
     sc.setDebug( false);
     sc.setFeatureGen( ff1 );
 
-    //vector<Mat> neg_samples;
-    //vector<Mat> neg_origsamples;
-    //vector<Mat> neg_previousSamples;
-    //cout<<"reading and sampling pos&neg image patches "<<endl;
-    //tk.start();
-    //sampleWins( sc, 0, false, neg_samples, neg_origsamples);
-    //
-    ////for ( int c=0;c<neg_origsamples.size();c++) 
-    ////{
-    ////    imshow("sample", neg_origsamples[c] );
-    ////    imwrite("sample.png", neg_origsamples[c]);
-    ////    waitKey(0);
-    ////}
-	//
-    //vector<Mat> pos_samples;
-    //vector<Mat> pos_origsamples;
-    //sampleWins( sc, 0, true, pos_samples, pos_origsamples);
-    //tk.stop();
-	//cout<<"# sampling time consuming is "<<tk.getTimeSec()<<" seconds "<<endl;
-	//cout<<"neg sample number -> "<<neg_origsamples.size()<<endl;
-	//cout<<"pos sample number -> "<<pos_samples.size()<<endl;
-
-    ///*  ------------------------- test Adaboost for one stage --------------------------- */
-    //Size modelDsPad = cas_para.modelDsPad;
-    //int n_channels = cas_para.nchannels;
-    //int n_shrink = cas_para.shrink;
-    //int final_feature_dim = modelDsPad.width/n_shrink*modelDsPad.height/n_shrink*n_channels;
-    //Mat pos_train_data = Mat::zeros( final_feature_dim, pos_samples.size(), CV_32F);
-    //Mat neg_train_data = Mat::zeros( final_feature_dim, neg_origsamples.size(), CV_32F);
-
-    //tk.reset();tk.start();
-    //cout<<"computing features for file "<<endl;
-
-    //#pragma omp parallel for num_threads(Nthreads)
-    //for ( int c=0;c<pos_origsamples.size();c++) 
-    //{
-    //    vector<Mat> feas;
-    //    ff1.computeChannels( pos_origsamples[c], feas );
-    //    Mat tmp = pos_train_data.col(c);
-    //    makeTrainData( feas, tmp , cas_para.modelDsPad, cas_para.shrink);
-    //    if(c==0)
-    //    {
-    //        cout<<"channels is "<<feas.size()<<endl;
-    //        cout<<"feature dim col "<<feas[c].cols<<" "<<feas[c].rows<<" final size "<<final_feature_dim<<endl;
-    //    }
-    //}
-
-    //#pragma omp parallel for num_threads(Nthreads)
-    //for ( int c=0;c<neg_origsamples.size();c++)
-    //{
-    //    vector<Mat> feas;
-    //    ff1.computeChannels( neg_origsamples[c], feas );
-    //    Mat tmp = neg_train_data.col(c);
-    //    makeTrainData( feas, tmp , cas_para.modelDsPad, cas_para.shrink);
-    //}
-    //tk.stop();
-    //cout<<"#time consuming "<<tk.getTimeSec()<<" seconds, computing features done for "<<neg_origsamples.size() + pos_origsamples.size()<<" targets "<<endl;
-
-
-    //Adaboost ab;ab.SetDebug(false);
-    //tree_para ad_para;
-    //ad_para.nBins = 256;
-    //ad_para.maxDepth = 2;
-    //ad_para.fracFtrs = 0.0625;
-
-    ///* check adaboost training*/
-    //ab.Train( neg_train_data, pos_train_data, 64, ad_para );
-    //vector<Adaboost> v_ab;
-    //v_ab.push_back( ab);
-    //sc.Combine( v_ab );
-
-    //
-    ///*  save and load */
-    //sc.Save( "test.xml" );
-    //sc.Load( "test.xml");
-    //
-    ///*  check softcascade combining  */
-    //pos_train_data = pos_train_data.t();
-    //double h = 0;
-    //double fn =0;
-    //for ( int c=0;c<pos_train_data.rows;c++ ) 
-    //{
-    //    h = 0;
-    //    float *pp = pos_train_data.ptr<float>(c);
-	//	sc.Predict( pp, h );
-	//	if( h < 0)
-	//		fn++;
-    //}
-    //cout<<"fn is "<<fn/pos_train_data.rows<<endl;
-
-
-    ///* test softcascade Apply function */
-    //Mat test_apply = imread("/media/yuanyang/disk1/git/adaboost/build/softcascade/test_2.png");
-
-    //vector<Mat> f_chns;
-    //vector<Rect> rs;vector<double> conf;
-
-
-    //vector< vector<Mat> > approPyramid;
-    //vector<double> appro_scales;
-    //ff1.chnsPyramid( test_apply, approPyramid, appro_scales);
-    //
-    ////for ( int c=0; c<appro_scales.size();c++ ) 
-    ////{
-    ////    cout<<"scale "<<c<<" is "<<appro_scales[c]<<endl;
-    ////}
-
-    //tk.reset();tk.start();
-    ////sc.Apply( test_apply, rs, conf);
-    //sc.detectMultiScale( test_apply, rs, conf );
-    //tk.stop();
-
-    //cout<<"# time computing featuers and running the classifier is "<<tk.getTimeSec()<<endl;
-
-    //cout<<"det size "<<rs.size()<<endl;
-    //Mat draw1  = test_apply.clone();
-    //Mat draw2  = test_apply.clone();
-    //for(int c=0;c<rs.size(); c++)
-    //{
-    //    rectangle( draw1, rs[c], Scalar(255,0,128));
-    //}
-
-    //imshow( "before", draw1);
-
-    //NonMaxSupress( rs, conf );
-
-    //for(int c=0;c<rs.size(); c++)
-    //{
-    //    cout<<"confidence "<<conf[c]<<endl;
-    //    rectangle( draw2, rs[c], Scalar(255,0,128));
-    //}
-    //cout<<"remained "<<rs.size()<<endl;
-    //imshow("after", draw2);
-    //waitKey(0);
-
-    //*/
-
-    /*  ------------------------- test Adaboost for one stage --------------------------- */
 
     vector<Mat> neg_samples;
     vector<Mat> neg_origsamples;
@@ -500,15 +353,13 @@ int main( int argc, char** argv)
 	{
 		tk.reset();tk.start();
 		cout<<"=========== Training Stage No "<<stage<<" ==========="<<endl;
-		/* 1--> sample positives and compute info about channels */
+		/*  1--> sample positives and compute info about channels */
+		/*  2--> compute lambdas */
 		if( stage == 0)
 		{
             sampleWins( sc, stage, true, pos_samples, pos_origsamples);
             ff1.compute_lambdas( pos_origsamples );
-    
 		}
-
-		/* TODO 2--> compute lambdas */
 
 		/* 3-->  compute features for positives */
         if( stage == 0)
@@ -617,6 +468,7 @@ int main( int argc, char** argv)
         imshow("show",test_img);
         waitKey(0);
 		cout<<"Done Stage No "<<stage<<" , time "<<tk.getTimeSec()<<endl<<endl;
-	}
 
+	}
+    sc.Save( "sc.xml");
 }

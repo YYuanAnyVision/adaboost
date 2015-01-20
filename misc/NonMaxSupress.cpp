@@ -70,7 +70,7 @@ void NonMaxSupress(std::vector<cv::Rect> &boxes, std::vector<double> &scores,
     // from higher score to lower score
     for (int i=numBox-1; i>=0; i--)
     {
-        if ( type == NMS_MAXG && supress[idx[i]] )
+        if ( (type&0x0F) == NMS_MAXG && supress[idx[i]] )
             continue;
 
         idx1 = idx[i];
@@ -95,7 +95,10 @@ void NonMaxSupress(std::vector<cv::Rect> &boxes, std::vector<double> &scores,
                 area = 0.0;
             else
                 area = (xx2-xx1)*(yy2-yy1);
-            ratio = area/(areas[idx1]+areas[idx2]-area);
+            if ( (type&0x0F0) == NMS_UNION )
+                ratio = area/(areas[idx1]+areas[idx2]-area);
+            else
+                ratio = area/std::min(areas[idx1],areas[idx2]);
 
             if ( ratio > overlap_threshold )
             {

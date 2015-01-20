@@ -447,25 +447,20 @@ bool softcascade::detectMultiScale( const Mat &image,
     
     vector< vector<Mat> > approPyramid;
     vector<double> appro_scales;
-    //vector<float> lambdas;
     vector<double> scale_w;
     vector<double> scale_h;
 
     m_feature_gen.chnsPyramid( image, approPyramid, appro_scales, scale_h, scale_w);
-    //m_feature_gen.chnsPyramid( image, approPyramid, appro_scales );
-
-
-    //cout<<"feature 3 is "<<approPyramid[0][3]<<endl;
 
     for( int c=0;c<approPyramid.size();c++)
     {
+        cout<<"scale "<<c<<" with feature size "<<approPyramid[c][0].size()<<endl;
         vector<Rect> t_tar;
         vector<double> t_conf;
         Apply( approPyramid[c], t_tar, t_conf);
         for ( int i=0;i<t_tar.size(); i++) 
         {
             Rect s( t_tar[i].x/appro_scales[c], t_tar[i].y/appro_scales[c], t_tar[i].width/scale_w[c], t_tar[i].height/scale_h[c]  );
-            //Rect s( t_tar[i].x/appro_scales[c], t_tar[i].y/appro_scales[c], t_tar[i].width/appro_scales[c], t_tar[i].height/scale_h[c]  );
             targets.push_back( s );
             confidence.push_back( t_conf[i]);
         }

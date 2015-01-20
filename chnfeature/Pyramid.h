@@ -32,7 +32,7 @@ struct detector_opt
 		nOctUp=0 ;
 		shrink=4;
 		smooth =1;
-		minDS=Size(16,16) ;
+		minDS=Size(41,100) ;
 		nbins=6;
 		binsize=4;
 		nApprox=7;
@@ -54,7 +54,7 @@ public:
 
 	void chnsPyramid(const Mat &img,  vector<vector<Mat> > &approxPyramid,vector<double> &scales) const;
 
-	void convTri(const Mat &src, Mat &dst, const Mat &Km) const;
+	void convTri( const Mat &src, Mat &dst,const Mat &Km) const;
 
 	void computeChannels( const Mat &image,vector<Mat>& channels) const;
 
@@ -73,5 +73,6 @@ public:
 	  vector<double>lam;
 
 };
+Mat get_Km(int smooth );
 #endif
 
