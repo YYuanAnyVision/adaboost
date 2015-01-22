@@ -19,6 +19,8 @@
 
 #include <omp.h>
 
+#define TEST_STAT
+
 using namespace std;
 using namespace cv;
 
@@ -29,7 +31,7 @@ namespace bl = boost::lambda;
 int myrandom (int i) { return std::rand()%i;}
 
 /* extract the center part of the feature( crossponding to the target) , save it as 
- * clo in output_data(not continuous) */
+ * clomun in output_data(not continuous) */
 void makeTrainData( vector<Mat> &in_data, Mat &output_data, Size modelDs, int shrink)
 {
     assert( output_data.type() == CV_32F);
@@ -266,41 +268,19 @@ bool sampleWins(    const softcascade &sc, 	    /*  in: detector */
         }
     }
     cout<<"Sampling done "<<endl;
+    return true;
 }
-
-void copySamples( const vector<Mat> &in_samples,
-                  vector<Mat> &out_samples)
-{
-    out_samples.clear();
-    out_samples.resize( in_samples.size());
-    for ( int c=0;c<in_samples.size() ;c++ ) 
-    {
-        in_samples[c].copyTo(out_samples[c]);
-    }
-}
-
-
     
+
 /* detector parameter define */
 int main( int argc, char** argv)
 {
     std::srand ( unsigned ( std::time(0) ) );
-
-    int test_vv[]={1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
-    vector<int> test_v(test_vv, test_vv+sizeof(test_vv)/sizeof(int));
-    std::random_shuffle(test_v.begin(), test_v.end(), myrandom);
-
-    for ( int c=0;c<test_v.size() ;c++ ) {
-        cout<<test_v[c]<<" ";
-    }
-    cout<<endl;
-
     Mat Km = get_Km(1);
 
     /* globale paras*/
 	int Nthreads = omp_get_max_threads();
     TickMeter tk;
-
 
 	/*-----------------------------------------------------------------------------
 	 *  Step 1 : set and check parameters
@@ -314,7 +294,7 @@ int main( int argc, char** argv)
  
     tree_par.nBins = 256;
     tree_par.maxDepth = 2;
-    tree_par.fracFtrs = 0.0625;
+    tree_par.fracFtrs = 0.08;
 
     //cas_para.posGtDir  = "/mnt/disk1/data/INRIAPerson/Train/posGT/";
     cas_para.posGtDir  = "/media/yuanyang/disk1/libs/piotr_toolbox/data/Inria/train/posGt_opencv/";
@@ -322,14 +302,13 @@ int main( int argc, char** argv)
     cas_para.posImgDir = "/media/yuanyang/disk1/libs/piotr_toolbox/data/Inria/train/pos/"; 
 	//cas_para.negImgDir = "/mnt/disk1/data/INRIAPerson/Train/neg/";
 	cas_para.negImgDir = "/media/yuanyang/disk1/libs/piotr_toolbox/data/Inria/train/neg/";
-    cas_para.infos = "2015-1-14, YuanYang, Test";
+    cas_para.infos = "2015-1-22, YuanYang, Test";
     cas_para.shrink = det_opt.shrink;
     cas_para.nchannels = 10;
 
     sc.setParas( cas_para);
     sc.setDebug( false);
     sc.setFeatureGen( ff1 );
-
 
     vector<Mat> neg_samples;
     vector<Mat> neg_origsamples;
@@ -442,14 +421,15 @@ int main( int argc, char** argv)
         vector<Adaboost> t_v;
         t_v.push_back( ab );
         sc.Combine( t_v );
+		cout<<"Done Stage No "<<stage<<" , time "<<tk.getTimeSec()<<endl<<endl;
 
-
-        vector<Rect> re;
-        vector<double> confs;
-        cout<<"little test ";
+        /* ---------- ~show improvement over diffierent stages~ ------------*/
+        vector<Rect> re;vector<double> confs;
         Mat test_img = imread("crop001573.png");
+        tk.reset();tk.start();
         sc.detectMultiScale( test_img, re, confs );
-        cout<<"number of detection is "<<re.size()<<endl;
+        tk.stop();
+        cout<<"Time consuming for detect a size "<<test_img.size()<<" pic is "<<tk.getTimeSec()<<endl;
         for( int c=0;c<re.size();c++)
         {
             if( confs[c] < 1 )
@@ -457,49 +437,141 @@ int main( int argc, char** argv)
             cout<<"confidence is "<<confs[c]<<endl;
             rectangle( test_img, re[c], Scalar(255,0,0), 3);
         }
-        stringstream ss;
-        ss<<stage;
-        string stage_index;
-        ss>>stage_index;
-        
-        imwrite( "test_result_on_stage_"+stage_index+".png", test_img );
-
-        sc.Save( "tt.xml");
+        stringstream ss;ss<<stage;string stage_index;ss>>stage_index;
 		tk.stop();
-        imshow("show",test_img);
-		cout<<"Done Stage No "<<stage<<" , time "<<tk.getTimeSec()<<endl<<endl;
+        //imshow("show",test_img);
+        //waitKey(0);
 
-
-        /*  add more test image */
-        Mat test1,test2;
-        test1 = imread("crop001521.png");
-        test2 = imread("crop001670.png");
-        re.clear(); confs.clear();
-        sc.detectMultiScale( test1, re, confs);
-
-        for( int c=0;c<re.size();c++)
-        {
-            if( confs[c] < 1 )
-                continue;
-            cout<<"confidence is "<<confs[c]<<endl;
-            rectangle( test1, re[c], Scalar(255,0,0), 3);
-        }
-        imshow("test 1", test1);
-        cout<<endl;
-        re.clear(); confs.clear();
-        sc.detectMultiScale( test2, re, confs);
-
-        for( int c=0;c<re.size();c++)
-        {
-            if( confs[c] < 1 )
-                continue;
-            cout<<"confidence is "<<confs[c]<<endl;
-            rectangle( test2, re[c], Scalar(255,0,0), 3);
-        }
-        imshow("test 2", test2);
-
-
-        waitKey(0);
 	}
     sc.Save( "sc.xml");
+    /*  swap the Mat data */
+    neg_train_data = Mat::zeros(1,1,CV_32F);
+    pos_train_data = Mat::zeros(1,1,CV_32F);
+    
+    /*----------------   test detectMultiScale over dataset , show ----------------*/
+#ifdef TEST_MUITI
+    bf::directory_iterator end_it;
+    bf::path test_data_path("/media/yuanyang/disk1/libs/piotr_toolbox/data/Inria/Test/pos/");
+    for( bf::directory_iterator file_iter(test_data_path); file_iter!=end_it; file_iter++)
+    {
+        string pathname = file_iter->path().string();
+        Mat test_img = imread( pathname );
+
+        vector<Rect> re;vector<double> confs;
+        sc.detectMultiScale( test_img, re, confs);
+        for( int c=0;c<re.size();c++)
+        {
+            if( confs[c] < 0 )
+                continue;
+            cout<<"confidence is "<<confs[c]<<endl;
+            rectangle( test_img, re[c], Scalar(255,0,0), 3);
+        }
+        cout<<endl;
+        imshow("testimage", test_img );
+        waitKey(0);
+    }
+#endif
+
+#ifdef TEST_STAT
+    string testset_neg_path = "/media/yuanyang/disk1/libs/piotr_toolbox/data/Inria/Test/neg/";
+    string testset_pos_image_path = "/media/yuanyang/disk1/libs/piotr_toolbox/data/Inria/Test/pos/";
+    string testset_pos_gt_path = "/media/yuanyang/disk1/libs/piotr_toolbox/data/Inria/Test/AnnotTest/";
+    
+    /*  using the sampleWins function */
+    cascadeParameter par_for_test = sc.getParas();
+    par_for_test.negImgDir = testset_neg_path;
+    par_for_test.posGtDir  = testset_pos_gt_path;
+    par_for_test.posImgDir = testset_pos_image_path;
+    
+    sc.setParas( par_for_test);
+    vector<Mat> test_pos_orig;
+    vector<Mat> test_pos_all;
+    sampleWins( sc, 0, true, test_pos_all, test_pos_orig );
+
+    cout<<"->Making positive test data ";
+    Mat pos_test_data = Mat::zeros( final_feature_dim, test_pos_all.size(), CV_32F);
+    #pragma omp parallel for num_threads(Nthreads)
+    for ( int c=0;c<test_pos_all.size();c++) 
+    {
+        vector<Mat> feas;
+        ff1.computeChannels( test_pos_all[c], feas );
+        
+        for(int i=0;i<feas.size();i++)
+        {
+            ff1.convTri( feas[i], feas[i], Km );
+        }
+
+        Mat tmp = pos_test_data.col(c);
+        makeTrainData( feas, tmp , cas_para.modelDsPad, cas_para.shrink);
+    }
+    /* delete others */
+    vector<Mat>().swap(test_pos_all);
+    vector<Mat>().swap(test_pos_orig);
+    cout<<"done. Total number :"<<pos_test_data.cols<<endl;
+    
+    Mat for_test_feat;
+    double stat_fn = 0;
+    double avg_pos_score = 0;
+    for( int c=0;c<pos_test_data.cols;c++)
+    {
+        for_test_feat = pos_test_data.col(c);
+        for_test_feat = for_test_feat.t();
+        double score = 0;
+        sc.Predict( (float*)for_test_feat.data, score );
+        cout<<"Test positive sample is "<<score<<endl;
+        avg_pos_score += score;
+        if( score < 0)
+            stat_fn += 1.0;
+    }
+    stat_fn = stat_fn / pos_test_data.cols;
+    avg_pos_score /= pos_test_data.cols;
+
+    vector<Mat> test_neg_orig;
+    vector<Mat> test_neg_all;
+    sampleWins( sc, 0, false, test_neg_all, test_neg_orig );
+    cout<<"Making negative test data "<<endl;
+    Mat neg_test_data = Mat::zeros( final_feature_dim, test_neg_orig.size(), CV_32F );
+ 
+    #pragma omp parallel for num_threads(Nthreads)
+    for ( int c=0;c<test_neg_orig.size();c++) 
+    {
+        vector<Mat> feas;
+        ff1.computeChannels( test_neg_orig[c], feas );
+        
+        for(int i=0;i<feas.size();i++)
+        {
+            ff1.convTri( feas[i], feas[i], Km );
+        }
+
+        Mat tmp = neg_test_data.col(c);
+        makeTrainData( feas, tmp , cas_para.modelDsPad, cas_para.shrink);
+    }
+    /* delete others */
+    vector<Mat>().swap(test_neg_all);
+    vector<Mat>().swap(test_neg_orig);
+    cout<<"done. Total number :"<<neg_test_data.cols<<endl;
+    
+    double stat_fp = 0;
+    double avg_neg_score = 0;
+    for( int c=0; c<neg_test_data.cols;c++)
+    {
+        for_test_feat = neg_test_data.col(c);
+        for_test_feat = for_test_feat;
+        double score = 0;
+        sc.Predict( (float*)for_test_feat.data, score);
+        avg_neg_score += score;
+        if( score > 0 )
+            stat_fp += 1.0;
+        cout<<"Test negative sample is "<<score<<endl;
+    }
+    stat_fp /= neg_test_data.cols;
+    avg_neg_score /= neg_test_data.cols;
+
+    cout<<"Test result on INRIA dataset\n FP is "<<stat_fp<<" FN is "<<stat_fn<<endl;
+    cout<<"avg pos score is "<<avg_pos_score<<" avg neg score is "<<avg_neg_score<<endl;
+#endif
+
+
+
+    return 0;
 }

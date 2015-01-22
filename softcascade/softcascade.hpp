@@ -46,7 +46,7 @@ struct cascadeParameter
 		modelDsPad = Size(64, 128);
 		stride     = 4;
 		cascThr	   = -1;
-		cascCal    = 0.005;
+		cascCal    = 0.003;
 		nWeaks.push_back( 32);
 		nWeaks.push_back( 128);
 		nWeaks.push_back( 512);
@@ -58,7 +58,7 @@ struct cascadeParameter
 		nPos = -1;
 		nNeg = 5000;
 		nPerNeg = 25;
-		nAccNeg = 10000;
+		nAccNeg = 15000;
 
 		shrink = 4;
 
@@ -128,7 +128,7 @@ class softcascade
 		 *			      memory is not continuous for each window Rect
 		 * =====================================================================================
 		 */
-		template < typename T> bool Predict(  T *data, double &score) const
+		template < typename T> bool Predict(  const T *data, double &score) const
 		{
 			if(!checkModel())
 				return false;
@@ -149,6 +149,8 @@ class softcascade
 						position = (( data[t_fids[position]] < t_thrs[position]) ? position*2+1:position*2+2);
 					}
 					h += t_hs[position];
+                    if( h < m_opts.cascThr)
+                        break;
 				}
 
 			}
@@ -166,6 +168,8 @@ class softcascade
 						position = (( data[t_fids[position]] < t_thrs[position]) ? t_child[position]: t_child[position] + 1);
 					}
 					h += t_hs[position];
+                    if( h < m_opts.cascThr)
+                        break;
 				}
 			}
 			score = h;
@@ -214,7 +218,7 @@ class softcascade
 		 *  Description:  return the parameters
 		 * =====================================================================================
 		 */
-		const cascadeParameter& getParas() const;
+		cascadeParameter getParas() const;
 
 
         /* 

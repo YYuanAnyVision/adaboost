@@ -429,7 +429,7 @@ bool softcascade::Load( string path_to_model )      /* in : path of the model, s
     cout<<"# Model Info --> "<<m_opts.infos<<endl;
     return true;
 }
-const cascadeParameter& softcascade::getParas() const
+cascadeParameter softcascade::getParas() const
 {
     return m_opts;
 }
@@ -456,11 +456,7 @@ bool softcascade::detectMultiScale( const Mat &image,
 
     for( int c=0;c<approPyramid.size();c++)
     {
-        stringstream ss;
-        ss<<c;
-        string ii;ss>>ii;
         //saveMatToFile("magh"+ii, approPyramid[c][4]);
-
         vector<Rect> t_tar;
         vector<double> t_conf;
         Apply( approPyramid[c], t_tar, t_conf);

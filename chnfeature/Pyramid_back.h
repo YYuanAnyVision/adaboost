@@ -53,8 +53,10 @@ public:
                     vector<double> &scales,
                     vector<double> &scalesh,
                     vector<double> &scalesw) const;
-
-	void chnsPyramid(const Mat &img,  vector<vector<Mat> > &chns_Pyramid,vector<double> &scales) const;
+		    
+	void chnsPyramid(const Mat &img, 
+                    vector<vector<Mat> > &approxPyramid,
+                    vector<double> &scales) const;
 
 	void convTri( const Mat &src, Mat &dst,const Mat &Km) const;
 
@@ -64,7 +66,7 @@ public:
 
 	void computeChannels( const Mat &image,vector<Mat>& channels) const;
 
-	void computeGradient(const Mat &img, Mat& grad, Mat& qangle,Mat& mag_sum_s) const;	
+	void computeGradient(const Mat &img, Mat& grad, Mat& qangle) const;	
 
 	void setParas (const  detector_opt &in_para ) ;
 
