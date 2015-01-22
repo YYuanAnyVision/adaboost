@@ -46,7 +46,7 @@ struct cascadeParameter
 		modelDsPad = Size(64, 128);
 		stride     = 4;
 		cascThr	   = -1;
-		cascCal    = 0.003;
+		cascCal    = 0.0025;
 		nWeaks.push_back( 32);
 		nWeaks.push_back( 128);
 		nWeaks.push_back( 512);
@@ -58,7 +58,7 @@ struct cascadeParameter
 		nPos = -1;
 		nNeg = 5000;
 		nPerNeg = 25;
-		nAccNeg = 15000;
+		nAccNeg = 10000;
 
 		shrink = 4;
 

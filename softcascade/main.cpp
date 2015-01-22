@@ -296,12 +296,12 @@ int main( int argc, char** argv)
     tree_par.maxDepth = 2;
     tree_par.fracFtrs = 0.08;
 
-    //cas_para.posGtDir  = "/mnt/disk1/data/INRIAPerson/Train/posGT/";
-    cas_para.posGtDir  = "/media/yuanyang/disk1/libs/piotr_toolbox/data/Inria/train/posGt_opencv/";
-    //cas_para.posImgDir = "/mnt/disk1/data/INRIAPerson/Train/pos"; 
-    cas_para.posImgDir = "/media/yuanyang/disk1/libs/piotr_toolbox/data/Inria/train/pos/"; 
-	//cas_para.negImgDir = "/mnt/disk1/data/INRIAPerson/Train/neg/";
-	cas_para.negImgDir = "/media/yuanyang/disk1/libs/piotr_toolbox/data/Inria/train/neg/";
+    cas_para.posGtDir  = "/mnt/disk1/data/INRIAPerson/Train/posGT/";
+    //cas_para.posGtDir  = "/media/yuanyang/disk1/libs/piotr_toolbox/data/Inria/train/posGt_opencv/";
+    cas_para.posImgDir = "/mnt/disk1/data/INRIAPerson/Train/pos"; 
+    //cas_para.posImgDir = "/media/yuanyang/disk1/libs/piotr_toolbox/data/Inria/train/pos/"; 
+	cas_para.negImgDir = "/mnt/disk1/data/INRIAPerson/Train/neg/";
+	//cas_para.negImgDir = "/media/yuanyang/disk1/libs/piotr_toolbox/data/Inria/train/neg/";
     cas_para.infos = "2015-1-22, YuanYang, Test";
     cas_para.shrink = det_opt.shrink;
     cas_para.nchannels = 10;
@@ -473,9 +473,12 @@ int main( int argc, char** argv)
 #endif
 
 #ifdef TEST_STAT
-    string testset_neg_path = "/media/yuanyang/disk1/libs/piotr_toolbox/data/Inria/Test/neg/";
-    string testset_pos_image_path = "/media/yuanyang/disk1/libs/piotr_toolbox/data/Inria/Test/pos/";
-    string testset_pos_gt_path = "/media/yuanyang/disk1/libs/piotr_toolbox/data/Inria/Test/AnnotTest/";
+    //string testset_neg_path = "/media/yuanyang/disk1/libs/piotr_toolbox/data/Inria/Test/neg/";
+    string testset_neg_path = "/mnt/disk1/data/INRIAPerson/Test/neg/";
+    //string testset_pos_image_path = "/media/yuanyang/disk1/libs/piotr_toolbox/data/Inria/Test/pos/";
+    string testset_pos_image_path = "/mnt/disk1/data/INRIAPerson/Test/pos/";
+    //string testset_pos_gt_path = "/media/yuanyang/disk1/libs/piotr_toolbox/data/Inria/Test/AnnotTest/";
+    string testset_pos_gt_path = "/mnt/disk1/data/INRIAPerson/Test/AnnotTest/";
     
     /*  using the sampleWins function */
     cascadeParameter par_for_test = sc.getParas();
@@ -567,6 +570,7 @@ int main( int argc, char** argv)
     stat_fp /= neg_test_data.cols;
     avg_neg_score /= neg_test_data.cols;
 
+	cout<<"Test data information, Pos "<<pos_test_data.cols<<" Neg "<<neg_test_data.cols<<endl;
     cout<<"Test result on INRIA dataset\n FP is "<<stat_fp<<" FN is "<<stat_fn<<endl;
     cout<<"avg pos score is "<<avg_pos_score<<" avg neg score is "<<avg_neg_score<<endl;
 #endif
