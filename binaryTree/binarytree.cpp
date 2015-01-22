@@ -195,22 +195,27 @@ bool binaryTree::Train( data_pack & train_data,			/* input&output : training dat
 	Mat pos_data = train_data.pos_data;
 
 	/* sanity check*/
-	if( neg_data.empty() || pos_data.empty() || !checkTreeParas(paras) || neg_data.channels()!=1 || pos_data.channels()!=1)
+	if( neg_data.empty() || pos_data.empty()  || neg_data.channels()!=1 || pos_data.channels()!=1)
 	{
-		cout<<"in function Train : input wrong format"<<endl;
+		cout<<"in function binaryTree::Train : input wrong format"<<endl;
 		return false;
 	}
+    if( !checkTreeParas(paras) )
+    {
+        cout<<"in function binaryTree::Train : wrong paras "<<endl;
+        return false;
+    }
 
 	if( neg_data.type() != pos_data.type() )
 	{
-		cout<<"in function Train : neg and pos data should be the same type "<<endl;
+		cout<<"in function binaryTree::Train : neg and pos data should be the same type "<<endl;
 		return false;
 	}
 
 	int feature_dim = neg_data.rows;
 	if( feature_dim != pos_data.rows)
 	{
-		cout<<"in function Train : feature dim should be the same between neg and pos samples "<<endl;
+		cout<<"in function binaryTree::Train : feature dim should be the same between neg and pos samples "<<endl;
 		return false;
 	}
 

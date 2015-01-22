@@ -265,6 +265,7 @@ bool sampleWins(    const softcascade &sc, 	    /*  in: detector */
             origsamples.resize( number_to_sample );
         }
     }
+    cout<<"Sampling done "<<endl;
 }
 
 void copySamples( const vector<Mat> &in_samples,
@@ -466,9 +467,39 @@ int main( int argc, char** argv)
         sc.Save( "tt.xml");
 		tk.stop();
         imshow("show",test_img);
-        waitKey(0);
 		cout<<"Done Stage No "<<stage<<" , time "<<tk.getTimeSec()<<endl<<endl;
 
+
+        /*  add more test image */
+        Mat test1,test2;
+        test1 = imread("crop001521.png");
+        test2 = imread("crop001670.png");
+        re.clear(); confs.clear();
+        sc.detectMultiScale( test1, re, confs);
+
+        for( int c=0;c<re.size();c++)
+        {
+            if( confs[c] < 1 )
+                continue;
+            cout<<"confidence is "<<confs[c]<<endl;
+            rectangle( test1, re[c], Scalar(255,0,0), 3);
+        }
+        imshow("test 1", test1);
+        cout<<endl;
+        re.clear(); confs.clear();
+        sc.detectMultiScale( test2, re, confs);
+
+        for( int c=0;c<re.size();c++)
+        {
+            if( confs[c] < 1 )
+                continue;
+            cout<<"confidence is "<<confs[c]<<endl;
+            rectangle( test2, re[c], Scalar(255,0,0), 3);
+        }
+        imshow("test 2", test2);
+
+
+        waitKey(0);
 	}
     sc.Save( "sc.xml");
 }

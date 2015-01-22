@@ -11,7 +11,7 @@ add_library( softcascade softcascade.hpp softcascade.cpp )
 add_executable( train_softcascade main.cpp)
 add_executable( test_s test.cpp)
 
-target_link_libraries( softcascade nms )
+target_link_libraries( softcascade nms misc )
 target_link_libraries(  train_softcascade  ${OpenCV_LIBS}   ${Boost_LIBRARIES} softcascade adaboost binaryTree chnFeature nms)
 target_link_libraries(  test_s  ${OpenCV_LIBS}   ${Boost_LIBRARIES} softcascade adaboost binaryTree chnFeature)
 

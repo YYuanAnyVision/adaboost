@@ -281,7 +281,7 @@ void feature_Pyramids::computeChannels(const Mat &image,vector<Mat>& channels) c
 		for( int i = 0; i < 3; ++i )
 		{
 			Mat channels_tmp=channels_addr.rowRange(i*channels_addr_rows,(i+1)*channels_addr_rows);
-		    cv::resize(luv_channels[i],channels_tmp,channels_tmp.size(),0.0,0.0,1);
+		    cv::resize(luv_channels[i],channels_tmp,channels_tmp.size(),0.0,0.0,INTER_AREA);
 			channels.push_back(channels_tmp);
 		}
 	}
@@ -316,7 +316,7 @@ void feature_Pyramids::computeChannels(const Mat &image,vector<Mat>& channels) c
 	Mat mag_sum_s;
 	mag_sum_s=mag_split[0]+mag_split[1];
 	//test
-	cv::resize(mag_sum_s,mag_sum,mag_sum.size(),0.0,0.0,1);
+	cv::resize(mag_sum_s,mag_sum,mag_sum.size(),0.0,0.0,INTER_AREA);
 	channels.push_back(mag_sum);
 
 	/*compute grad_hist*/
@@ -349,7 +349,7 @@ void feature_Pyramids::computeChannels(const Mat &image,vector<Mat>& channels) c
 		{
 			channels.push_back(bins_mat_tmp[c]);
 		}else{
-			cv::resize(bins_mat_tmp[c],bins_mat[c],bins_mat[c].size(),0.0,0.0,1);
+			cv::resize(bins_mat_tmp[c],bins_mat[c],bins_mat[c].size(),0.0,0.0,INTER_AREA);
 			channels.push_back(bins_mat[c]);
 		}
 		
@@ -373,7 +373,7 @@ void feature_Pyramids:: chnsPyramid(const Mat &img,vector<vector<Mat> > &approxP
 	Size minDS =m_opt.minDS;
 	/*get scales*/
 	//double minDs=(double)min(diam.width,diam.height);
-	int nscales=(int)floor(nPerOct*(nOctUp+log(min(img.cols/(minDS.width*1.0),img.rows/(minDS.height*1.0))))+1);
+	int nscales=(int)floor(nPerOct*(nOctUp+log(min(img.cols/(minDS.height*1.0),img.rows/(minDS.width*1.0)))/log(2))+1);
 	vector<Size> ap_size;
 	Size ap_tmp_size;
 
@@ -451,7 +451,7 @@ void feature_Pyramids:: chnsPyramid(const Mat &img,vector<vector<Mat> > &approxP
 	for (int s_r=0;s_r<(int)real_scal.size();s_r++)
 	{
 		vector<Mat> chns;
-		resize(img,img_tmp,ap_size[real_scal[s_r]]*shrink,0.0,0.0,1);
+		resize(img,img_tmp,ap_size[real_scal[s_r]]*shrink,0.0,0.0,INTER_AREA);
 		computeChannels(img_tmp,chns);
 		chns_num=chns.size();
 		chns_Pyramid.push_back(chns);
@@ -575,7 +575,7 @@ void feature_Pyramids:: chnsPyramid(const Mat &img,vector<vector<Mat> > &approxP
 			{
 				Mat py=approx.rowRange(n_chans*approx_rows,(n_chans+1)*approx_rows);
 				int ma=approx_scal[ap_id]/(nApprox+1);
-				resize(chns_Pyramid[ma][n_chans],py,py.size(),0.0,0.0,1);
+				resize(chns_Pyramid[ma][n_chans],py,py.size(),0.0,0.0,INTER_AREA);
 				ratio=(double)pow(scales[ap_id]/scales[approx_scal[ap_id]],-lambdas[n_chans]);
 				py=py*ratio;
 				//smooth channels, optionally pad and concatenate channels
@@ -662,7 +662,7 @@ void feature_Pyramids:: chnsPyramid(const Mat &img,  vector<vector<Mat> > &chns_
 	for (int s_r=0;s_r<(int)scales.size();s_r++)
 	{
 		vector<Mat> chns;
-		cv::resize(img,img_tmp,ap_size[s_r]*shrink,0.0,0.0,1);
+		cv::resize(img,img_tmp,ap_size[s_r]*shrink,0.0,0.0,INTER_AREA);
 		computeChannels(img_tmp,chns);
 		chns_Pyramid.push_back(chns);
 	}
@@ -752,7 +752,7 @@ void feature_Pyramids::compute_lambdas(const vector<Mat> &fold)
 	double num=0;//有效的图像数量
 	Mat mus=Mat::zeros(scal.size()-1,3,CV_64FC1);//
 	Mat s=Mat::ones(scal.size()-1,2,CV_64FC1);//0~35个log（scale）
-
+	FileStorage s_fs("s.yml", FileStorage::WRITE);
 	for (int r=0;r<scal.size()-1;r++)
 	{
 		s.at<double>(r,0)=log(scal[r+1])/log(2);
@@ -775,13 +775,13 @@ void feature_Pyramids::compute_lambdas(const vector<Mat> &fold)
 			mus.at<double>(m,L)=log(sum/num)/log(2);
 		}
 	}
-
 	//compute lam;
 	for (int n=0;n<3;n++)
 	{
 		Mat mus_omega=mus.colRange(n,n+1);
 		Mat lam_omgea=(s.t()*s).inv()*(s.t())*mus_omega;
 	    lam.push_back(-lam_omgea.at<double>(0,0));
+        cout<<"lam is "<<lam[n]<<endl;
 	}
 
 }

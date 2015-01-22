@@ -5,12 +5,14 @@
 #include <typeinfo>
 #include "opencv2/highgui/highgui.hpp"
 #include "opencv2/imgproc/imgproc.hpp"
+#include "opencv2/contrib/contrib.hpp"
 #include "opencv2/opencv.hpp" 
 #include <cv.h>
 #include <cxcore.h> 
 #include <cvaux.h>
 
 #include "Pyramid.h"
+//#include "../misc/misc.hpp"
 
 using namespace std;
 using namespace cv;
@@ -90,35 +92,59 @@ void MultiImage_OneWin(const std::string& MultiShow_WinName, const vector<Mat>& 
 
 int main( int argc, char** argv)
 {
-    Mat test_img = imread("test.png");
-    int smooth = 5;
+    Mat input_image = imread("crop001573.png");
 
-    feature_Pyramids m_feature_gen;
-	
-    double *kern=new double[2*smooth+1];
-	for (int c=0;c<=smooth;c++)
-	{
-		kern[c]=(double)((c+1)/((smooth+1.0)*(smooth+1.0)));
-		kern[2*smooth-c]=kern[c];
-	}
-	Mat Km=Mat(1,(2*smooth+1),CV_64FC1,kern); 
-    Mat dst;
+    feature_Pyramids ff1;
+    vector<Mat> feature;
+    ff1.computeChannels( input_image, feature);
     
-    vector< vector<Mat> > approPyramid;
-    vector<double> appro_scales;
 
-    m_feature_gen.chnsPyramid( test_img, approPyramid, appro_scales);
-    cout<<"chn 3 is "<<approPyramid[0][3].size()<<endl;
-    cout<<approPyramid[0][3]<<endl;
+    TickMeter tk;
+    Mat b_i, a_i;
+    tk.start();
+    resize( input_image, b_i, Size(), 0.25, 0.25, INTER_LINEAR);
+    tk.stop();
+    cout<<"time b is "<<tk.getTimeSec()<<endl;
+
+    tk.reset();tk.start();
+    resize( input_image, a_i, Size(), 0.25, 0.25, INTER_AREA);
+    tk.stop();
+    cout<<"time a is "<<tk.getTimeSec()<<endl;
     
-    m_feature_gen.convTri( approPyramid[0][3], dst, Km);
-    cout<<"dst size "<<dst.size()<<endl;
-    cout<<dst;
+    
+    //for ( int c=0; c<feature.size(); c++) {
+    //    cout<<"\n\n feature "<<c<<" is \n\n"<<feature[c]<<endl;
+    //}
 
-    Mat norm_mag = approPyramid[0][3]/(dst+0.01);
-    cout<<"\n\nnorm_mag size "<<norm_mag.size()<<endl;
-    cout<<norm_mag;
-	
-    delete [] kern;
+    //Mat test_img = imread("test.png");
+    //int smooth = 5;
+
+    //feature_Pyramids m_feature_gen;
+	//
+    //double *kern=new double[2*smooth+1];
+	//for (int c=0;c<=smooth;c++)
+	//{
+	//	kern[c]=(double)((c+1)/((smooth+1.0)*(smooth+1.0)));
+	//	kern[2*smooth-c]=kern[c];
+	//}
+	//Mat Km=Mat(1,(2*smooth+1),CV_64FC1,kern); 
+    //Mat dst;
+    //
+    //vector< vector<Mat> > approPyramid;
+    //vector<double> appro_scales;
+
+    //m_feature_gen.chnsPyramid( test_img, approPyramid, appro_scales);
+    //cout<<"chn 3 is "<<approPyramid[0][3].size()<<endl;
+    //cout<<approPyramid[0][3]<<endl;
+    //
+    //m_feature_gen.convTri( approPyramid[0][3], dst, Km);
+    //cout<<"dst size "<<dst.size()<<endl;
+    //cout<<dst;
+
+    //Mat norm_mag = approPyramid[0][3]/(dst+0.01);
+    //cout<<"\n\nnorm_mag size "<<norm_mag.size()<<endl;
+    //cout<<norm_mag;
+	//
+    //delete [] kern;
     return 0;
 }

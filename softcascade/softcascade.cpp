@@ -3,11 +3,13 @@
 #include <algorithm>
 #include <assert.h>
 #include <cmath>
+#include <sstream>
 #include "opencv2/highgui/highgui.hpp"
 #include "softcascade.hpp"
 #include "../binaryTree/binarytree.hpp"
 #include "../Adaboost/Adaboost.hpp"
 #include "../misc/NonMaxSupress.h"
+#include "../misc/misc.hpp"
 
 using namespace cv;
 using namespace std;
@@ -454,7 +456,11 @@ bool softcascade::detectMultiScale( const Mat &image,
 
     for( int c=0;c<approPyramid.size();c++)
     {
-        cout<<"scale "<<c<<" with feature size "<<approPyramid[c][0].size()<<endl;
+        stringstream ss;
+        ss<<c;
+        string ii;ss>>ii;
+        //saveMatToFile("magh"+ii, approPyramid[c][4]);
+
         vector<Rect> t_tar;
         vector<double> t_conf;
         Apply( approPyramid[c], t_tar, t_conf);
