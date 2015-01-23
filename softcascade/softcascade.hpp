@@ -149,8 +149,8 @@ class softcascade
 						position = (( data[t_fids[position]] < t_thrs[position]) ? position*2+1:position*2+2);
 					}
 					h += t_hs[position];
-                    if( h < m_opts.cascThr)
-                        break;
+                    //if( h < m_opts.cascThr)
+                    //    break;
 				}
 
 			}
@@ -168,8 +168,8 @@ class softcascade
 						position = (( data[t_fids[position]] < t_thrs[position]) ? t_child[position]: t_child[position] + 1);
 					}
 					h += t_hs[position];
-                    if( h < m_opts.cascThr)
-                        break;
+                    //if( h < m_opts.cascThr)
+                    //    break;
 				}
 			}
 			score = h;

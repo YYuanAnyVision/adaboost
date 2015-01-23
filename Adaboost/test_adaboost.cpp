@@ -15,15 +15,28 @@ int main( int argc, char** argv)
     /* -------------check the training process using matlab data , result--> good ----------- */
     cout<<"Loading data ..."<<endl;
     FileStorage fs;
-    fs.open("train_neg_big.xml", FileStorage::READ);
+
+    fs.open("X0train_first.xml", FileStorage::READ);
     Mat train_neg;
     fs["matrix"]>>train_neg;
     fs.release();
 
-    fs.open("train_pos_big.xml", FileStorage::READ);
+    fs.open("X1train.xml", FileStorage::READ);
     Mat train_pos;
     fs["matrix"]>>train_pos;
     fs.release();
+
+    fs.open("X1test.xml", FileStorage::READ);
+    Mat test_pos;
+    fs["matrix"]>>test_pos;
+    fs.release();
+
+    fs.open("X0test.xml", FileStorage::READ);
+    Mat test_neg;
+    fs["matrix"]>>test_neg;
+    fs.release();
+
+
 
     cout<<"Loading data done"<<endl;
     cout<<"pos data size "<<train_pos.size()<<endl;
@@ -43,7 +56,40 @@ int main( int argc, char** argv)
 	ab.Train( train_neg, train_pos, number_n_weak, train_paras);
 	t = (double)getTickCount() - t;
 	cout<<"Adaboost decision tree : time consuming is "<<t/(double)getTickFrequency()<<"s, training "<<number_n_weak<<" weak classifiers "<<endl;
-	ab.saveModel("ttab.xml");
+
+    cout<<"Now testing "<<endl;
+	Mat predicted_label0, predicted_label1;
+	ab.Apply( test_neg, predicted_label0);
+	ab.Apply( test_pos, predicted_label1);
+
+    double avg_neg_dis = 0;
+    double avg_pos_dis = 0;
+	double fp = 0;
+	double fn = 0;
+	for(int c=0;c<predicted_label0.rows;c++)
+    {
+        avg_neg_dis += predicted_label0.at<double>(c,0);
+		fp += (predicted_label0.at<double>(c,0) > 0?1:0);
+    }
+	fp /= predicted_label0.rows;
+    avg_neg_dis /= predicted_label0.rows;
+
+	for(int c=0;c<predicted_label1.rows;c++)
+    {
+        avg_pos_dis += predicted_label1.at<double>(c,0);
+		fn += (predicted_label1.at<double>(c,0) < 0?1:0);
+    }
+    avg_pos_dis /= predicted_label1.rows;
+	fn /= predicted_label1.rows;
+
+
+	/*  fp and fn should be around 0.12-0.13  */
+	cout<<"Results on the training data is :"<<endl;
+	cout<<"--> False Positive is "<<fp<<endl;
+	cout<<"--> False Negative is "<<fn<<endl;
+    cout<<"avg_neg_dis is "<<avg_neg_dis<<endl;
+    cout<<"avg_pos_dis is "<<avg_pos_dis<<endl;
+
 
     ///* --------------------------- compare the results with svm -------------------- */
 	//FileStorage fs;

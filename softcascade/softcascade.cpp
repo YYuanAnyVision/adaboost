@@ -177,7 +177,7 @@ bool softcascade::Combine(vector<Adaboost> &ads )
     m_number_of_trees = number_of_trees;
 
     /*  shift the hs */
-    m_hs = m_hs + m_opts.cascCal;
+    //m_hs = m_hs + m_opts.cascCal;
 
     cout<<"softcascade : number of trees "<<m_number_of_trees<<endl;
 

@@ -66,6 +66,8 @@ public:
 
 	void computeGradient(const Mat &img, Mat& grad, Mat& qangle,Mat& mag_sum_s) const;	
 
+	void computeGradient(const Mat &img, Mat& grad, Mat& qangle) const;
+
 	void setParas (const  detector_opt &in_para ) ;
 
 	void compute_lambdas(const vector<Mat> &fold);

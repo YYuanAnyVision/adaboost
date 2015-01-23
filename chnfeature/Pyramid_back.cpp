@@ -172,8 +172,10 @@ void feature_Pyramids::computeChannels(const Mat &image,vector<Mat>& channels) c
 	Mat_<double> angles;
 	Mat src,luv;
 
-	int channels_addr_rows=(image.rows+shrink-1)/shrink;
-	int channels_addr_cols=(image.cols+shrink-1)/shrink;
+	//int channels_addr_rows=(image.rows+shrink-1)/shrink;
+	//int channels_addr_cols=(image.cols+shrink-1)/shrink;
+	int channels_addr_rows=(image.rows)/shrink;
+	int channels_addr_cols=(image.cols)/shrink;
 	Mat channels_addr=Mat::zeros((nbins+4)*channels_addr_rows,channels_addr_cols,CV_32FC1);
 	if(image.channels() > 1)
 	{
@@ -246,8 +248,10 @@ void feature_Pyramids::computeChannels(const Mat &image,vector<Mat>& channels) c
 
 	/*compute grad_hist*/
 	vector<Mat> bins_mat,bins_mat_tmp;
-	int bins_mat_tmp_rows=(mag.rows+binsize-1)/binsize;
-	int bins_mat_tmp_cols=(mag.cols+binsize-1)/binsize;
+	//int bins_mat_tmp_rows=(mag.rows+binsize-1)/binsize;
+	//int bins_mat_tmp_cols=(mag.cols+binsize-1)/binsize;
+	int bins_mat_tmp_rows=(mag.rows)/binsize;
+    int bins_mat_tmp_cols=(mag.cols)/binsize;
 	for( int s=0;s<nbins;s++){
 		Mat channels_tmp=channels_addr.rowRange((s+4)*channels_addr_rows,(s+5)*channels_addr_rows);
 		if (binsize==shrink)
@@ -264,8 +268,8 @@ void feature_Pyramids::computeChannels(const Mat &image,vector<Mat>& channels) c
 #define GH \
 	bins_mat_tmp[ori.at<Vec2b>(row,col)[0]].at<float>((row)/binsize,(col)/binsize)+=(mag.at<Vec2f>(row,col)[0]*(1.0/s)*(1.0/s));\
 	bins_mat_tmp[ori.at<Vec2b>(row,col)[1]].at<float>((row)/binsize,(col)/binsize)+=(mag.at<Vec2f>(row,col)[1]*(1.0/s)*(1.0/s));
-	for(int row=0;row<mag.rows;row++){
-		for(int col=0;col<mag.cols;col++){GH;}}
+	for(int row=0;row<(mag.rows/binsize*binsize);row++){
+		for(int col=0;col<(mag.cols/binsize*binsize);col++){GH;}}
 	/*push*/
 	for (int c=0;c < (int)nbins;c++)
 	{
@@ -296,6 +300,8 @@ void feature_Pyramids:: chnsPyramid(const Mat &img,vector<vector<Mat> > &approxP
 	int binsize=m_opt.binsize;
 	int nApprox=m_opt.nApprox;
 	Size minDS =m_opt.minDS;
+	Size pad = m_opt.pad;
+
 	/*get scales*/
 	//double minDs=(double)min(diam.width,diam.height);
 	int nscales=(int)floor(nPerOct*(nOctUp+log(min(img.cols/(minDS.height*1.0),img.rows/(minDS.width*1.0)))/log(2))+1);
@@ -486,36 +492,78 @@ void feature_Pyramids:: chnsPyramid(const Mat &img,vector<vector<Mat> > &approxP
 		}
 	  //compute the filter
 		Mat Km = get_Km(smooth);
-		//compute approxPyramid
-		double ratio;
-		for (int ap_id=0;ap_id<(int)approx_scal.size();ap_id++)
-		{
-			vector<Mat> approx_chns;
-			approx_chns.clear();
-			/*memory is consistent*/
-			int approx_rows=ap_size[ap_id].height;
-			int approx_cols=ap_size[ap_id].width;
-			Mat approx=Mat::zeros(10*approx_rows,approx_cols,CV_32FC1);//因为chns_Pyramind是32F
-			for(int n_chans=0;n_chans<chns_num;n_chans++)
+
+			double ratio;
+			for (int ap_id=0;ap_id<(int)approx_scal.size();ap_id++)
 			{
-				Mat py=approx.rowRange(n_chans*approx_rows,(n_chans+1)*approx_rows);
-				int ma=approx_scal[ap_id]/(nApprox+1);
-				resize(chns_Pyramid[ma][n_chans],py,py.size(),0.0,0.0,INTER_AREA);
-				ratio=(double)pow(scales[ap_id]/scales[approx_scal[ap_id]],-lambdas[n_chans]);
-				py=py*ratio;
-				//smooth channels, optionally pad and concatenate channels
-				convTri(py,py,Km);
-				approx_chns.push_back(py);
-			} 
-			/*  check the pointer */
-			/*	float *add1 = (float*)approx_chns[0].data;
-				for( int c=1;c<approx_chns.size();c++)
+				vector<Mat> approx_chns;
+				approx_chns.clear();
+				/*memory is consistent*/
+				int approx_rows=ap_size[ap_id].height;
+				int approx_cols=ap_size[ap_id].width;
+				//pad
+				int pad_T=pad.height/shrink;
+				int pad_R=pad.width/shrink;
+				Mat approx=Mat::zeros(10*(approx_rows+2*pad_T),approx_cols+2*pad_R,CV_32FC1);//因为chns_Pyramind是32F
+				for(int n_chans=0;n_chans<chns_num;n_chans++)
 				{
-					cout<<"pointer "<<static_cast<void*>(approx_chns[c].data)<<" "<< (static_cast<void*>(add1+c*ap_size[ap_id].height*ap_size[ap_id].width))<<endl;
-				cout<<"pointer "<<(static_cast<void*>(approx_chns[c].data) == (static_cast<void*>(add1+c*ap_size[ap_id].height*ap_size[ap_id].width))? true :false)<<endl;
-				}*/
-			approxPyramid.push_back(approx_chns);
-		}
+					Mat py_tmp=Mat::zeros(approx_rows,approx_cols,CV_32FC1);
+		
+					Mat py=approx.rowRange(n_chans*(approx_rows+2*pad_T),(n_chans+1)*(approx_rows+2*pad_T));//pad 以后的图像
+		
+					int ma=approx_scal[ap_id]/(nApprox+1);
+					resize(chns_Pyramid[ma][n_chans],py_tmp,py_tmp.size(),0.0,0.0,INTER_AREA);
+					
+					if (nApprox!=0)
+					{
+						ratio=(double)pow(scales[ap_id]/scales[approx_scal[ap_id]],-lambdas[n_chans]);
+						py_tmp=py_tmp*ratio;
+					}
+					//smooth channels, optionally pad and concatenate channels
+					convTri(py_tmp,py_tmp,Km);
+					copyMakeBorder(py_tmp,py,pad_T,pad_T,pad_R,pad_R,IPL_BORDER_REPLICATE);
+					approx_chns.push_back(py);
+				} 
+				/*  check the pointer */
+				//float *add1 = (float*)approx_chns[0].data;
+				//for( int c=1;c<approx_chns.size();c++)
+				//{
+				//	//cout<<"pointer "<<static_cast<void*>(approx_chns[c].data)<<" "<< (static_cast<void*>(add1+c*ap_size[ap_id].height*ap_size[ap_id].width))<<endl;
+				//cout<<"pointer "<<(static_cast<void*>(approx_chns[c].data) == (static_cast<void*>(add1+c*((ap_size[ap_id].height+2*pad_T)*(ap_size[ap_id].width+2*pad_R))))? true :false)<<endl;
+				//}
+				approxPyramid.push_back(approx_chns);
+			}
+
+		//compute approxPyramid
+		//double ratio;
+		//for (int ap_id=0;ap_id<(int)approx_scal.size();ap_id++)
+		//{
+		//	vector<Mat> approx_chns;
+		//	approx_chns.clear();
+		//	/*memory is consistent*/
+		//	int approx_rows=ap_size[ap_id].height;
+		//	int approx_cols=ap_size[ap_id].width;
+		//	Mat approx=Mat::zeros(10*approx_rows,approx_cols,CV_32FC1);//因为chns_Pyramind是32F
+		//	for(int n_chans=0;n_chans<chns_num;n_chans++)
+		//	{
+		//		Mat py=approx.rowRange(n_chans*approx_rows,(n_chans+1)*approx_rows);
+		//		int ma=approx_scal[ap_id]/(nApprox+1);
+		//		resize(chns_Pyramid[ma][n_chans],py,py.size(),0.0,0.0,INTER_AREA);
+		//		ratio=(double)pow(scales[ap_id]/scales[approx_scal[ap_id]],-lambdas[n_chans]);
+		//		py=py*ratio;
+		//		//smooth channels, optionally pad and concatenate channels
+		//		convTri(py,py,Km);
+		//		approx_chns.push_back(py);
+		//	} 
+		//	/*  check the pointer */
+		//	/*	float *add1 = (float*)approx_chns[0].data;
+		//		for( int c=1;c<approx_chns.size();c++)
+		//		{
+		//			cout<<"pointer "<<static_cast<void*>(approx_chns[c].data)<<" "<< (static_cast<void*>(add1+c*ap_size[ap_id].height*ap_size[ap_id].width))<<endl;
+		//		cout<<"pointer "<<(static_cast<void*>(approx_chns[c].data) == (static_cast<void*>(add1+c*ap_size[ap_id].height*ap_size[ap_id].width))? true :false)<<endl;
+		//		}*/
+		//	approxPyramid.push_back(approx_chns);
+		//}
 
     vector<int>().swap(real_scal);
 	vector<int>().swap(approx_scal);
