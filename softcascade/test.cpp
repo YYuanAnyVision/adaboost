@@ -12,61 +12,31 @@ using namespace cv;
 
 int main( int argc, char** argv)
 {
-	vector<Adaboost> abs;
-	Adaboost ab1,ab2,ab3;
-	ab1.loadModel( "t_dep2.xml");
-	ab2.loadModel( "t_dep2.xml");
-	//ab3.loadModel( "t_dep2.xml");
-	abs.push_back( ab1 );
-	abs.push_back( ab2 );
-	//abs.push_back( ab3);
-	
+
+	Adaboost ab;
+	ab.loadModel("ab_3.xml");
+
 	softcascade sc;
-	sc.Combine( abs);
+	sc.Load("scmodel.xml");
 
+	FileStorage fs("neg_test_data.xml", FileStorage::READ);
+	Mat neg_test_data;
+	fs["neg_data"]>>neg_test_data;
 
-	Mat test_pos,test_neg;
-	FileStorage fs;
-	fs.open( "../../data/test_pos.xml", FileStorage::READ);
-	fs["matrix"] >>test_pos;
-	fs.release();
+	Mat for_test_data = neg_test_data.col(0);
+	Mat sc_only; for_test_data.copyTo( sc_only);
+	double sc_score = 0;
+	sc.Predict( (const float*)sc_only.data, sc_score);
 
-	fs.open( "../../data/test_neg.xml", FileStorage::READ);
-	fs["matrix"] >>test_neg;
-	fs.release();
+	Mat ab_test; for_test_data.copyTo(ab_test ); Mat ad_predict;
+	ab.Apply( ab_test, ad_predict);
+	cout<<"sc score is "<<sc_score<<endl;
+	cout<<"ab score is "<<ad_predict.at<double>(0,0)<<endl;
 
-	cout<<"test_neg, number of sample "<<test_pos.rows<<" feature dim "<<test_pos.cols<<endl;
+	//for( int c=0;c<for_test_data.rows;c++)
+	//{
+	//	cout<<"fea index "<<c<<" "<<for_test_data.at<float>(c,0)<<endl;
+	//}
 
-
-	cv::TickMeter tk;
-	tk.start();
-	int fn = 0;
-	int fp = 0;
-	for ( int c=0; c<test_pos.rows;c++ ) 
-	{
-		double h = 0;
-		double* pp = test_pos.ptr<double>(c);
-		sc.Predict( pp, h );
-		if( h < 0)
-			fn++;
-        pp=NULL;
-	}
-	cout<<"False Negative is "<<fn*1.0/test_pos.rows<<endl;
-
-	for ( int c=0; c<test_neg.rows;c++ ) 
-	{
-		double h = 0;
-		double* pp = test_neg.ptr<double>(c);
-		sc.Predict( pp, h );
-		if( h > 0)
-			fp++;
-        pp=NULL;
-	}
-	cout<<"False Positive is "<<fp*1.0/test_neg.rows<<endl;
-	tk.stop();
-	cout<<"time ----> "<<tk.getTimeSec()<<endl;
-
-	/*  test Save And Load */
-	sc.Save("sc.xml");
 	return 0;
 }

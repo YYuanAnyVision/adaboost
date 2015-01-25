@@ -201,7 +201,6 @@ bool Adaboost::Apply( const Mat &test_data,				/*  in: test data format-> featur
 	for( int c=0;c<m_trees.size();c++)
 	{
 		Mat p; m_trees[c].Apply( test_data, p);
-        cout<<"adding form tree "<<c<<" "<<p.at<double>(0,0)<<endl;
 		predicted_vector += p;
 	}
 	return true;

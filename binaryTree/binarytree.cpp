@@ -547,6 +547,7 @@ bool  _apply( double* inds,				/* out: predicted label 1 or -1 */
 		int k = 0;
 		while( child[k] )					/*  not leaf node */
 		{
+			//cout<<"choose fids "<<fids[k]<<", v "<<data[ fids[k]*number_of_samples +i]<<", t "<<thrs[k];
 			if( data[ fids[k]*number_of_samples +i] < thrs[k] )
 			{
 				k = child[k];				/* left node */
@@ -555,9 +556,11 @@ bool  _apply( double* inds,				/* out: predicted label 1 or -1 */
 			{
 				k = child[k]+1;				/* right node */
 			}
+			//cout<<" jump to "<<k<<endl;
 		}
 		/*  double format */
 		inds[i] = hs[k];
+		//cout<<"adding score "<<hs[k]<<" from position "<<k<<endl;
 	}
 }
 

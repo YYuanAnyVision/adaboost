@@ -14,7 +14,7 @@
 
 using namespace std;
 using namespace cv;
-
+//#define  fun_getscale
 Mat get_Km(int smooth )
 { 
     Mat dst(1, 2*smooth+1, CV_32FC1);
@@ -31,6 +31,175 @@ void feature_Pyramids::convTri( const Mat &src, Mat &dst,const Mat &Km) const
 	filter2D(src,dst,src.depth(),Km,Point(-1,-1),0,IPL_BORDER_REFLECT);
 	filter2D(dst,dst,src.depth(),Km.t(),Point(-1,-1),0,IPL_BORDER_REFLECT); 
 	
+}
+void feature_Pyramids::get_lambdas(vector<vector<Mat> > &chns_Pyramid,vector<double> &lambdas,vector<int> &real_scal,vector<double> &scales)const
+{
+	if (lam.empty()) 
+	{
+		Scalar lam_s;
+		Scalar lam_ss;
+		CV_Assert(chns_Pyramid.size()>=2);
+		if (chns_Pyramid.size()>2)
+		{
+			//compute lambdas
+			double size1,size2,lam_tmp;
+			size1 =(double)chns_Pyramid[1][0].rows*chns_Pyramid[1][0].cols;
+			size2 =(double)chns_Pyramid[2][0].rows*chns_Pyramid[2][0].cols;
+			//compute luv	 
+			for (int c=0;c<3;c++)
+			{
+				lam_s+=sum(chns_Pyramid[1][c]);		
+				lam_ss+=sum(chns_Pyramid[2][c]);
+			}
+			lam_s=lam_s/(size1*3.0);
+			lam_ss=lam_ss/(size2*3.0);
+			lam_tmp=-cv::log(lam_ss.val[0]/lam_s.val[0])/cv::log(scales[real_scal[2]]/scales[real_scal[1]]);
+			for (int c=0;c<3;c++)
+			{
+				lambdas.push_back(lam_tmp);
+			}
+			//compute  mag
+			lam_s=sum(chns_Pyramid[1][4])/(size1*1.0);
+			lam_ss=sum(chns_Pyramid[2][4])/(size2*1.0);
+			lambdas.push_back(-cv::log(lam_ss.val[0]/lam_s.val[0])/cv::log(scales[real_scal[2]]/scales[real_scal[1]]));
+			//compute grad_hist
+			for (int c=4;c<10;c++)
+			{
+				lam_s+=sum(chns_Pyramid[1][c]);		
+				lam_ss+=sum(chns_Pyramid[2][c]);
+			}
+			lam_s=lam_s/(size1*6.0);
+			lam_ss=lam_ss/(size2*6.0);
+			lam_tmp=-cv::log(lam_ss.val[0]/lam_s.val[0])/cv::log(scales[real_scal[2]]/scales[real_scal[1]]);
+			for (int c=4;c<10;c++)
+			{
+				lambdas.push_back(lam_tmp);
+			}
+		}else{
+			//compute lambdas
+			double size0,size1,lam_tmp;
+			size0 =(double)chns_Pyramid[0][0].rows*chns_Pyramid[0][0].cols;
+			size1 =(double)chns_Pyramid[1][0].rows*chns_Pyramid[1][0].cols;
+			//compute luv	 
+			for (int c=0;c<3;c++)
+			{
+				lam_s+=sum(chns_Pyramid[0][c]);		
+				lam_ss+=sum(chns_Pyramid[1][c]);
+			}
+			lam_s=lam_s/(size0*3.0);
+			lam_ss=lam_ss/(size1*3.0);
+			lam_tmp=-cv::log(lam_ss.val[0]/lam_s.val[0])/cv::log(scales[real_scal[1]]/scales[real_scal[0]]);
+			for (int c=0;c<3;c++)
+			{
+				lambdas.push_back(lam_tmp);
+			}
+			//compute  mag
+			lam_s=sum(chns_Pyramid[0][4])/(size0*1.0);
+			lam_ss=sum(chns_Pyramid[1][4])/(size1*1.0);
+			lambdas.push_back(-cv::log(lam_ss.val[0]/lam_s.val[0])/cv::log(scales[real_scal[1]]/scales[real_scal[0]]));
+			//compute grad_hist
+			for (int c=4;c<10;c++)
+			{
+				lam_s+=sum(chns_Pyramid[0][c]);		
+				lam_ss+=sum(chns_Pyramid[1][c]);
+			}
+			lam_s=lam_s/(size0*6.0);
+			lam_ss=lam_ss/(size1*6.0);
+			lam_tmp=-cv::log(lam_ss.val[0]/lam_s.val[0])/cv::log(scales[real_scal[1]]/scales[real_scal[0]]);
+			for (int c=4;c<10;c++)
+			{
+				lambdas.push_back(lam_tmp);
+			}
+		}
+	}else{
+		lambdas.resize(10);
+		for(int n=0;n<3;n++)
+		{
+			lambdas[n]=lam[0];
+		}
+		lambdas[3]=lam[1];
+		for(int n=4;n<10;n++)
+		{
+			lambdas[n]=lam[2];
+		}	
+	}
+}
+void feature_Pyramids::getscales(const Mat &img,vector<Size> &ap_size,vector<int> &real_scal,vector<double> &scales,vector<double> &scalesh,vector<double> &scalesw)const
+{
+
+	int nPerOct =m_opt.nPerOct;
+	int nOctUp =m_opt.nOctUp;
+	int shrink =m_opt.shrink;
+	int nApprox=m_opt.nApprox;
+	Size minDS =m_opt.minDS;
+
+	int nscales=(int)floor(nPerOct*(nOctUp+log(min(img.cols/(minDS.width*1.0),img.rows/(minDS.height*1.0)))/log(2))+1);
+	//Size ap_tmp_size;
+
+	CV_Assert(nApprox<nscales);
+
+	double d0=(double)min(img.rows,img.cols);
+	double d1=(double)max(img.rows,img.cols);
+	for (double s=0;s<nscales;s++)
+	{
+
+		/*adjust ap_size*/
+		double sc=pow(2.0,(-s)/nPerOct+nOctUp);
+		double s0=(cvRound(d0*sc/shrink)*shrink-0.25*shrink)/d0;
+		double s1=(cvRound(d0*sc/shrink)*shrink+0.25*shrink)/d0;
+		double ss,es1,es2,a=10,val;
+		for(int c=0;c<101;c++)
+		{
+			ss=(double)((s1-s0)*c/101+s0);
+			es1=abs(d0*ss-cvRound(d0*ss/shrink)*shrink);
+			es2=abs(d1*ss-cvRound(d1*ss/shrink)*shrink);
+			if (max(es1,es2)<a)
+			{
+				a=max(es1,es2);
+				val=ss;
+			}
+		}
+		if (scales.empty())
+		{
+			/*all scales*/
+			scales.push_back(val);
+			scalesh.push_back(cvRound(img.rows*val/shrink)*shrink/(img.rows*1.0));
+			scalesw.push_back(cvRound(img.cols*val/shrink)*shrink/(img.cols*1.0));
+			/*save ap_size*/
+			//ap_tmp_size.height=cvRound(((img.rows*val)/shrink));
+			//ap_tmp_size.width=cvRound(((img.cols*val)/shrink));
+			ap_size.push_back(Size(cvRound(((img.cols*val)/shrink)),cvRound(((img.rows*val)/shrink))));
+
+		}else{
+			if (val!=scales.back())
+			{	
+				/*all scales*/
+				scales.push_back(val);
+				scalesh.push_back(cvRound(img.rows*val/shrink)*shrink/(img.rows*1.0));
+				scalesw.push_back(cvRound(img.cols*val/shrink)*shrink/(img.cols*1.0));
+				/*save ap_size*/
+				//ap_tmp_size.height=cvRound((img.rows*val/shrink));
+				//ap_tmp_size.width=cvRound((img.cols*val/shrink));
+				//ap_size.push_back(ap_tmp_size);
+				ap_size.push_back(Size(cvRound(((img.cols*val)/shrink)),cvRound(((img.rows*val)/shrink))));
+			}
+		}	
+	}
+	/*compute real & approx scales*/
+	nscales=scales.size();
+
+	for (int s=0;s<nscales;s++)
+	{
+		/*real scale*/
+		if (((int)s%(nApprox+1)==0))
+		{
+			real_scal.push_back((int)s);
+		}
+		if ((s==(scales.size()-1)&&(s>real_scal[real_scal.size()-1])&&(s-real_scal[real_scal.size()-1]>(nApprox+1)/2)))
+		{
+			real_scal.push_back((int)s);
+		}
+	}
 }
 void feature_Pyramids::computeGradient(const Mat &img, Mat& grad, Mat& qangle) const
 {
@@ -292,89 +461,23 @@ void feature_Pyramids::computeChannels(const Mat &image,vector<Mat>& channels) c
 }
 void feature_Pyramids:: chnsPyramid(const Mat &img,vector<vector<Mat> > &approxPyramid,vector<double> &scales,vector<double> &scalesh,vector<double> &scalesw) const
 {
-	int nPerOct =m_opt.nPerOct;
-	int nOctUp =m_opt.nOctUp;
+
 	int shrink =m_opt.shrink;
 	int smooth =m_opt.smooth;
 	int nbins=m_opt.nbins;
 	int binsize=m_opt.binsize;
 	int nApprox=m_opt.nApprox;
-	Size minDS =m_opt.minDS;
 	Size pad = m_opt.pad;
 
-	/*get scales*/
-	//double minDs=(double)min(diam.width,diam.height);
-	int nscales=(int)floor(nPerOct*(nOctUp+log(min(img.cols/(minDS.height*1.0),img.rows/(minDS.width*1.0)))/log(2))+1);
-	vector<Size> ap_size;
-	Size ap_tmp_size;
-
 	approxPyramid.clear();
-	scales.clear();
-	scalesh.clear();
-	scalesw.clear();
 
-	CV_Assert(nApprox<nscales);
-	/*compute real & approx scales*/
+
+	/*get scales*/
+	vector<Size> ap_size;
 	vector<int> real_scal;
-	double d0=(double)min(img.rows,img.cols);
-	double d1=(double)max(img.rows,img.cols);
-	for (double s=0;s<nscales;s++)
-	{
-		
-		/*adjust ap_size*/
-		double sc=pow(2.0,(-s)/nPerOct+nOctUp);
-		double s0=(cvRound(d0*sc/shrink)*shrink-0.25*shrink)/d0;
-		double s1=(cvRound(d0*sc/shrink)*shrink+0.25*shrink)/d0;
-		double ss,es1,es2,a=10,val;
-		for(int c=0;c<101;c++)
-		{
-			ss=(double)((s1-s0)*c/101+s0);
-			es1=abs(d0*ss-cvRound(d0*ss/shrink)*shrink);
-			es2=abs(d1*ss-cvRound(d1*ss/shrink)*shrink);
-			if (max(es1,es2)<a)
-			{
-				a=max(es1,es2);
-				val=ss;
-			}
-		}
-		if (scales.empty())
-		{
-			/*all scales*/
-			scales.push_back(val);
-			scalesh.push_back(cvRound(img.rows*val/shrink)*shrink/(img.rows*1.0));
-			scalesw.push_back(cvRound(img.cols*val/shrink)*shrink/(img.cols*1.0));
-			/*save ap_size*/
-			ap_tmp_size.height=cvRound(((img.rows+shrink-1)/shrink)*val);
-			ap_tmp_size.width=cvRound(((img.cols+shrink-1)/shrink)*val);
-			ap_size.push_back(ap_tmp_size);
 
-		}else{
-			if (val!=scales.back())
-			{	
-				/*all scales*/
-				scales.push_back(val);
-				scalesh.push_back(cvRound(img.rows*val/shrink)*shrink/(img.rows*1.0));
-				scalesw.push_back(cvRound(img.cols*val/shrink)*shrink/(img.cols*1.0));
-				/*save ap_size*/
-				ap_tmp_size.height=cvRound(((img.rows+shrink-1)/shrink)*val);
-				ap_tmp_size.width=cvRound(((img.cols+shrink-1)/shrink)*val);
-				ap_size.push_back(ap_tmp_size);
-			}
-		}	
-	}
-	nscales=scales.size();
-	for (int s=0;s<nscales;s++)
-	{
-		/*real scale*/
-		if (((int)s%(nApprox+1)==0))
-		{
-			real_scal.push_back((int)s);
-		}
-		if ((s==(scales.size()-1)&&(s>real_scal[real_scal.size()-1])&&(s-real_scal[real_scal.size()-1]>(nApprox+1)/2)))
-		{
-			real_scal.push_back((int)s);
-		}
-	}
+	getscales(img,ap_size,real_scal,scales,scalesh,scalesw);
+
 	Mat img_tmp;
 	//compute real 
 	vector<vector<Mat> > chns_Pyramid;
@@ -389,98 +492,100 @@ void feature_Pyramids:: chnsPyramid(const Mat &img,vector<vector<Mat> > &approxP
 	}
 	//compute lambdas
 	vector<double> lambdas;
-	if (lam.empty()) 
-	{
-		Scalar lam_s;
-		Scalar lam_ss;
-		CV_Assert(chns_Pyramid.size()>=2);
-		if (chns_Pyramid.size()>2)
-		{
-			//compute lambdas
-			     double size1,size2,lam_tmp;
-				 size1 =(double)chns_Pyramid[1][0].rows*chns_Pyramid[1][0].cols;
-				 size2 =(double)chns_Pyramid[2][0].rows*chns_Pyramid[2][0].cols;
-				    //compute luv	 
-					for (int c=0;c<3;c++)
-					{
-						lam_s+=sum(chns_Pyramid[1][c]);		
-						lam_ss+=sum(chns_Pyramid[2][c]);
-					}
-					lam_s=lam_s/(size1*3.0);
-					lam_ss=lam_ss/(size2*3.0);
-					lam_tmp=-cv::log(lam_ss.val[0]/lam_s.val[0])/cv::log(scales[real_scal[2]]/scales[real_scal[1]]);
-					for (int c=0;c<3;c++)
-					{
-						lambdas.push_back(lam_tmp);
-					}
-			        //compute  mag
-					lam_s=sum(chns_Pyramid[1][4])/(size1*1.0);
-					lam_ss=sum(chns_Pyramid[2][4])/(size2*1.0);
-					lambdas.push_back(-cv::log(lam_ss.val[0]/lam_s.val[0])/cv::log(scales[real_scal[2]]/scales[real_scal[1]]));
-			         //compute grad_hist
-					for (int c=4;c<10;c++)
-					{
-						lam_s+=sum(chns_Pyramid[1][c]);		
-						lam_ss+=sum(chns_Pyramid[2][c]);
-					}
-						lam_s=lam_s/(size1*6.0);
-						lam_ss=lam_ss/(size2*6.0);
-						lam_tmp=-cv::log(lam_ss.val[0]/lam_s.val[0])/cv::log(scales[real_scal[2]]/scales[real_scal[1]]);
-				   for (int c=4;c<10;c++)
-				   {
-				      lambdas.push_back(lam_tmp);
-				   }
-		}else{
-			//compute lambdas
-			double size0,size1,lam_tmp;
-			size0 =(double)chns_Pyramid[0][0].rows*chns_Pyramid[0][0].cols;
-			size1 =(double)chns_Pyramid[1][0].rows*chns_Pyramid[1][0].cols;
-			//compute luv	 
-			for (int c=0;c<3;c++)
-			{
-				lam_s+=sum(chns_Pyramid[0][c]);		
-				lam_ss+=sum(chns_Pyramid[1][c]);
-			}
-			lam_s=lam_s/(size0*3.0);
-			lam_ss=lam_ss/(size1*3.0);
-			lam_tmp=-cv::log(lam_ss.val[0]/lam_s.val[0])/cv::log(scales[real_scal[1]]/scales[real_scal[0]]);
-			for (int c=0;c<3;c++)
-			{
-				lambdas.push_back(lam_tmp);
-			}
-			//compute  mag
-			lam_s=sum(chns_Pyramid[0][4])/(size0*1.0);
-			lam_ss=sum(chns_Pyramid[1][4])/(size1*1.0);
-			lambdas.push_back(-cv::log(lam_ss.val[0]/lam_s.val[0])/cv::log(scales[real_scal[1]]/scales[real_scal[0]]));
-			//compute grad_hist
-			for (int c=4;c<10;c++)
-			{
-				lam_s+=sum(chns_Pyramid[0][c]);		
-				lam_ss+=sum(chns_Pyramid[1][c]);
-			}
-			lam_s=lam_s/(size0*6.0);
-			lam_ss=lam_ss/(size1*6.0);
-			lam_tmp=-cv::log(lam_ss.val[0]/lam_s.val[0])/cv::log(scales[real_scal[1]]/scales[real_scal[0]]);
-			for (int c=4;c<10;c++)
-			{
-				lambdas.push_back(lam_tmp);
-			}
-		}
-	}else{
-		lambdas.resize(10);
-		for(int n=0;n<3;n++)
-		{
-		 lambdas[n]=lam[0];
-		}
-		 lambdas[3]=lam[1];
-		for(int n=4;n<10;n++)
-		{
-		 lambdas[n]=lam[2];
-		}	
-	}
+	//if (lam.empty()) 
+	//{
+	//	Scalar lam_s;
+	//	Scalar lam_ss;
+	//	CV_Assert(chns_Pyramid.size()>=2);
+	//	if (chns_Pyramid.size()>2)
+	//	{
+	//		//compute lambdas
+	//		     double size1,size2,lam_tmp;
+	//			 size1 =(double)chns_Pyramid[1][0].rows*chns_Pyramid[1][0].cols;
+	//			 size2 =(double)chns_Pyramid[2][0].rows*chns_Pyramid[2][0].cols;
+	//			    //compute luv	 
+	//				for (int c=0;c<3;c++)
+	//				{
+	//					lam_s+=sum(chns_Pyramid[1][c]);		
+	//					lam_ss+=sum(chns_Pyramid[2][c]);
+	//				}
+	//				lam_s=lam_s/(size1*3.0);
+	//				lam_ss=lam_ss/(size2*3.0);
+	//				lam_tmp=-cv::log(lam_ss.val[0]/lam_s.val[0])/cv::log(scales[real_scal[2]]/scales[real_scal[1]]);
+	//				for (int c=0;c<3;c++)
+	//				{
+	//					lambdas.push_back(lam_tmp);
+	//				}
+	//		        //compute  mag
+	//				lam_s=sum(chns_Pyramid[1][4])/(size1*1.0);
+	//				lam_ss=sum(chns_Pyramid[2][4])/(size2*1.0);
+	//				lambdas.push_back(-cv::log(lam_ss.val[0]/lam_s.val[0])/cv::log(scales[real_scal[2]]/scales[real_scal[1]]));
+	//		         //compute grad_hist
+	//				for (int c=4;c<10;c++)
+	//				{
+	//					lam_s+=sum(chns_Pyramid[1][c]);		
+	//					lam_ss+=sum(chns_Pyramid[2][c]);
+	//				}
+	//					lam_s=lam_s/(size1*6.0);
+	//					lam_ss=lam_ss/(size2*6.0);
+	//					lam_tmp=-cv::log(lam_ss.val[0]/lam_s.val[0])/cv::log(scales[real_scal[2]]/scales[real_scal[1]]);
+	//			   for (int c=4;c<10;c++)
+	//			   {
+	//			      lambdas.push_back(lam_tmp);
+	//			   }
+	//	}else{
+	//		//compute lambdas
+	//		double size0,size1,lam_tmp;
+	//		size0 =(double)chns_Pyramid[0][0].rows*chns_Pyramid[0][0].cols;
+	//		size1 =(double)chns_Pyramid[1][0].rows*chns_Pyramid[1][0].cols;
+	//		//compute luv	 
+	//		for (int c=0;c<3;c++)
+	//		{
+	//			lam_s+=sum(chns_Pyramid[0][c]);		
+	//			lam_ss+=sum(chns_Pyramid[1][c]);
+	//		}
+	//		lam_s=lam_s/(size0*3.0);
+	//		lam_ss=lam_ss/(size1*3.0);
+	//		lam_tmp=-cv::log(lam_ss.val[0]/lam_s.val[0])/cv::log(scales[real_scal[1]]/scales[real_scal[0]]);
+	//		for (int c=0;c<3;c++)
+	//		{
+	//			lambdas.push_back(lam_tmp);
+	//		}
+	//		//compute  mag
+	//		lam_s=sum(chns_Pyramid[0][4])/(size0*1.0);
+	//		lam_ss=sum(chns_Pyramid[1][4])/(size1*1.0);
+	//		lambdas.push_back(-cv::log(lam_ss.val[0]/lam_s.val[0])/cv::log(scales[real_scal[1]]/scales[real_scal[0]]));
+	//		//compute grad_hist
+	//		for (int c=4;c<10;c++)
+	//		{
+	//			lam_s+=sum(chns_Pyramid[0][c]);		
+	//			lam_ss+=sum(chns_Pyramid[1][c]);
+	//		}
+	//		lam_s=lam_s/(size0*6.0);
+	//		lam_ss=lam_ss/(size1*6.0);
+	//		lam_tmp=-cv::log(lam_ss.val[0]/lam_s.val[0])/cv::log(scales[real_scal[1]]/scales[real_scal[0]]);
+	//		for (int c=4;c<10;c++)
+	//		{
+	//			lambdas.push_back(lam_tmp);
+	//		}
+	//	}
+	//}else{
+	//	lambdas.resize(10);
+	//	for(int n=0;n<3;n++)
+	//	{
+	//	 lambdas[n]=lam[0];
+	//	}
+	//	 lambdas[3]=lam[1];
+	//	for(int n=4;n<10;n++)
+	//	{
+	//	 lambdas[n]=lam[2];
+	//	}	
+	//}
+	get_lambdas(chns_Pyramid,lambdas,real_scal,scales);
+
 		//compute approx 特征基准
 		vector<int> approx_scal;
-		for (int s_r=0;s_r<nscales;s_r++)
+		for (int s_r=0;s_r<scales.size();s_r++)
 		{
 			int tmp=s_r/(nApprox+1);
 			if (s_r-real_scal[tmp]>((nApprox+1)/2))
@@ -572,64 +677,18 @@ void feature_Pyramids:: chnsPyramid(const Mat &img,vector<vector<Mat> > &approxP
 }
 void feature_Pyramids:: chnsPyramid(const Mat &img,  vector<vector<Mat> > &chns_Pyramid,vector<double> &scales) const//nApprox==0时
 {
-	int nPerOct =m_opt.nPerOct;
-	int nOctUp =m_opt.nOctUp;
-	int shrink =m_opt.shrink;
-	int smooth =m_opt.smooth;
-	int nbins=m_opt.nbins;
-	int binsize=m_opt.binsize;
-	int nApprox=m_opt.nApprox;
-	Size diam =m_opt.minDS;
-	/*get scales*/
-	double minDs=(double)min(diam.width,diam.height);
-	int nscales=(int)floor(nPerOct*(nOctUp+log(min(img.cols/minDs,img.rows/minDs))/log(2))+1);
-	vector<Size> ap_size;
-	Size ap_tmp_size;
 
-	CV_Assert(nApprox<nscales);
-	/*compute real & approx scales*/
+	int shrink =m_opt.shrink;
 	chns_Pyramid.clear();
 	scales.clear();
-	double d0=(double)min(img.rows,img.cols);
-	double d1=(double)max(img.rows,img.cols);
-	for (float s=0;s<nscales;s++)
-	{
-		/*adjust ap_size*/
-		double sc=pow(2.0,(-s)/nPerOct+nOctUp);
-		double s0=(cvRound(d0*sc/shrink)*shrink-0.25*shrink)/d0;
-		double s1=(cvRound(d0*sc/shrink)*shrink+0.25*shrink)/d0;
-		double ss,es1,es2,a=10,val;
-		for(int c=0;c<101;c++)
-		{
-			ss=(double)((s1-s0)*c/101+s0);
-			es1=abs(d0*ss-cvRound(d0*ss/shrink)*shrink);
-			es2=abs(d1*ss-cvRound(d1*ss/shrink)*shrink);
-			if (max(es1,es2)<a)
-			{
-				a=max(es1,es2);
-				val=ss;
-			}
-		}
-		if (scales.empty())
-		{
-			scales.push_back(val);
-			/*save ap_size*/
-			ap_tmp_size.height=cvRound((img.rows*val)/shrink);
-			ap_tmp_size.width=cvRound((img.cols*val)/shrink);
-			ap_size.push_back(ap_tmp_size);
-			
-		}else
-		{
-			if (val!=scales.back())
-			{
-				scales.push_back(val);
-				/*save ap_size*/
-				ap_tmp_size.height=cvRound((img.rows*val)/shrink);
-				ap_tmp_size.width=cvRound((img.cols*val)/shrink);
-				ap_size.push_back(ap_tmp_size);
-			}
-		}		
-	}
+	/*get scales*/
+	vector<Size> ap_size;
+	vector<double> scalesh;
+	vector<double> scalesw;
+	vector<int> real_scal;
+
+	getscales(img,ap_size,real_scal,scales,scalesh,scalesw);
+
 	Mat img_tmp;
 	//compute real 
 	for (int s_r=0;s_r<(int)scales.size();s_r++)
@@ -657,45 +716,69 @@ void feature_Pyramids::compute_lambdas(const vector<Mat> &fold)
 	detector_opt in_opt;
 	in_opt.nApprox=0;
 	feature_set.setParas(in_opt);
-	vector<vector<vector<Mat> > > Pyramid_set;
+	//vector<vector<vector<Mat> > > Pyramid_set;
 	vector<double> scal;
+	vector<double> mean;	
+	mean.resize(3);
+	vector<vector<double> >Pyramid_mean;
+	vector<vector<vector<double> > > Pyramid_set_mean;
+
 	for (int n=0;n<nimages;n++)
 	{
 		image= fold[n];
 		vector<vector<Mat> > Pyramid;
 		feature_set.chnsPyramid(image,Pyramid,scal);
-		Pyramid_set.push_back(Pyramid);
-	}
-	vector<double> mean;	
-	mean.resize(3);
-	vector<vector<double> >Pyramid_mean;
-	vector<vector<vector<double> > > Pyramid_set_mean;
-	/*compute the mean of the n_type,where n_type=3(color,mag,gradhist)*/
-	for (int m=0;m<Pyramid_set.size();m++)//图像
-	{
+		//Pyramid_set.push_back(Pyramid);
 		Pyramid_mean.clear();
-		for (int n=0;n<Pyramid_set[m].size();n++)//比例scales
-		{
-			double size=Pyramid_set[m][n][0].rows*Pyramid_set[m][n][0].cols*1.0;
-			Scalar lam_color,lam_mag,lam_hist;
-			for (int p=0;p<3;p++)
+			for (int n=0;n<Pyramid.size();n++)//比例scales
 			{
-				lam_color+=sum(Pyramid_set[m][n][p]);
-			}
-			mean[0]=lam_color[0]/(size*3.0);
-			lam_mag=sum(Pyramid_set[m][n][3]);
-			mean[1]=lam_mag[0]/(size*1.0);
+				double size=Pyramid[n][0].rows*Pyramid[n][0].cols*1.0;
+				Scalar lam_color,lam_mag,lam_hist;
+				for (int p=0;p<3;p++)
+				{
+					lam_color+=sum(Pyramid[n][p]);
+				}
+				mean[0]=lam_color[0]/(size*3.0);
+				lam_mag=sum(Pyramid[n][3]);
+				mean[1]=lam_mag[0]/(size*1.0);
 
-			for (int p = 0; p < 6; p++)
-			{
-				lam_hist+=sum(Pyramid_set[m][n][p+4]);
-			}
-			mean[2]=lam_hist[0]/(size*6.0);
+				for (int p = 0; p < 6; p++)
+				{
+					lam_hist+=sum(Pyramid[n][p+4]);
+				}
+				mean[2]=lam_hist[0]/(size*6.0);
 
-			Pyramid_mean.push_back(mean);
-		}
-		Pyramid_set_mean.push_back(Pyramid_mean);
+				Pyramid_mean.push_back(mean);
+			}
+			Pyramid_set_mean.push_back(Pyramid_mean);
 	}
+	
+	/*compute the mean of the n_type,where n_type=3(color,mag,gradhist)*/
+	//for (int m=0;m<Pyramid_set.size();m++)//图像
+	//{
+	//	Pyramid_mean.clear();
+	//	for (int n=0;n<Pyramid_set[m].size();n++)//比例scales
+	//	{
+	//		double size=Pyramid_set[m][n][0].rows*Pyramid_set[m][n][0].cols*1.0;
+	//		Scalar lam_color,lam_mag,lam_hist;
+	//		for (int p=0;p<3;p++)
+	//		{
+	//			lam_color+=sum(Pyramid_set[m][n][p]);
+	//		}
+	//		mean[0]=lam_color[0]/(size*3.0);
+	//		lam_mag=sum(Pyramid_set[m][n][3]);
+	//		mean[1]=lam_mag[0]/(size*1.0);
+
+	//		for (int p = 0; p < 6; p++)
+	//		{
+	//			lam_hist+=sum(Pyramid_set[m][n][p+4]);
+	//		}
+	//		mean[2]=lam_hist[0]/(size*6.0);
+
+	//		Pyramid_mean.push_back(mean);
+	//	}
+	//	Pyramid_set_mean.push_back(Pyramid_mean);
+	//}
 	// run
 
 	/*remove the small value when scale==1*/

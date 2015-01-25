@@ -19,7 +19,7 @@
 
 #include <omp.h>
 
-#define TEST_STAT
+#define TEST_MUITI
 
 using namespace std;
 using namespace cv;
@@ -208,8 +208,8 @@ bool sampleWins(    const softcascade &sc, 	    /*  in: detector */
 
 		std::random_shuffle( neg_paths.begin(), neg_paths.end(),myrandom);
        
-        #pragma omp parallel for num_threads(Nthreads) /* openmp -->but no error check in runtime ... */
-		for( int c=0;c<number_of_neg_images;c++)
+		//#pragma omp parallel for num_threads(Nthreads) /* openmp -->but no error check in runtime ... */
+		for( int c=0;c<number_of_neg_images && origsamples.size() < number_to_sample;c++)
 		{
 			vector<Rect> target_rects;
             vector<double> conf_v;
@@ -226,6 +226,8 @@ bool sampleWins(    const softcascade &sc, 	    /*  in: detector */
                 /*  sampling and shuffle  */
 				sampleRects( number_target_per_image, img.size(), opts.modelDs, target_rects );
                 std::random_shuffle( target_rects.begin(), target_rects.end() , myrandom);
+				if( target_rects.size() > number_target_per_image)
+					target_rects.resize( number_target_per_image );
 			}
 			else
 			{
@@ -234,9 +236,9 @@ bool sampleWins(    const softcascade &sc, 	    /*  in: detector */
                 if( target_rects.size() > number_target_per_image )
                     target_rects.resize( number_target_per_image);
 			}
-			
             /*  resize the rect to fixed widht / height ratio, for pedestrain det , is 41/100 for INRIA database */
-            for ( int i=0;i<target_rects.size() && i < number_target_per_image;i++) 
+			Mat draw;img.copyTo( draw);
+            for ( int i=0;i<target_rects.size();i++) 
             {
                 target_rects[i] = resizeToFixedRatio( target_rects[i], opts.modelDs.width*1.0/opts.modelDs.height, 1); /* respect to height */
                 /* grow it a little bit */
@@ -250,14 +252,12 @@ bool sampleWins(    const softcascade &sc, 	    /*  in: detector */
                 /* finally crop the image */
                 Mat target_obj = cropImage( img, target_rects[i]);
                 cv::resize( target_obj, target_obj, cv::Size(modelDsBig_width, modelDsBig_height), 0, 0, INTER_AREA);
-                
                 #pragma omp critical
                 {
                     origsamples.push_back( target_obj );
                 }
             }
 		}
-
         /* random shuffle and sampling  */
         if(origsamples.size() > number_to_sample)
         {
@@ -294,12 +294,16 @@ int main( int argc, char** argv)
     tree_par.maxDepth = 2;
     tree_par.fracFtrs = 0.08;
 
-    //cas_para.posGtDir  = "/mnt/disk1/data/INRIAPerson/Train/posGT/";
+#ifdef P1
     cas_para.posGtDir  = "/media/yuanyang/disk1/libs/piotr_toolbox/data/Inria/train/posGt_opencv/";
-    //cas_para.posImgDir = "/mnt/disk1/data/INRIAPerson/Train/pos"; 
     cas_para.posImgDir = "/media/yuanyang/disk1/libs/piotr_toolbox/data/Inria/train/pos/"; 
-	//cas_para.negImgDir = "/mnt/disk1/data/INRIAPerson/Train/neg/";
 	cas_para.negImgDir = "/media/yuanyang/disk1/libs/piotr_toolbox/data/Inria/train/neg/";
+#else
+    cas_para.posImgDir = "/mnt/disk1/data/INRIAPerson/Train/pos"; 
+    cas_para.posGtDir  = "/mnt/disk1/data/INRIAPerson/Train/posGT/";
+	cas_para.negImgDir = "/mnt/disk1/data/INRIAPerson/Train/neg/";
+#endif
+
     cas_para.infos = "2015-1-22, YuanYang, Test";
     cas_para.shrink = det_opt.shrink;
     cas_para.nchannels = 10;
@@ -364,20 +368,19 @@ int main( int argc, char** argv)
             cout<<"done. number :"<<pos_train_data.cols<<endl;
         }
 
-
+		saveMatToFile("pos_train_data_nopad.data", pos_train_data);
 		/* 4--> sample negatives and compute features, accumulate negatives from previous stages */
         cout<<"->Making negative training data ";
         sampleWins( sc, stage, false, neg_samples, neg_origsamples );          /* remember the neg_samples is empty */
         cout<<"->Sampling done"<<endl;
 
         vector<Mat> accu_neg;
-        if( neg_previousSamples.size() ==0 )                                   /* stage == 0 */
+        if( stage ==0 )                                   /* stage == 0 */
         {
             accu_neg = neg_origsamples;
         }
         else
         {
-            vector<Mat>().swap(accu_neg);accu_neg.clear();                      
             int n1 = std::max(cas_para.nAccNeg,cas_para.nNeg)-neg_origsamples.size();   /* how many will be save from previous stage */
             if( n1 < neg_previousSamples.size())
             {
@@ -385,8 +388,8 @@ int main( int argc, char** argv)
                 neg_previousSamples.resize( n1 );
             }
             accu_neg.reserve( neg_previousSamples.size() + neg_origsamples.size() );
-            accu_neg.insert( accu_neg.begin(), neg_previousSamples.begin(), neg_previousSamples.end());
             accu_neg.insert( accu_neg.begin(), neg_origsamples.begin(), neg_origsamples.end());    
+            accu_neg.insert( accu_neg.begin(), neg_previousSamples.begin(), neg_previousSamples.end());
         }
         neg_previousSamples = accu_neg;
         neg_train_data = Mat::zeros( final_feature_dim, accu_neg.size(), CV_32F);
@@ -426,10 +429,11 @@ int main( int argc, char** argv)
         /* show the average pos and neg distance */
         double avg_train_pos_score = 0;
         double avg_train_neg_score = 0;
+
         Mat pre_neg_score;
         Mat pre_pos_score;
-        //ab.Apply( pos_train_data, pre_pos_score);
-        //ab.Apply( neg_train_data, pre_neg_score);
+        ab.Apply( pos_train_data, pre_pos_score);
+        ab.Apply( neg_train_data, pre_neg_score);
         for( int c=0;c<pre_pos_score.rows;c++)
         {
             avg_train_pos_score += pre_pos_score.at<double>(c,0);
@@ -440,10 +444,12 @@ int main( int argc, char** argv)
             avg_train_neg_score += pre_neg_score.at<double>(c,0);
         }
         avg_train_neg_score /= pre_neg_score.rows;
+
+		//Mat for_test_feat;
         //for( int c=0;c<pos_train_data.cols;c++)
         //{
-        //    Mat for_test_feat = pos_train_data.col(c);
-        //    for_test_feat = for_test_feat.t();
+        //    Mat tmp = pos_train_data.col(c);
+		//	tmp.copyTo( for_test_feat );
         //    double score = 0;
         //    sc.Predict( (float*)for_test_feat.data, score );
         //    avg_train_pos_score += score;
@@ -452,16 +458,16 @@ int main( int argc, char** argv)
 
         //for( int c=0;c<neg_train_data.cols;c++)
         //{
-        //    Mat for_test_feat = neg_train_data.col(c);
-        //    for_test_feat = for_test_feat.t();
+        //    Mat tmp = neg_train_data.col(c);
+		//	tmp.copyTo( for_test_feat );
         //    double score = 0;
         //    sc.Predict( (float*)for_test_feat.data, score );
         //    avg_train_neg_score += score;
         //}
         //avg_train_neg_score /= neg_train_data.cols;
 
-        cout<<"avg_train_pos_score is "<<avg_train_pos_score<<endl;
-        cout<<"avg_train_neg_score is "<<avg_train_neg_score<<endl;
+        cout<<"Train : avg_train_pos_score is "<<avg_train_pos_score<<endl;
+        cout<<"Train : avg_train_neg_score is "<<avg_train_neg_score<<endl;
 
         /* ---------- ~show improvement over diffierent stages~ ------------*/
         vector<Rect> re;vector<double> confs;
@@ -490,7 +496,12 @@ int main( int argc, char** argv)
     /*----------------   test detectMultiScale over dataset , show ----------------*/
 #ifdef TEST_MUITI
     bf::directory_iterator end_it;
+
+#ifdef P1
     bf::path test_data_path("/media/yuanyang/disk1/libs/piotr_toolbox/data/Inria/Test/pos/");
+#else
+    bf::path test_data_path("/mnt/disk1/data/INRIAPerson/Test/pos/");
+#endif
     for( bf::directory_iterator file_iter(test_data_path); file_iter!=end_it; file_iter++)
     {
         string pathname = file_iter->path().string();
@@ -502,6 +513,10 @@ int main( int argc, char** argv)
         {
             if( confs[c] < 0 )
                 continue;
+			rectangle( test_img, re[c], Scalar(255,0,0) );
+			stringstream ss; ss<<confs[c];string conf_string;ss>>conf_string;
+			putText( test_img, "conf "+conf_string, Point( re[c].x, re[c].y ), FONT_HERSHEY_COMPLEX, 0.4, Scalar(255,0,0));
+			cout<<"confidence is "<<confs[c]<<endl;
         }
         cout<<endl;
         imshow("testimage", test_img );
@@ -510,12 +525,16 @@ int main( int argc, char** argv)
 #endif
 
 #ifdef TEST_STAT
+
+#ifdef P1
     string testset_neg_path = "/media/yuanyang/disk1/libs/piotr_toolbox/data/Inria/Test/neg/";
-    //string testset_neg_path = "/mnt/disk1/data/INRIAPerson/Test/neg/";
     string testset_pos_image_path = "/media/yuanyang/disk1/libs/piotr_toolbox/data/Inria/Test/pos/";
-    //string testset_pos_image_path = "/mnt/disk1/data/INRIAPerson/Test/pos/";
     string testset_pos_gt_path = "/media/yuanyang/disk1/libs/piotr_toolbox/data/Inria/Test/AnnotTest/";
-    //string testset_pos_gt_path = "/mnt/disk1/data/INRIAPerson/Test/AnnotTest/";
+#else
+    string testset_neg_path = "/mnt/disk1/data/INRIAPerson/Test/neg/";
+    string testset_pos_image_path = "/mnt/disk1/data/INRIAPerson/Test/pos/";
+    string testset_pos_gt_path = "/mnt/disk1/data/INRIAPerson/Test/AnnotTest/";
+#endif
     
     /*  using the sampleWins function */
     cascadeParameter par_for_test = sc.getParas();
@@ -554,12 +573,12 @@ int main( int argc, char** argv)
     double avg_pos_score = 0;
     for( int c=0;c<pos_test_data.cols;c++)
     {
-        for_test_feat = pos_test_data.col(c);
-        for_test_feat = for_test_feat.t();
+        Mat tmp = pos_test_data.col(c);
+		tmp.copyTo(for_test_feat);
         double score = 0;
-      //  sc.Predict( (float*)for_test_feat.data, score );
+		sc.Predict( (float*)for_test_feat.data, score );
         avg_pos_score += score;
-        if( score < 60)
+        if( score < 0)
             stat_fn += 1.0;
     }
     stat_fn = stat_fn / pos_test_data.cols;
@@ -594,13 +613,12 @@ int main( int argc, char** argv)
     double avg_neg_score = 0;
     for( int c=0; c<neg_test_data.cols;c++)
     {
-        cout<<"\n\ndealing neg samples "<<c<<endl;
-        for_test_feat = neg_test_data.col(c);
-        for_test_feat = for_test_feat;
+        Mat tmp = neg_test_data.col(c);
+		tmp.copyTo(for_test_feat);
         double score = 0;
         sc.Predict( (float*)for_test_feat.data, score);
         avg_neg_score += score;
-        if( score > 60 )
+        if( score > 0 )
             stat_fp += 1.0;
     }
     stat_fp /= neg_test_data.cols;
@@ -608,45 +626,7 @@ int main( int argc, char** argv)
 
 	cout<<"Test data information, Pos "<<pos_test_data.cols<<" Neg "<<neg_test_data.cols<<endl;
     cout<<"Test result on INRIA dataset\n FP is "<<stat_fp<<" FN is "<<stat_fn<<endl;
-    cout<<"avg pos score is "<<avg_pos_score<<" avg neg score is "<<avg_neg_score<<endl;
-
-
-    /* using adaboost itself to compute the distance?  */
-    Adaboost ab1;ab1.loadModel("ab_3.xml");
-    Mat predicted_label0, predicted_label1;
-	ab1.Apply( neg_test_data, predicted_label0);
-	ab1.Apply( pos_test_data, predicted_label1);
-
-    double avg_neg_dis = 0;
-    double avg_pos_dis = 0;
-	double fp = 0;
-	double fn = 0;
-	for(int c=0;c<predicted_label0.rows;c++)
-    {
-        avg_neg_dis += predicted_label0.at<double>(c,0);
-		fp += (predicted_label0.at<double>(c,0) > 0?1:0);
-    }
-	fp /= predicted_label0.rows;
-    avg_neg_dis /= predicted_label0.rows;
-
-	for(int c=0;c<predicted_label1.rows;c++)
-    {
-        avg_pos_dis += predicted_label1.at<double>(c,0);
-		fn += (predicted_label1.at<double>(c,0) < 0?1:0);
-    }
-    avg_pos_dis /= predicted_label1.rows;
-	fn /= predicted_label1.rows;
-
-
-	/*  fp and fn should be around 0.12-0.13  */
-    cout<<"\n--------Using Adaboost itself--------- "<<endl;
-	cout<<"Results using adaboost Apply() "<<endl;
-	cout<<"--> False Positive is "<<fp<<endl;
-	cout<<"--> False Negative is "<<fn<<endl;
-    cout<<"avg_neg_dis is "<<avg_neg_dis<<endl;
-    cout<<"avg_pos_dis is "<<avg_pos_dis<<endl;
-
-
+    cout<<"Test: avg pos score is "<<avg_pos_score<<" avg neg score is "<<avg_neg_score<<endl;
 #endif
 
 

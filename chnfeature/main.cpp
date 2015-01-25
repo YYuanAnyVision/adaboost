@@ -12,7 +12,7 @@
 #include <cvaux.h>
 
 #include "Pyramid.h"
-//#include "../misc/misc.hpp"
+#include "../misc/misc.hpp"
 
 using namespace std;
 using namespace cv;
@@ -92,12 +92,14 @@ void MultiImage_OneWin(const std::string& MultiShow_WinName, const vector<Mat>& 
 
 int main( int argc, char** argv)
 {
-    Mat input_image = imread("crop001573.png");
+    Mat input_image = imread("crop001504.png");
 
     feature_Pyramids ff1;
     vector<Mat> feature;
     ff1.computeChannels( input_image, feature);
     
+	saveMatToFile("old_new.data", feature[3]);
+
 
     TickMeter tk;
     Mat b_i, a_i;
