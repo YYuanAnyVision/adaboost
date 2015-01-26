@@ -37,6 +37,7 @@ struct cascadeParameter
     string posImgDir;                   /* positive image directory */
     string negImgDir;                   /* negative image directory */
 
+    Size pad;                           /* ----------> get it from feature generator */
     int    nchannels;                   /* ----------> number of channels, usually 1 */
 	int shrink;							/* ----------> should be provided by the chnPyramid */
 
@@ -46,7 +47,7 @@ struct cascadeParameter
 		modelDsPad = Size(64, 128);
 		stride     = 4;
 		cascThr	   = -1;
-		cascCal    = 0.0025;
+		cascCal    = 0.005;
 		nWeaks.push_back( 32);
 		nWeaks.push_back( 128);
 		nWeaks.push_back( 512);
@@ -93,7 +94,6 @@ class softcascade
 		bool Apply( const vector<Mat> &input_data,		/*  in: channel features, input_data.size() == nchannels */
 				    vector<Rect> &results,              /* out: detect results */
                     vector<double> &confidence) const;	/* out: detect confidence */
-    
 
         /* 
          * ===  FUNCTION  ======================================================================
@@ -111,24 +111,25 @@ class softcascade
          *  Description:  detect targets in a given image using sliding windows
          * =====================================================================================
          */
-        bool detectMultiScale( const Mat &image,
-                               vector<Rect> &targets,
-                               vector<double> &confidence,
-                               int stride = 4,
-                               int minSize = 32,
-                               int maxSize = 300) const;
+        bool detectMultiScale( const Mat &image,                    /* in : image */
+                               vector<Rect> &targets,               /* out: target positions*/
+                               vector<double> &confidence,          /* out: target confidence */
+                               int stride = 4,                      /* in : detection stride */
+                               int minSize = 32,                    /* in : min target size */
+                               int maxSize = 300) const;            /* in : max target size */
 
 		/* 
 		 * ===  FUNCTION  ======================================================================
 		 *         Name:  Predict
 		 *  Description:  test a single sample
-		 *			 in:  data
+		 *			 in:  data, has to be continuous!!
 		 *			out:  predicted score ( hs ) 
 		 *			      !!! this function shoule not be used in sliding window search, since the
 		 *			      memory is not continuous for each window Rect
 		 * =====================================================================================
 		 */
-		template < typename T> bool Predict(  const T *data, double &score) const
+		template < typename T> bool Predict(  const T *data,            /* in : test data, must be continuous in memory */
+                                              double &score) const      /* out: score ..*/
 		{
 			if(!checkModel())
 				return false;
@@ -149,8 +150,8 @@ class softcascade
 						position = (( data[t_fids[position]] < t_thrs[position]) ? position*2+1:position*2+2);
 					}
 					h += t_hs[position];
-                    //if( h < m_opts.cascThr)
-                    //    break;
+                    if( h < m_opts.cascThr)
+                        break;
 				}
 
 			}
@@ -168,13 +169,61 @@ class softcascade
 						position = (( data[t_fids[position]] < t_thrs[position]) ? t_child[position]: t_child[position] + 1);
 					}
 					h += t_hs[position];
-                    //if( h < m_opts.cascThr)
-                    //    break;
+                    if( h < m_opts.cascThr)
+                        break;
 				}
 			}
 			score = h;
 		}
-			
+		
+
+        /* 
+         * ===  FUNCTION  ======================================================================
+         *         Name:  Predict
+         *  Description:  output the confidence of the inputData matrix( column vector)
+         * =====================================================================================
+         */
+        bool Predict( const Mat &testData,              /* in : featureDim x numberOfSamples */
+                      Mat &confidence)                  /* out: numberOfSamples x 1 */
+        {
+            if( !testData.isContinuous())
+            {
+                cout<<"Data must be continuous is Predict() function"<<endl;
+                return false;
+            }
+            if( testData.empty())
+            {
+                cout<<"Data's empty in Predict() function "<<endl;
+                return false;
+            }
+            if( testData.channels() != 1)
+            {
+                cout<<"only single channel is supported in Predict() function "<<endl;
+                return false;
+            }
+            Mat tmp;        /* copy each vector into it, since opencv matrix is store by rows, *column* is not continuous in memory(except single column) */
+            confidence = Mat::zeros( testData.cols, 1, CV_64F );
+            for( int c=0;c<testData.cols;c++)
+            {
+                Mat t = testData.col(c);
+                t.copyTo( tmp );
+                tmp = tmp.t();
+                double score = 0;
+                if( testData.type() == CV_32F)
+                    Predict( (const float*)tmp.data, score );
+                else if( testData.type() == CV_64F )
+                    Predict( (const double*)tmp.data, score );
+                else if( testData.type() == CV_32S )
+                    Predict( (const int*)tmp.data, score );
+                else
+                {
+                    cout<<"no known data type in Predict() function "<<endl;
+                    return false;
+                }
+                confidence.at<double>(c,0) = score;
+            }
+        }
+
 		/* 
 		 * ===  FUNCTION  ======================================================================
 		 *         Name:  Save
@@ -194,7 +243,6 @@ class softcascade
 		 */
 		bool Combine( vector<Adaboost> &ads );
 
-
 		/* 
 		 * ===  FUNCTION  ======================================================================
 		 *         Name:  checkModel
@@ -202,7 +250,6 @@ class softcascade
 		 * =====================================================================================
 		 */
 		bool checkModel() const;
-
 
         /* 
          * ===  FUNCTION  ======================================================================
@@ -220,7 +267,6 @@ class softcascade
 		 */
 		cascadeParameter getParas() const;
 
-
         /* 
          * ===  FUNCTION  ======================================================================
          *         Name:  setParas
@@ -228,7 +274,6 @@ class softcascade
          * =====================================================================================
          */
         void setParas( const cascadeParameter &in_par );
-
 
         /* 
          * ===  FUNCTION  ======================================================================

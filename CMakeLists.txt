@@ -10,8 +10,3 @@ add_subdirectory( Adaboost )
 add_subdirectory( misc )
 add_subdirectory( softcascade )
 add_subdirectory( chnfeature )
-
-#add_library(dlibsource /home/yuanyang/build/dlib-18.10/dlib/all/source.cpp)
-
-#target_link_libraries(  test_align aligner dlibsource  ${OpenCV_LIBS} ${dlibo} )
-

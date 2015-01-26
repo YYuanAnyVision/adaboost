@@ -34,7 +34,7 @@ struct detector_opt
 		shrink=4;
 		smooth =1;
 		minDS=Size(41,100) ;
-		pad=Size(12,16);
+		pad=Size(0,0);
 		nbins=6;
 		binsize=4;
 		nApprox=7;

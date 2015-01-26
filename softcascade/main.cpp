@@ -19,6 +19,7 @@
 
 #include <omp.h>
 
+#define P1
 #define TEST_MUITI
 
 using namespace std;
@@ -181,8 +182,6 @@ bool sampleWins(    const softcascade &sc, 	    /*  in: detector */
             Mat flipped_target; cv::flip( origsamples[i], flipped_target, 1 );
             samples[i+copy_offset] = flipped_target;
         }
-
-        
     }
     else /* for negative samples */
     {
@@ -205,11 +204,10 @@ bool sampleWins(    const softcascade &sc, 	    /*  in: detector */
             string pathname = file_iter->path().string();
 			neg_paths.push_back( pathname );
 		}
-
 		std::random_shuffle( neg_paths.begin(), neg_paths.end(),myrandom);
        
-		//#pragma omp parallel for num_threads(Nthreads) /* openmp -->but no error check in runtime ... */
-		for( int c=0;c<number_of_neg_images && origsamples.size() < number_to_sample;c++)
+		#pragma omp parallel for num_threads(Nthreads) /* openmp -->but no error check in runtime ... */
+		for( int c=0;c<number_of_neg_images;c++)
 		{
 			vector<Rect> target_rects;
             vector<double> conf_v;
@@ -298,14 +296,21 @@ int main( int argc, char** argv)
     cas_para.posGtDir  = "/media/yuanyang/disk1/libs/piotr_toolbox/data/Inria/train/posGt_opencv/";
     cas_para.posImgDir = "/media/yuanyang/disk1/libs/piotr_toolbox/data/Inria/train/pos/"; 
 	cas_para.negImgDir = "/media/yuanyang/disk1/libs/piotr_toolbox/data/Inria/train/neg/";
-#else
+#endif
+#ifdef P2
     cas_para.posImgDir = "/mnt/disk1/data/INRIAPerson/Train/pos"; 
     cas_para.posGtDir  = "/mnt/disk1/data/INRIAPerson/Train/posGT/";
 	cas_para.negImgDir = "/mnt/disk1/data/INRIAPerson/Train/neg/";
 #endif
+#ifdef P3
+    cas_para.posImgDir = "/home/pcipci/mzx/ped_detect/Inria/train/pos/"; 
+    cas_para.posGtDir  = "/home/pcipci/mzx/ped_detect/Inria/train/posGt_opencv/";
+	cas_para.negImgDir = "/home/pcipci/mzx/ped_detect/Inria/train/neg/";
+#endif
 
-    cas_para.infos = "2015-1-22, YuanYang, Test";
+    cas_para.infos = "2015-1-25, YuanYang, Test";
     cas_para.shrink = det_opt.shrink;
+    cas_para.pad   = det_opt.pad;
     cas_para.nchannels = 10;
 
     sc.setParas( cas_para);
@@ -368,11 +373,8 @@ int main( int argc, char** argv)
             cout<<"done. number :"<<pos_train_data.cols<<endl;
         }
 
-		saveMatToFile("pos_train_data_nopad.data", pos_train_data);
 		/* 4--> sample negatives and compute features, accumulate negatives from previous stages */
-        cout<<"->Making negative training data ";
         sampleWins( sc, stage, false, neg_samples, neg_origsamples );          /* remember the neg_samples is empty */
-        cout<<"->Sampling done"<<endl;
 
         vector<Mat> accu_neg;
         if( stage ==0 )                                   /* stage == 0 */
@@ -393,8 +395,8 @@ int main( int argc, char** argv)
         }
         neg_previousSamples = accu_neg;
         neg_train_data = Mat::zeros( final_feature_dim, accu_neg.size(), CV_32F);
-        cout<<"Neg samples now "<<accu_neg.size()<<endl;
 
+        cout<<"->Making negative training data ";
         #pragma omp parallel for num_threads(Nthreads)
         for ( int c=0;c<accu_neg.size();c++)
         {
@@ -412,28 +414,39 @@ int main( int argc, char** argv)
         cout<<"neg_train_data's size "<<neg_train_data.size()<<"feature dim "<<neg_train_data.rows<<endl;
         cout<<"pos_train_data's size "<<pos_train_data.size()<<"feature dim "<<pos_train_data.rows<<endl;
 
-
 		/* 5-->  train boosted classifiers */
         Adaboost ab;ab.SetDebug(false);  
         cout<<"-- Training with "<<cas_para.nWeaks[stage]<<" weak classifiers."<<endl;
         ab.Train( neg_train_data, pos_train_data, cas_para.nWeaks[stage], tree_par);
 
-        if(stage==3)
-            ab.saveModel("ab_3.xml");
-        
+
+        /* test pyramid */
+        Mat yy = imread("crop001521.png");
+        vector<vector<Mat> > pps;
+        vector<double> ppscale;
+        vector<double> ppscale1;
+        vector<double> ppscale2;
+        ff1.chnsPyramid( yy, pps, ppscale, ppscale1, ppscale2);
+        saveMatToFile( "ytest1data", pps[0][3] );
+        saveMatToFile( "ytest2data", pps[0][4] );
+        saveMatToFile( "ytest3data", pps[4][3] );
+        saveMatToFile( "ytest4data", pps[4][4] );
+
+
         vector<Adaboost> t_v;
         t_v.push_back( ab );
         sc.Combine( t_v );
 		cout<<"Done Stage No "<<stage<<" , time "<<tk.getTimeSec()<<endl<<endl;
 
-        /* show the average pos and neg distance */
+        /* ------------- show the average pos and neg distance ------------- */
         double avg_train_pos_score = 0;
         double avg_train_neg_score = 0;
-
         Mat pre_neg_score;
         Mat pre_pos_score;
         ab.Apply( pos_train_data, pre_pos_score);
         ab.Apply( neg_train_data, pre_neg_score);
+        //sc.Predict( pos_train_data, pre_pos_score);
+        //sc.Predict( neg_train_data, pre_neg_score);
         for( int c=0;c<pre_pos_score.rows;c++)
         {
             avg_train_pos_score += pre_pos_score.at<double>(c,0);
@@ -444,28 +457,6 @@ int main( int argc, char** argv)
             avg_train_neg_score += pre_neg_score.at<double>(c,0);
         }
         avg_train_neg_score /= pre_neg_score.rows;
-
-		//Mat for_test_feat;
-        //for( int c=0;c<pos_train_data.cols;c++)
-        //{
-        //    Mat tmp = pos_train_data.col(c);
-		//	tmp.copyTo( for_test_feat );
-        //    double score = 0;
-        //    sc.Predict( (float*)for_test_feat.data, score );
-        //    avg_train_pos_score += score;
-        //}
-        //avg_train_pos_score /= pos_train_data.cols;
-
-        //for( int c=0;c<neg_train_data.cols;c++)
-        //{
-        //    Mat tmp = neg_train_data.col(c);
-		//	tmp.copyTo( for_test_feat );
-        //    double score = 0;
-        //    sc.Predict( (float*)for_test_feat.data, score );
-        //    avg_train_neg_score += score;
-        //}
-        //avg_train_neg_score /= neg_train_data.cols;
-
         cout<<"Train : avg_train_pos_score is "<<avg_train_pos_score<<endl;
         cout<<"Train : avg_train_neg_score is "<<avg_train_neg_score<<endl;
 
@@ -486,7 +477,6 @@ int main( int argc, char** argv)
 		tk.stop();
         //imshow("show",test_img);
         //waitKey(0);
-        sc.Save("scmodel.xml");
 
 	}
     /*  swap the Mat data */
@@ -499,8 +489,12 @@ int main( int argc, char** argv)
 
 #ifdef P1
     bf::path test_data_path("/media/yuanyang/disk1/libs/piotr_toolbox/data/Inria/Test/pos/");
-#else
+#endif
+#ifdef P2
     bf::path test_data_path("/mnt/disk1/data/INRIAPerson/Test/pos/");
+#endif
+#ifdef P3
+    bf::path test_data_path("/home/pcipci/mzx/ped_detect/Inria/Test/pos/");
 #endif
     for( bf::directory_iterator file_iter(test_data_path); file_iter!=end_it; file_iter++)
     {
@@ -509,13 +503,14 @@ int main( int argc, char** argv)
 
         vector<Rect> re;vector<double> confs;
         sc.detectMultiScale( test_img, re, confs);
+        cout<<"detection result "<<re.size()<<endl;
         for( int c=0;c<re.size();c++)
         {
             if( confs[c] < 0 )
                 continue;
-			rectangle( test_img, re[c], Scalar(255,0,0) );
+			rectangle( test_img, re[c], Scalar(255,0,0), 3);
 			stringstream ss; ss<<confs[c];string conf_string;ss>>conf_string;
-			putText( test_img, "conf "+conf_string, Point( re[c].x, re[c].y ), FONT_HERSHEY_COMPLEX, 0.4, Scalar(255,0,0));
+			putText( test_img, "conf "+conf_string, Point( re[c].x, re[c].y ), FONT_HERSHEY_COMPLEX, 0.8, Scalar(255,0,0));
 			cout<<"confidence is "<<confs[c]<<endl;
         }
         cout<<endl;
@@ -530,11 +525,18 @@ int main( int argc, char** argv)
     string testset_neg_path = "/media/yuanyang/disk1/libs/piotr_toolbox/data/Inria/Test/neg/";
     string testset_pos_image_path = "/media/yuanyang/disk1/libs/piotr_toolbox/data/Inria/Test/pos/";
     string testset_pos_gt_path = "/media/yuanyang/disk1/libs/piotr_toolbox/data/Inria/Test/AnnotTest/";
-#else
+#endif
+#ifdef P2
     string testset_neg_path = "/mnt/disk1/data/INRIAPerson/Test/neg/";
     string testset_pos_image_path = "/mnt/disk1/data/INRIAPerson/Test/pos/";
     string testset_pos_gt_path = "/mnt/disk1/data/INRIAPerson/Test/AnnotTest/";
 #endif
+#ifdef P3
+    string testset_neg_path = "/home/pcipci/mzx/ped_detect/Inria/Test/neg/";
+    string testset_pos_image_path = "/home/pcipci/mzx/ped_detect/Inria/Test/pos/";
+    string testset_pos_gt_path = "/home/pcipci/mzx/ped_detect/Inria/Test/AnnotTest/";
+#endif
+
     
     /*  using the sampleWins function */
     cascadeParameter par_for_test = sc.getParas();
@@ -628,8 +630,6 @@ int main( int argc, char** argv)
     cout<<"Test result on INRIA dataset\n FP is "<<stat_fp<<" FN is "<<stat_fn<<endl;
     cout<<"Test: avg pos score is "<<avg_pos_score<<" avg neg score is "<<avg_neg_score<<endl;
 #endif
-
-
 
     return 0;
 }

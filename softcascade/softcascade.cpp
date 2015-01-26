@@ -32,8 +32,8 @@ template <typename T> void _apply( const T *input_data,                 /* in : 
     const int modelWidth  = opts.modelDsPad.width;
     const int modelW_fit  = opts.modelDs.width;
     const int modelH_fit  = opts.modelDs.height;
-    const int modelW_shift= (modelWidth - opts.modelDs.width)/2;
-    const int modelH_shift= (modelHeight- opts.modelDs.height)/2;
+    const int modelW_shift= (modelWidth - opts.modelDs.width)/2 - opts.pad.width;
+    const int modelH_shift= (modelHeight- opts.modelDs.height)/2 - opts.pad.height;
     const int stride      = opts.stride;
     const double cascThr  = opts.cascThr;
     const double cascCal  = opts.cascCal;
@@ -177,8 +177,7 @@ bool softcascade::Combine(vector<Adaboost> &ads )
     m_number_of_trees = number_of_trees;
 
     /*  shift the hs */
-    //m_hs = m_hs + m_opts.cascCal;
-
+    m_hs = m_hs + m_opts.cascCal;
     cout<<"softcascade : number of trees "<<m_number_of_trees<<endl;
 
     int counter = 0;
@@ -454,14 +453,15 @@ bool softcascade::detectMultiScale( const Mat &image,
 
     m_feature_gen.chnsPyramid( image, approPyramid, appro_scales, scale_h, scale_w);
 
+
     for( int c=0;c<approPyramid.size();c++)
     {
-        //saveMatToFile("magh"+ii, approPyramid[c][4]);
         vector<Rect> t_tar;
         vector<double> t_conf;
         Apply( approPyramid[c], t_tar, t_conf);
         for ( int i=0;i<t_tar.size(); i++) 
         {
+            
             Rect s( t_tar[i].x/appro_scales[c], t_tar[i].y/appro_scales[c], t_tar[i].width/scale_w[c], t_tar[i].height/scale_h[c]  );
             targets.push_back( s );
             confidence.push_back( t_conf[i]);
