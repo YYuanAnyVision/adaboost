@@ -19,14 +19,28 @@
 
 #include <omp.h>
 
-#define P1
-#define TEST_MUITI
+#define P2
+#define TEST_STAT_SLIDE
 
 using namespace std;
 using namespace cv;
 
 namespace bf = boost::filesystem;
 namespace bl = boost::lambda;
+
+bool isSameTarget( Rect r1, Rect r2)
+{
+	Rect intersect = r1 & r2;
+	if(intersect.width * intersect.height < 1)
+		return false;
+	
+	double union_area = r1.width*r1.height + r2.width*r2.height - intersect.width*intersect.height;
+
+	if( intersect.width*intersect.height/union_area < 0.5 )
+		return false;
+
+	return true;
+}
 
 /*  random generator function */
 int myrandom (int i) { return std::rand()%i;}
@@ -418,22 +432,8 @@ int main( int argc, char** argv)
         Adaboost ab;ab.SetDebug(false);  
         cout<<"-- Training with "<<cas_para.nWeaks[stage]<<" weak classifiers."<<endl;
         ab.Train( neg_train_data, pos_train_data, cas_para.nWeaks[stage], tree_par);
-
-
-        /* test pyramid */
-        Mat yy = imread("crop001521.png");
-        vector<vector<Mat> > pps;
-        vector<double> ppscale;
-        vector<double> ppscale1;
-        vector<double> ppscale2;
-        ff1.chnsPyramid( yy, pps, ppscale, ppscale1, ppscale2);
-        saveMatToFile( "ytest1data", pps[0][3] );
-        saveMatToFile( "ytest2data", pps[0][4] );
-        saveMatToFile( "ytest3data", pps[4][3] );
-        saveMatToFile( "ytest4data", pps[4][4] );
-
-
-        vector<Adaboost> t_v;
+        
+		vector<Adaboost> t_v;
         t_v.push_back( ab );
         sc.Combine( t_v );
 		cout<<"Done Stage No "<<stage<<" , time "<<tk.getTimeSec()<<endl<<endl;
@@ -463,6 +463,11 @@ int main( int argc, char** argv)
         /* ---------- ~show improvement over diffierent stages~ ------------*/
         vector<Rect> re;vector<double> confs;
         Mat test_img = imread("crop001573.png");
+		if(test_img.empty())
+		{
+			cout<<"img empty, return "<<endl;
+			return -1;
+		}
         tk.reset();tk.start();
         sc.detectMultiScale( test_img, re, confs );
         tk.stop();
@@ -486,7 +491,6 @@ int main( int argc, char** argv)
     /*----------------   test detectMultiScale over dataset , show ----------------*/
 #ifdef TEST_MUITI
     bf::directory_iterator end_it;
-
 #ifdef P1
     bf::path test_data_path("/media/yuanyang/disk1/libs/piotr_toolbox/data/Inria/Test/pos/");
 #endif
@@ -519,7 +523,7 @@ int main( int argc, char** argv)
     }
 #endif
 
-#ifdef TEST_STAT
+#ifdef TEST_STAT_WINDOW
 
 #ifdef P1
     string testset_neg_path = "/media/yuanyang/disk1/libs/piotr_toolbox/data/Inria/Test/neg/";
@@ -629,7 +633,132 @@ int main( int argc, char** argv)
 	cout<<"Test data information, Pos "<<pos_test_data.cols<<" Neg "<<neg_test_data.cols<<endl;
     cout<<"Test result on INRIA dataset\n FP is "<<stat_fp<<" FN is "<<stat_fn<<endl;
     cout<<"Test: avg pos score is "<<avg_pos_score<<" avg neg score is "<<avg_neg_score<<endl;
+
 #endif
 
+#ifdef TEST_STAT_SLIDE
+
+#ifdef P1
+    string testset_neg_path = "/media/yuanyang/disk1/libs/piotr_toolbox/data/Inria/Test/neg/";
+    string testset_pos_image_path = "/media/yuanyang/disk1/libs/piotr_toolbox/data/Inria/Test/pos/";
+    string testset_pos_gt_path = "/media/yuanyang/disk1/libs/piotr_toolbox/data/Inria/Test/AnnotTest/";
+#endif
+#ifdef P2
+    string testset_neg_path = "/mnt/disk1/data/INRIAPerson/Test/neg/";
+    string testset_pos_image_path = "/mnt/disk1/data/INRIAPerson/Test/pos/";
+    string testset_pos_gt_path = "/mnt/disk1/data/INRIAPerson/Test/AnnotTest/";
+#endif
+#ifdef P3
+    string testset_neg_path = "/home/pcipci/mzx/ped_detect/Inria/Test/neg/";
+    string testset_pos_image_path = "/home/pcipci/mzx/ped_detect/Inria/Test/pos/";
+    string testset_pos_gt_path = "/home/pcipci/mzx/ped_detect/Inria/Test/AnnotTest/";
+#endif
+	/* 1 -> slide negative images */
+	bf::path neg_img_dir( testset_neg_path );
+	int number_of_neg_images = getNumberOfFilesInDir( testset_neg_path );
+
+	bf::directory_iterator end_it;
+    vector<string> image_path_vector;
+
+    for( bf::directory_iterator file_iter(neg_img_dir); file_iter!=end_it; file_iter++)
+    {
+        string pathname = file_iter->path().string();
+        image_path_vector.push_back( pathname );
+    }
+
+	int number_of_fp = 0;
+	double score_of_fp = 0;
+	cout<<"FP test ... "<<endl;
+	tk.reset();tk.start();
+	#pragma omp parallel for num_threads(Nthreads) reduction( +: number_of_fp)
+	for( int c=0;c<image_path_vector.size();c++)
+	{
+		vector<Rect> det_rects;
+		vector<double> det_confs;
+		Mat input_img = imread( image_path_vector[c]);
+		sc.detectMultiScale( input_img, det_rects, det_confs );
+		#pragma omp critical
+		{
+			number_of_fp += det_rects.size();
+			for(int i=0;i<det_confs.size();i++)
+				score_of_fp += det_confs[i];
+		}
+	}
+	tk.stop();
+	cout<<"FP test done. Time consume "<<tk.getTimeSec()<<" seconds"<<endl;
+
+	/* 2 -> test FN  */
+	int number_of_fn = 0;
+	int number_of_wrong = 0;
+	bf::path pos_img_dir(testset_pos_image_path);
+	int number_of_pos_images = getNumberOfFilesInDir( testset_pos_image_path );
+	image_path_vector.clear();
+	vector<string> gt_path_vector;
+	
+	for( bf::directory_iterator file_iter(pos_img_dir); file_iter!=end_it; file_iter++)
+    {
+		bf::path s = *(file_iter);
+		string basename = bf::basename(s);
+        string pathname = file_iter->path().string();
+        string extname  = bf::extension(s);
+
+        image_path_vector.push_back( pathname );
+        gt_path_vector.push_back( testset_pos_gt_path + basename + ".txt");
+    }
+	cout<<"Test FN "<<endl;
+	tk.reset();tk.start();
+	for( int i=0;i<image_path_vector.size(); i++)
+	{ 
+		// reading groundtruth...
+		vector<Rect> target_rects;
+        FileStorage fst( gt_path_vector[i], FileStorage::READ | FileStorage::FORMAT_XML);
+        fst["boxes"]>>target_rects;
+        fst.release();
+
+		// reading image
+		Mat test_img = imread( image_path_vector[i]);
+		vector<Rect> det_rects;
+		vector<double> det_confs;
+		sc.detectMultiScale( test_img, det_rects, det_confs );
+
+		int matched = 0;
+		vector<bool> isMatched_r( target_rects.size(), false);
+		vector<bool> isMatched_l( det_rects.size(), false);
+		for( int c=0;c<det_rects.size();c++)
+		{
+			for( int k=0;k<target_rects.size();k++)	
+			{
+				if( isSameTarget( det_rects[c], target_rects[k]) && !isMatched_r[k] && !isMatched_l[c])
+				{
+					matched++;
+					isMatched_r[k] = true;
+					isMatched_l[k] = true;
+					break;
+				}
+			}
+		}
+
+		for(int c=0;c<isMatched_r.size();c++)
+		{
+			if( !isMatched_r[c])
+				number_of_fn++;
+		}
+
+		for(int c=0;c<isMatched_l.size();c++)
+		{
+			if( !isMatched_l[c])
+				number_of_wrong++;
+		}
+
+	}
+	tk.stop();
+	cout<<"Test FN done. Time consuming "<<tk.getTimeSec()<<" seconds."<<endl;
+	
+	number_of_fp += number_of_wrong;
+
+	cout<<"number of fp is "<<number_of_fp<<endl;
+	cout<<"number of fn is "<<number_of_fn<<endl;
+
+#endif
     return 0;
 }
