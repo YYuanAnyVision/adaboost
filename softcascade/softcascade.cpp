@@ -14,6 +14,7 @@
 using namespace cv;
 using namespace std;
 
+
 template <typename T> void _apply( const T *input_data,                 /* in : (nchannels*nheight)x(nwidth) channels feature, already been scaled with shrink*/
                                    const int &in_width,                 /* in : width of a single channel image */
                                    const int &in_height,                /* in : height of a single channel image */

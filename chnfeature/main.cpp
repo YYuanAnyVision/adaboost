@@ -92,26 +92,34 @@ void MultiImage_OneWin(const std::string& MultiShow_WinName, const vector<Mat>& 
 
 int main( int argc, char** argv)
 {
-    Mat input_image = imread("crop001504.png");
+    Mat input_image = imread(argv[1]);
 
     feature_Pyramids ff1;
-    vector<Mat> feature;
-    ff1.computeChannels( input_image, feature);
-    
-	saveMatToFile("old_new.data", feature[3]);
+    vector<vector<Mat> > feature;
+    vector<double> scales;
+    vector<double> scalesw;
+    vector<double> scalesh;
+    ff1.chnsPyramid( input_image, feature, scales, scalesw, scalesh );
+
+	saveMatToFile("p1.data", feature[0][3]);
+	saveMatToFile("p2.data", feature[0][4]);
+	saveMatToFile("p3.data", feature[0][5]);
+	saveMatToFile("p4.data", feature[0][6]);
+	saveMatToFile("p5.data", feature[0][7]);
+	saveMatToFile("p6.data", feature[0][8]);
 
 
-    TickMeter tk;
-    Mat b_i, a_i;
-    tk.start();
-    resize( input_image, b_i, Size(), 0.25, 0.25, INTER_LINEAR);
-    tk.stop();
-    cout<<"time b is "<<tk.getTimeSec()<<endl;
+    //TickMeter tk;
+    //Mat b_i, a_i;
+    //tk.start();
+    //resize( input_image, b_i, Size(), 0.25, 0.25, INTER_LINEAR);
+    //tk.stop();
+    //cout<<"time b is "<<tk.getTimeSec()<<endl;
 
-    tk.reset();tk.start();
-    resize( input_image, a_i, Size(), 0.25, 0.25, INTER_AREA);
-    tk.stop();
-    cout<<"time a is "<<tk.getTimeSec()<<endl;
+    //tk.reset();tk.start();
+    //resize( input_image, a_i, Size(), 0.25, 0.25, INTER_AREA);
+    //tk.stop();
+    //cout<<"time a is "<<tk.getTimeSec()<<endl;
     
     
     //for ( int c=0; c<feature.size(); c++) {

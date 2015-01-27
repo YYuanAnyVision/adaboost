@@ -19,7 +19,7 @@
 
 #include <omp.h>
 
-#define P2
+#define P1
 #define TEST_STAT_SLIDE
 
 using namespace std;
@@ -280,10 +280,8 @@ bool sampleWins(    const softcascade &sc, 	    /*  in: detector */
     cout<<"Sampling done "<<endl;
     return true;
 }
-    
-
-/* detector parameter define */
-int main( int argc, char** argv)
+ 
+int runTrainAndTest( double &out_miss_rate, double &out_fp_per_image)
 {
     std::srand ( unsigned ( std::time(0) ) );
     Mat Km = get_Km(1);
@@ -445,8 +443,6 @@ int main( int argc, char** argv)
         Mat pre_pos_score;
         ab.Apply( pos_train_data, pre_pos_score);
         ab.Apply( neg_train_data, pre_neg_score);
-        //sc.Predict( pos_train_data, pre_pos_score);
-        //sc.Predict( neg_train_data, pre_neg_score);
         for( int c=0;c<pre_pos_score.rows;c++)
         {
             avg_train_pos_score += pre_pos_score.at<double>(c,0);
@@ -462,7 +458,7 @@ int main( int argc, char** argv)
 
         /* ---------- ~show improvement over diffierent stages~ ------------*/
         vector<Rect> re;vector<double> confs;
-        Mat test_img = imread("crop001573.png");
+        Mat test_img = imread("crop001704.png");
 		if(test_img.empty())
 		{
 			cout<<"img empty, return "<<endl;
@@ -487,6 +483,7 @@ int main( int argc, char** argv)
     /*  swap the Mat data */
     neg_train_data = Mat::zeros(1,1,CV_32F);
     pos_train_data = Mat::zeros(1,1,CV_32F);
+    sc.Save("fortest_sc.xml");
     
     /*----------------   test detectMultiScale over dataset , show ----------------*/
 #ifdef TEST_MUITI
@@ -521,6 +518,7 @@ int main( int argc, char** argv)
         imshow("testimage", test_img );
         waitKey(0);
     }
+
 #endif
 
 #ifdef TEST_STAT_WINDOW
@@ -653,6 +651,7 @@ int main( int argc, char** argv)
     string testset_pos_image_path = "/home/pcipci/mzx/ped_detect/Inria/Test/pos/";
     string testset_pos_gt_path = "/home/pcipci/mzx/ped_detect/Inria/Test/AnnotTest/";
 #endif
+
 	/* 1 -> slide negative images */
 	bf::path neg_img_dir( testset_neg_path );
 	int number_of_neg_images = getNumberOfFilesInDir( testset_neg_path );
@@ -667,7 +666,6 @@ int main( int argc, char** argv)
     }
 
 	int number_of_fp = 0;
-	double score_of_fp = 0;
 	cout<<"FP test ... "<<endl;
 	tk.reset();tk.start();
 	#pragma omp parallel for num_threads(Nthreads) reduction( +: number_of_fp)
@@ -677,19 +675,19 @@ int main( int argc, char** argv)
 		vector<double> det_confs;
 		Mat input_img = imread( image_path_vector[c]);
 		sc.detectMultiScale( input_img, det_rects, det_confs );
-		#pragma omp critical
-		{
-			number_of_fp += det_rects.size();
-			for(int i=0;i<det_confs.size();i++)
-				score_of_fp += det_confs[i];
-		}
+		//#pragma omp critical
+        {
+		    number_of_fp += det_rects.size();
+        }
 	}
 	tk.stop();
+    cout<<"number_of_fp is "<<number_of_fp<<endl;
 	cout<<"FP test done. Time consume "<<tk.getTimeSec()<<" seconds"<<endl;
 
 	/* 2 -> test FN  */
 	int number_of_fn = 0;
 	int number_of_wrong = 0;
+    int number_of_target = 0;
 	bf::path pos_img_dir(testset_pos_image_path);
 	int number_of_pos_images = getNumberOfFilesInDir( testset_pos_image_path );
 	image_path_vector.clear();
@@ -707,6 +705,8 @@ int main( int argc, char** argv)
     }
 	cout<<"Test FN "<<endl;
 	tk.reset();tk.start();
+
+	#pragma omp parallel for num_threads(Nthreads) reduction( +: number_of_fn) reduction( +: number_of_wrong ) reduction(+:number_of_target)
 	for( int i=0;i<image_path_vector.size(); i++)
 	{ 
 		// reading groundtruth...
@@ -714,6 +714,7 @@ int main( int argc, char** argv)
         FileStorage fst( gt_path_vector[i], FileStorage::READ | FileStorage::FORMAT_XML);
         fst["boxes"]>>target_rects;
         fst.release();
+        number_of_target += target_rects.size();
 
 		// reading image
 		Mat test_img = imread( image_path_vector[i]);
@@ -732,33 +733,74 @@ int main( int argc, char** argv)
 				{
 					matched++;
 					isMatched_r[k] = true;
-					isMatched_l[k] = true;
+					isMatched_l[c] = true;
 					break;
 				}
 			}
 		}
+        //#pragma omp critical
+        {
+            for(int c=0;c<isMatched_r.size();c++)
+            {
+                if( !isMatched_r[c])
+                    number_of_fn++;
+            }
 
-		for(int c=0;c<isMatched_r.size();c++)
-		{
-			if( !isMatched_r[c])
-				number_of_fn++;
-		}
-
-		for(int c=0;c<isMatched_l.size();c++)
-		{
-			if( !isMatched_l[c])
-				number_of_wrong++;
-		}
-
+            for(int c=0;c<isMatched_l.size();c++)
+            {
+                if( !isMatched_l[c])
+                    number_of_wrong++;
+            }
+        }
 	}
+    cout<<"number of wrong is "<<number_of_wrong<<endl;
+    cout<<"number of fn is "<<number_of_fn<<endl;
 	tk.stop();
 	cout<<"Test FN done. Time consuming "<<tk.getTimeSec()<<" seconds."<<endl;
 	
 	number_of_fp += number_of_wrong;
-
 	cout<<"number of fp is "<<number_of_fp<<endl;
 	cout<<"number of fn is "<<number_of_fn<<endl;
+    cout<<"number of target is "<<number_of_target<<endl;
 
+    cout<<"MISS RATE is "<<1-1.0*number_of_fn/number_of_target<<endl;
+    cout<<"FP(per image) is "<<1.0*number_of_fp/(number_of_neg_images + number_of_pos_images)<<endl;
+    out_miss_rate = 1-1.0*number_of_fn/number_of_target;
+    out_fp_per_image = 1.0*number_of_fp/(number_of_neg_images + number_of_pos_images);
 #endif
     return 0;
+}
+
+
+
+/* detector parameter define */
+int main( int argc, char** argv)
+{
+    int number_to_go = 5;
+    vector<double> precision_v(number_to_go,0);
+    vector<double> fp_v(number_to_go,0);
+
+
+    for ( int c=0;c < number_to_go; c++) 
+    {
+        cout<<"------------------------------ RUN "<<c<<" ------------------------------------"<<endl;
+        double mr_tmp = 0;
+        double fp_tmp = 0;
+        runTrainAndTest( mr_tmp, fp_tmp );
+        precision_v[c] = mr_tmp;
+        fp_v[c] = fp_tmp;
+    }
+
+    /* show result  */
+    cout<<"precision_v :"<<endl;
+    for ( int c=0; c<precision_v.size(); c++) {
+        cout<<precision_v[c]<<" ";
+    }
+    cout<<endl;
+
+    cout<<"fp_v :"<<endl;
+    for ( int c=0; c<fp_v.size(); c++) {
+        cout<<fp_v[c]<<" ";
+    }
+    cout<<endl;
 }

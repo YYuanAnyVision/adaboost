@@ -241,7 +241,7 @@ void feature_Pyramids::computeGradient(const Mat &img, Mat& grad, Mat& qangle,Ma
 	Mat Angle(1, width, CV_32F, dbuf + width*3);
 
 	int _nbins = nbins;
-	float angleScale = (float)(_nbins/(CV_PI));//0~2*pi
+	float angleScale = (float)(_nbins/(CV_PI));
 #ifdef HAVE_IPP
 	Mat lutimg(img.rows,img.cols,CV_MAKETYPE(CV_32F,cn));
 	Mat hidxs(1, width, CV_32F);
@@ -470,7 +470,7 @@ void feature_Pyramids::computeChannels(const Mat &image,vector<Mat>& channels) c
 		for( int i = 0; i < 3; ++i )
 		{
 			Mat channels_tmp=channels_addr.rowRange(i*channels_addr_rows,(i+1)*channels_addr_rows);
-		    cv::resize(luv_channels[i],channels_tmp,channels_tmp.size(),0.0,0.0,1);
+		    cv::resize(luv_channels[i],channels_tmp,channels_tmp.size(),0.0,0.0,INTER_AREA);
 			channels.push_back(channels_tmp);
 		}
 	}
@@ -521,7 +521,7 @@ void feature_Pyramids::computeChannels(const Mat &image,vector<Mat>& channels) c
 		{
 			channels.push_back(bins_mat_tmp[c]);
 		}else{
-			cv::resize(bins_mat_tmp[c],bins_mat[c],bins_mat[c].size(),0.0,0.0,1);
+			cv::resize(bins_mat_tmp[c],bins_mat[c],bins_mat[c].size(),0.0,0.0,INTER_AREA);
 			channels.push_back(bins_mat[c]);
 		}
 		
