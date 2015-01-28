@@ -249,7 +249,6 @@ bool sampleWins(    const softcascade &sc, 	    /*  in: detector */
                     target_rects.resize( number_target_per_image);
 			}
             /*  resize the rect to fixed widht / height ratio, for pedestrain det , is 41/100 for INRIA database */
-			Mat draw;img.copyTo( draw);
             for ( int i=0;i<target_rects.size();i++) 
             {
                 target_rects[i] = resizeToFixedRatio( target_rects[i], opts.modelDs.width*1.0/opts.modelDs.height, 1); /* respect to height */
@@ -288,6 +287,7 @@ int runTrainAndTest( double &out_miss_rate, double &out_fp_per_image)
 
     /* globale paras*/
 	int Nthreads = omp_get_max_threads();
+    cout<<"using threads "<<Nthreads<<endl;
     TickMeter tk;
 
 	/*-----------------------------------------------------------------------------
@@ -302,12 +302,12 @@ int runTrainAndTest( double &out_miss_rate, double &out_fp_per_image)
  
     tree_par.nBins = 256;
     tree_par.maxDepth = 2;
-    tree_par.fracFtrs = 0.08;
+    tree_par.fracFtrs = 0.0625;
 
 #ifdef P1
-    cas_para.posGtDir  = "/media/yuanyang/disk1/libs/piotr_toolbox/data/Inria/train/posGt_opencv/";
-    cas_para.posImgDir = "/media/yuanyang/disk1/libs/piotr_toolbox/data/Inria/train/pos/"; 
-	cas_para.negImgDir = "/media/yuanyang/disk1/libs/piotr_toolbox/data/Inria/train/neg/";
+    cas_para.posGtDir  = "/home/yuanyang/Workspace/INRIA/train/posGt_opencv/";
+    cas_para.posImgDir = "/home/yuanyang/Workspace/INRIA/train/pos/"; 
+	cas_para.negImgDir = "/home/yuanyang/Workspace/INRIA/train/neg/";
 #endif
 #ifdef P2
     cas_para.posImgDir = "/mnt/disk1/data/INRIAPerson/Train/pos"; 
@@ -350,7 +350,6 @@ int runTrainAndTest( double &out_miss_rate, double &out_fp_per_image)
 	 *-----------------------------------------------------------------------------*/
 	for( int stage=0;stage<cas_para.nWeaks.size();stage++)
 	{
-		tk.reset();tk.start();
 		cout<<"=========== Training Stage No "<<stage<<" ==========="<<endl;
 		/*  1--> sample positives and compute info about channels */
 		/*  2--> compute lambdas */
@@ -387,6 +386,13 @@ int runTrainAndTest( double &out_miss_rate, double &out_fp_per_image)
 
 		/* 4--> sample negatives and compute features, accumulate negatives from previous stages */
         sampleWins( sc, stage, false, neg_samples, neg_origsamples );          /* remember the neg_samples is empty */
+
+        cout<<"show hard examples number:"<<neg_origsamples.size()<<endl;
+        for( int c=0;stage==3&&c<neg_origsamples.size();c++)
+        {
+            imshow("hard samples", neg_origsamples[c]);
+            waitKey(0);
+        }
 
         vector<Mat> accu_neg;
         if( stage ==0 )                                   /* stage == 0 */
@@ -483,13 +489,12 @@ int runTrainAndTest( double &out_miss_rate, double &out_fp_per_image)
     /*  swap the Mat data */
     neg_train_data = Mat::zeros(1,1,CV_32F);
     pos_train_data = Mat::zeros(1,1,CV_32F);
-    sc.Save("fortest_sc.xml");
     
     /*----------------   test detectMultiScale over dataset , show ----------------*/
 #ifdef TEST_MUITI
     bf::directory_iterator end_it;
 #ifdef P1
-    bf::path test_data_path("/media/yuanyang/disk1/libs/piotr_toolbox/data/Inria/Test/pos/");
+    bf::path test_data_path("/home/yuanyang/Workspace/INRIA/Test/pos/");
 #endif
 #ifdef P2
     bf::path test_data_path("/mnt/disk1/data/INRIAPerson/Test/pos/");
@@ -524,9 +529,9 @@ int runTrainAndTest( double &out_miss_rate, double &out_fp_per_image)
 #ifdef TEST_STAT_WINDOW
 
 #ifdef P1
-    string testset_neg_path = "/media/yuanyang/disk1/libs/piotr_toolbox/data/Inria/Test/neg/";
-    string testset_pos_image_path = "/media/yuanyang/disk1/libs/piotr_toolbox/data/Inria/Test/pos/";
-    string testset_pos_gt_path = "/media/yuanyang/disk1/libs/piotr_toolbox/data/Inria/Test/AnnotTest/";
+    string testset_neg_path =       "/home/yuanyang/Workspace/INRIA/Test/neg/";
+    string testset_pos_image_path = "/home/yuanyang/Workspace/INRIA/Test/pos/";
+    string testset_pos_gt_path =    "/home/yuanyang/Workspace/INRIA/Test/AnnotTest/";
 #endif
 #ifdef P2
     string testset_neg_path = "/mnt/disk1/data/INRIAPerson/Test/neg/";
@@ -760,10 +765,9 @@ int runTrainAndTest( double &out_miss_rate, double &out_fp_per_image)
 	
 	number_of_fp += number_of_wrong;
 	cout<<"number of fp is "<<number_of_fp<<endl;
-	cout<<"number of fn is "<<number_of_fn<<endl;
     cout<<"number of target is "<<number_of_target<<endl;
 
-    cout<<"MISS RATE is "<<1-1.0*number_of_fn/number_of_target<<endl;
+    cout<<"PRECISON is "<<1-1.0*number_of_fn/number_of_target<<endl;
     cout<<"FP(per image) is "<<1.0*number_of_fp/(number_of_neg_images + number_of_pos_images)<<endl;
     out_miss_rate = 1-1.0*number_of_fn/number_of_target;
     out_fp_per_image = 1.0*number_of_fp/(number_of_neg_images + number_of_pos_images);

@@ -47,13 +47,13 @@ struct cascadeParameter
 		modelDsPad = Size(64, 128);
 		stride     = 4;
 		cascThr	   = -1;
-		cascCal    = 0.005;
+		cascCal    = 0.002;
 		nWeaks.push_back( 32);
 		nWeaks.push_back( 128);
 		nWeaks.push_back( 512);
 		nWeaks.push_back( 2048);
 
-		pBoost_nweaks = 128;
+		pBoost_nweaks = 2048;
 		pBoost_pTree = tree_para();
 		infos = "no infos";
 		nPos = -1;

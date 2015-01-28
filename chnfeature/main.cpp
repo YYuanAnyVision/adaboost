@@ -92,7 +92,7 @@ void MultiImage_OneWin(const std::string& MultiShow_WinName, const vector<Mat>& 
 
 int main( int argc, char** argv)
 {
-    Mat input_image = imread(argv[1]);
+    Mat input_image = imread("/media/yuanyang/disk1/git/adaboost/build/chnfeature/test.jpg");
 
     feature_Pyramids ff1;
     vector<vector<Mat> > feature;
@@ -101,12 +101,18 @@ int main( int argc, char** argv)
     vector<double> scalesh;
     ff1.chnsPyramid( input_image, feature, scales, scalesw, scalesh );
 
-	saveMatToFile("p1.data", feature[0][3]);
-	saveMatToFile("p2.data", feature[0][4]);
-	saveMatToFile("p3.data", feature[0][5]);
-	saveMatToFile("p4.data", feature[0][6]);
-	saveMatToFile("p5.data", feature[0][7]);
-	saveMatToFile("p6.data", feature[0][8]);
+//    vector<Mat> features;
+//    ff1.computeChannels( input_image, features);
+//    saveMatToFile("p1.data", features[3]);
+//    saveMatToFile("p2.data", features[4]);
+//    saveMatToFile("p3.data", features[5]);
+//    saveMatToFile("p4.data", features[6]);
+//    saveMatToFile("p5.data", features[7]);
+//    saveMatToFile("p6.data", features[8]);
+//    saveMatToFile("p7.data", features[9]);
+	//saveMatToFile("p4.data", feature[0][6]);
+	//saveMatToFile("p5.data", feature[0][7]);
+	//saveMatToFile("p6.data", feature[0][8]);
 
 
     //TickMeter tk;

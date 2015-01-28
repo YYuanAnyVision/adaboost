@@ -265,9 +265,6 @@ void feature_Pyramids::computeGradient(const Mat &img, Mat& grad, Mat& qangle,Ma
 	//vector<Mat> angle;
 	//Mat combineMat;
 
-
-	//ofstream f1("d:\data.txt");
-
 	for( y = 0; y < gradsize.height; y++ )
 	{
 #ifdef HAVE_IPP
@@ -385,9 +382,12 @@ void feature_Pyramids::computeGradient(const Mat &img, Mat& grad, Mat& qangle,Ma
 #else
 			float mag = dbuf[x+width*2];
 			float act_ang = (dbuf[x+width*3] > CV_PI ? dbuf[x+width*3]-CV_PI: dbuf[x+width*3]);
-			float angle = act_ang*angleScale;//-0.5f;
+            float angle = act_ang*angleScale;//-0.5f;
+			//float mag = dbuf[x+width*2], angle = dbuf[x+width*3]*angleScale - 0.5f;
 			int hidx = cvFloor(angle);
+        
 			angle -= hidx;
+
 			gradPtr[x*2] = mag*(1.f - angle);
 			gradPtr[x*2+1] = mag*angle;
 #endif
@@ -425,9 +425,8 @@ void feature_Pyramids::computeGradient(const Mat &img, Mat& grad, Mat& qangle,Ma
 	// =(mag0+mag1)./((conTri(mag0),Km)+conTri(mag1,Km)+normConst)
 	mag_split[0]= mag_split[0]/(mag_split_s[0]+mag_split_s[1] + normConst);
 	mag_split[1]= mag_split[1]/(mag_split_s[0]+mag_split_s[1] + normConst);
-	
-
 	merge(mag_split,grad);
+
 	mag_sum_s=mag_split[0]+mag_split[1];
 	//tm5.stop();
 	//cout<<"mag_smooth "<<tm5.getTimeMilli()<<endl;
@@ -496,9 +495,6 @@ void feature_Pyramids::computeChannels(const Mat &image,vector<Mat>& channels) c
 	Mat mag_sum_s;
 	
 	computeGradient(luv_norm, mag, ori,mag_sum_s);//mzx 以上共花费64ms
-
-	//FileStorage fs2( " ori.yml" ,FileStorage::WRITE);
-	//fs2 << "data" << ori;
 
 	//tm3.stop();
 	//std::cout << "computeGradient_tm3, ms = " << tm3.getTimeMilli() << std::endl;
@@ -572,24 +568,13 @@ void feature_Pyramids:: chnsPyramid(const Mat &img,vector<vector<Mat> > &approxP
 
 	getscales(img,ap_size,real_scal,scales,scalesh,scalesw);
 	Mat img_tmp;
-	Mat img_half;
 	//compute real 
 	vector<vector<Mat> > chns_Pyramid;
 	int chns_num;
 	for (int s_r=0;s_r<(int)real_scal.size();s_r++)
 	{
 		vector<Mat> chns;
-		if (img_half.empty())
-		{
-			resize(img,img_tmp,ap_size[real_scal[s_r]]*shrink,0.0,0.0,INTER_AREA);
-		}else
-		{
-			resize(img_half,img_tmp,ap_size[real_scal[s_r]]*shrink,0.0,0.0,INTER_AREA);
-		}
-		if (abs(scales[real_scal[s_r]]-0.5)<=0.01)
-		{
-			img_half=img_tmp;
-		}
+		resize(img,img_tmp,ap_size[real_scal[s_r]]*shrink,0.0,0.0,INTER_AREA);
 		computeChannels(img_tmp,chns);
 		chns_num=chns.size();
 		chns_Pyramid.push_back(chns);
@@ -684,30 +669,12 @@ void feature_Pyramids:: chnsPyramid(const Mat &img,  vector<vector<Mat> > &chns_
 	getscales(img,ap_size,real_scal,scales,scalesh,scalesw);
 
 	Mat img_tmp;
-	Mat img_half;
-	Mat Km = get_Km(smooth);
 	//compute real 
 	for (int s_r=0;s_r<(int)scales.size();s_r++)
 	{
 		vector<Mat> chns;
-		//cv::resize(img,img_tmp,ap_size[s_r]*shrink,0.0,0.0,INTER_AREA);
-		if (img_half.empty())
-		{
-			resize(img,img_tmp,ap_size[real_scal[s_r]]*shrink,0.0,0.0,INTER_AREA);
-		}else 
-		{
-			resize(img_half,img_tmp,ap_size[real_scal[s_r]]*shrink,0.0,0.0,INTER_AREA);
-		}
-		if (abs(scales[real_scal[s_r]]-0.5)<=0.01)
-		{
-			img_half=img_tmp;
-		}
+		cv::resize(img,img_tmp,ap_size[s_r]*shrink,0.0,0.0,INTER_AREA);
 		computeChannels(img_tmp,chns);
-		for (int c = 0; c < chns.size(); c++)
-		{
-			convTri(chns[c],chns[c],Km);
-
-		}
 		chns_Pyramid.push_back(chns);
 	}
 

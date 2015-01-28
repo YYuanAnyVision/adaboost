@@ -16,7 +16,7 @@ int main( int argc, char** argv)
     cout<<"Loading data ..."<<endl;
     FileStorage fs;
 
-    fs.open("X0train_first.xml", FileStorage::READ);
+    fs.open("X0train_final.xml", FileStorage::READ);
     Mat train_neg;
     fs["matrix"]>>train_neg;
     fs.release();
