@@ -384,8 +384,13 @@ void feature_Pyramids::computeGradient(const Mat &img, Mat& grad, Mat& qangle,Ma
 			int hidx = (int)pHidxs[x];
 #else
 			float mag = dbuf[x+width*2];
+			//float act_ang = dbuf[x+width*3]; //- 0.5f;
 			float act_ang = (dbuf[x+width*3] > CV_PI ? dbuf[x+width*3]-CV_PI: dbuf[x+width*3]);
+			//f1<<act_ang;
+			//f1<<" ";
 			float angle = act_ang*angleScale;//-0.5f;
+			//float mag = dbuf[x+width*2];
+			
 			int hidx = cvFloor(angle);
 			angle -= hidx;
 			gradPtr[x*2] = mag*(1.f - angle);
@@ -407,7 +412,7 @@ void feature_Pyramids::computeGradient(const Mat &img, Mat& grad, Mat& qangle,Ma
 		//f1<<"\n";
 	}
 
-	//cv::TickMeter tm5;
+//cv::TickMeter tm5;
 //	tm5.start();
 	vector<Mat> mag_split;
 	cv::split(grad,mag_split);
@@ -446,8 +451,8 @@ void feature_Pyramids::computeChannels(const Mat &image,vector<Mat>& channels) c
 	
 	//cv::TickMeter tm3;
 	//tm3.start();
-	int channels_addr_rows=(image.rows+shrink-1)/shrink;
-	int channels_addr_cols=(image.cols+shrink-1)/shrink;
+	int channels_addr_rows=(image.rows)/shrink;
+	int channels_addr_cols=(image.cols)/shrink;
 	Mat channels_addr=Mat::zeros((nbins+4)*channels_addr_rows,channels_addr_cols,CV_32FC1);
 	if(image.channels() > 1)
 	{
@@ -480,7 +485,7 @@ void feature_Pyramids::computeChannels(const Mat &image,vector<Mat>& channels) c
 		for( int i = 0; i < 3; ++i )
 		{
 			Mat channels_tmp=channels_addr.rowRange(i*channels_addr_rows,(i+1)*channels_addr_rows);
-		    cv::resize(luv_channels[i],channels_tmp,channels_tmp.size(),0.0,0.0,INTER_AREA);
+		    cv::resize(luv_channels[i],channels_tmp,channels_tmp.size(),0.0,0.0,1);
 			channels.push_back(channels_tmp);
 		}
 	}
@@ -510,8 +515,8 @@ void feature_Pyramids::computeChannels(const Mat &image,vector<Mat>& channels) c
 	//tm4.start();
 	/*compute grad_hist*/
 	vector<Mat> bins_mat,bins_mat_tmp;
-	int bins_mat_tmp_rows=(mag.rows+binsize-1)/binsize;
-	int bins_mat_tmp_cols=(mag.cols+binsize-1)/binsize;
+	int bins_mat_tmp_rows=mag.rows/binsize;
+	int bins_mat_tmp_cols=mag.cols/binsize;
 	for( int s=0;s<nbins;s++){
 		Mat channels_tmp=channels_addr.rowRange((s+4)*channels_addr_rows,(s+5)*channels_addr_rows);
 		if (binsize==shrink)
@@ -528,8 +533,8 @@ void feature_Pyramids::computeChannels(const Mat &image,vector<Mat>& channels) c
 #define GH \
 	bins_mat_tmp[ori.at<Vec2b>(row,col)[0]].at<float>((row)/binsize,(col)/binsize)+=(mag.at<Vec2f>(row,col)[0]*(1.0/sc)*(1.0/sc));\
 	bins_mat_tmp[ori.at<Vec2b>(row,col)[1]].at<float>((row)/binsize,(col)/binsize)+=(mag.at<Vec2f>(row,col)[1]*(1.0/sc)*(1.0/sc));
-	for(int row=0;row<mag.rows;row++){
-		for(int col=0;col<mag.cols;col++){GH;}}
+	for(int row=0;row<(mag.rows/binsize*binsize);row++){
+		for(int col=0;col<(mag.cols/binsize*binsize);col++){GH;}}
 
 	/*push*/
 	for (int c=0;c < (int)nbins;c++)
@@ -572,31 +577,31 @@ void feature_Pyramids:: chnsPyramid(const Mat &img,vector<vector<Mat> > &approxP
 
 	getscales(img,ap_size,real_scal,scales,scalesh,scalesw);
 	Mat img_tmp;
-	Mat img_half;
+	//Mat img_half;
 	//compute real 
 	vector<vector<Mat> > chns_Pyramid;
 	int chns_num;
 	for (int s_r=0;s_r<(int)real_scal.size();s_r++)
 	{
 		vector<Mat> chns;
-		if (img_half.empty())
+		resize(img,img_tmp,ap_size[real_scal[s_r]]*shrink,0.0,0.0,INTER_AREA);
+		/*if (img_half.empty())
 		{
 			resize(img,img_tmp,ap_size[real_scal[s_r]]*shrink,0.0,0.0,INTER_AREA);
 		}else
 		{
-			resize(img_half,img_tmp,ap_size[real_scal[s_r]]*shrink,0.0,0.0,INTER_AREA);
+			resize(img_half,img_tmp,ap_size[real_scal[s_r]]*shrink,0.0,0.0,1);
 		}
 		if (abs(scales[real_scal[s_r]]-0.5)<=0.01)
 		{
 			img_half=img_tmp;
-		}
+		}*/
 		computeChannels(img_tmp,chns);
 		chns_num=chns.size();
 		chns_Pyramid.push_back(chns);
 	}
 	//compute lambdas
 	vector<double> lambdas;
-
 	if (nApprox!=0)
 	{
 		get_lambdas(chns_Pyramid,lambdas,real_scal,scales);
@@ -647,7 +652,7 @@ void feature_Pyramids:: chnsPyramid(const Mat &img,vector<vector<Mat> > &approxP
 					}
 					//smooth channels, optionally pad and concatenate channels
 					convTri(py_tmp,py_tmp,Km);
-					copyMakeBorder(py_tmp,py,pad_T,pad_T,pad_R,pad_R,BORDER_CONSTANT,Scalar(0,0,0));
+					copyMakeBorder(py_tmp,py,pad_T,pad_T,pad_R,pad_R,IPL_BORDER_CONSTANT);
 					approx_chns.push_back(py);
 				}
 
@@ -690,18 +695,18 @@ void feature_Pyramids:: chnsPyramid(const Mat &img,  vector<vector<Mat> > &chns_
 	for (int s_r=0;s_r<(int)scales.size();s_r++)
 	{
 		vector<Mat> chns;
-		//cv::resize(img,img_tmp,ap_size[s_r]*shrink,0.0,0.0,INTER_AREA);
-		if (img_half.empty())
+		cv::resize(img,img_tmp,ap_size[s_r]*shrink,0.0,0.0,INTER_AREA);
+		/*if (img_half.empty())
 		{
 			resize(img,img_tmp,ap_size[real_scal[s_r]]*shrink,0.0,0.0,INTER_AREA);
 		}else 
 		{
-			resize(img_half,img_tmp,ap_size[real_scal[s_r]]*shrink,0.0,0.0,INTER_AREA);
+			resize(img_half,img_tmp,ap_size[real_scal[s_r]]*shrink,0.0,0.0,1);
 		}
 		if (abs(scales[real_scal[s_r]]-0.5)<=0.01)
 		{
 			img_half=img_tmp;
-		}
+		}*/
 		computeChannels(img_tmp,chns);
 		for (int c = 0; c < chns.size(); c++)
 		{

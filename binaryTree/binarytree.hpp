@@ -72,7 +72,8 @@ class binaryTree
 		 *         Name:  Train
 		 *  Description:  train the binary tree
 		 *			out:  true->no error
-		 *	    warning:  this will change the original data in train_data !!
+		 *	    warning:  this will change the original data in train_data ( quantization is expensive
+         *	              save the quantized data back will save the computation)!!
 		 * =====================================================================================
 		 */
 		bool Train( 
@@ -194,7 +195,7 @@ class binaryTree
 		/* 
 		 * ===  FUNCTION  ======================================================================
 		 *         Name:  any
-		 *  Description:  true if there's at least one non-element 
+		 *  Description:  true if there's at least one non-zero-element 
 		 * =====================================================================================
 		 */
 		bool any( const Mat& input) const;								// in 

@@ -202,6 +202,7 @@ bool softcascade::Combine(vector<Adaboost> &ads )
 
     /*  set the depth */
     setTreeDepth();
+
     if(m_debug)
     {
         cout<<"fids samples \n"<<m_fids.rowRange(0,10)<<endl;
@@ -281,6 +282,8 @@ bool softcascade::checkModel() const
         cout<<"<softcascade::checkModel><error> Model is not continuous "<<endl;
         return false;
     }
+    if( m_opts.stride < 0 || m_opts.shrink < 0 || m_opts.modelDs.width < 0 || m_opts.modelDs.height< 0 ||
+            (m_opts.modelDsPad.width < m_opts.modelDs.width) || ( m_opts.modelDsPad.height < m_opts.modelDs.height ) || m_opts.nchannels < 0)
     return true;
 }
 
@@ -339,7 +342,7 @@ bool softcascade::Apply( const vector<Mat> &input_data,      /*  in: channels fe
         return false;
     }
     /*  --------------------------- check done ----------------------------*/
-
+    return true;
 }
 
 
@@ -429,6 +432,7 @@ bool softcascade::Load( string path_to_model )      /* in : path of the model, s
     cout<<"# Model Info --> "<<m_opts.infos<<endl;
     return true;
 }
+
 cascadeParameter softcascade::getParas() const
 {
     return m_opts;
@@ -446,14 +450,12 @@ bool softcascade::detectMultiScale( const Mat &image,
                        int minSize,
                        int maxSize) const
 {
-    
     vector< vector<Mat> > approPyramid;
     vector<double> appro_scales;
     vector<double> scale_w;
     vector<double> scale_h;
 
     m_feature_gen.chnsPyramid( image, approPyramid, appro_scales, scale_h, scale_w);
-
 
     for( int c=0;c<approPyramid.size();c++)
     {
@@ -468,12 +470,14 @@ bool softcascade::detectMultiScale( const Mat &image,
             confidence.push_back( t_conf[i]);
         }
     }
-    
+    /* TODO filter the detection results according to the minSize maxSize */
+
     /*  non max supression */
     NonMaxSupress( targets, confidence );
 
     return true;
 }
+
 bool softcascade::Apply( const Mat &input_image,        /*  in: !!! image !!! */
                     vector<Rect> &results,              /* out: detect results */
                     vector<double> &confidence) 	    /* out: detect confidence */
@@ -487,3 +491,58 @@ void softcascade::setDebug( bool m_d )
 {
     m_debug = m_d;
 }
+
+bool softcascade::getFeatureChannelAndPosition( const int featureIndex, 
+                                           Point & position,
+                                           int &nchannel) const
+{
+    if( !checkModel())
+        return false;
+    int feature_width  = m_opts.modelDsPad.width/m_opts.shrink;  
+    int feature_height = m_opts.modelDsPad.height/m_opts.shrink;
+    int number_channels = m_opts.nchannels;
+    
+    nchannel = featureIndex/(feature_width*feature_height);
+    position.y = ( featureIndex - nchannel*feature_width*feature_height )/(feature_width);
+    position.x = featureIndex - nchannel*feature_width*feature_height - feature_width*position.y;
+
+    return true;
+}
+
+
+void softcascade::visulizeFeature()
+{
+    if( !checkModel())
+        return;
+    
+    int number_channels = m_opts.nchannels;
+    int feature_width  = m_opts.modelDsPad.width/m_opts.shrink;  
+    int feature_height = m_opts.modelDsPad.height/m_opts.shrink;
+    
+    vector<Mat> v_features;v_features.resize( number_channels);
+    for( int c=0;c<number_channels;c++)
+    {
+        v_features[c] = Mat::zeros(  feature_height, feature_width, CV_32F);
+    }
+
+    for( int r=0;r<m_fids.rows;r++)
+    {
+        for( int c=0;c<m_fids.cols;c++)
+        {
+            cout<<"testing "<<r<<" "<<c;
+            int fea = m_fids.at<int>( r, c);
+            if( fea == 0)
+            {
+                cout<<endl;
+                continue;
+            }
+            Point position; int n_c;
+            cout<<" write to channel "<<n_c<<" with row "<<position.y<<" col "<<position.x<<" done "<<endl;
+            getFeatureChannelAndPosition( fea, position, n_c);
+            v_features[n_c].at<float>( position.y, position.x) += abs(m_hs.at<double>(r,c));
+        }
+    }
+    cout<<" -- final "<<endl;
+    saveMatToFile( "v.data", v_features[9] );
+}
+

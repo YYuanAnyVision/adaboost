@@ -16,7 +16,7 @@ template<class T> bool _any( T *ptr, int numberOfele )
 	
 	for ( int c=0;c<numberOfele ;c++ )
 	{
-		if( 1.0-ptr[c] > 1e-7 || ptr[c] - 1.0 > 1e-7)
+		if( 0.0-ptr[c] > 1e-7 || ptr[c] - 0.0 > 1e-7)
 			return true;
 	}
 	return false;
@@ -90,7 +90,7 @@ bool binaryTree::computeCDF(	const Mat & sampleData,				// in samples	1 x number
 	{
 		cdf[c] += cdf[c-1];	
 	}
-
+    return true;
 }
 
 bool binaryTree::binaryTreeTrain(   
@@ -376,6 +376,7 @@ bool binaryTree::Train( data_pack & train_data,			/* input&output : training dat
 	Mat fidsSt( feature_dim, 1, CV_32S); /* pre computes the feature indexs, sampled later for feature selection*/
 	for ( int i=0;i<feature_dim ;i++) 
 		fidsSt.at<int>(i,0) = i;
+
 	cv::RNG rng(getTickCount());
 
 	while( k < K)
@@ -413,13 +414,10 @@ bool binaryTree::Train( data_pack & train_data,			/* input&output : training dat
 		Point minLocation; double minError; double maxError;
 		cv::minMaxLoc( errors_st, &minError, &maxError, &minLocation);
 		int minErrorIndex = (int)minLocation.y;
-		//cout<<"min error is "<<minError<<" max error is "<<maxError<<" index: "<<minLocation.y<<endl;
 
 		int selectedFeature = fidsSt.at<int>(minErrorIndex, 0);
-		//cout<<"selected feature is No "<<selectedFeature<<endl;
 
 		double threshold_ready_to_apply = threshold_st.at<uchar>(minErrorIndex,0) + 0.5;
-		//cout<<"threshold is set to "<<threshold_ready_to_apply<<endl;
 
 		/* split the data and continue if necessary */
 		Mat left0 = quan_neg_data.row(selectedFeature) < threshold_ready_to_apply; left0 /=255; /* normalize to 0,1 otherwize is 0,255 */
@@ -440,13 +438,9 @@ bool binaryTree::Train( data_pack & train_data,			/* input&output : training dat
 
 			/* -------------------------------- weights rearrange -------------------------------------*/
 			Mat left0_double; left0.convertTo( left0_double, CV_64F);
-			//cout<<"weight0 size "<<(*weight0).rows<<" "<<(*weight0).cols<<" "<<(*weight0).type()<<endl;
-			//cout<<"left0 size "<<left0_double.rows<<" "<<left0_double.cols<<" "<<left0_double.type()<<endl;
 			Mat *newWeight0 = new Mat((*weight0).mul(left0_double.t()));
 			Mat *newWeight0plus = new Mat((*weight0).mul( 1-left0_double.t())); /* "1-left0_double" is same as "~left0_double" */
-			//cout<<" weights0 is \n"<<*weight0<<endl;
-			//cout<<"left0_double is \n"<<left0_double<<endl;
-			//cout<<" newWeights is \n"<<newWeight0<<endl;
+
 			wtsAll0[K]   = newWeight0;				/* left node */
 			wtsAll0[K+1] = newWeight0plus;			/* right node, index+1*/
 			delete wtsAll0[k]; wtsAll0[k] = NULL;	/* works on node k is done, release the memory */
@@ -547,7 +541,6 @@ bool  _apply( double* inds,				/* out: predicted label 1 or -1 */
 		int k = 0;
 		while( child[k] )					/*  not leaf node */
 		{
-			//cout<<"choose fids "<<fids[k]<<", v "<<data[ fids[k]*number_of_samples +i]<<", t "<<thrs[k];
 			if( data[ fids[k]*number_of_samples +i] < thrs[k] )
 			{
 				k = child[k];				/* left node */
@@ -556,12 +549,11 @@ bool  _apply( double* inds,				/* out: predicted label 1 or -1 */
 			{
 				k = child[k]+1;				/* right node */
 			}
-			//cout<<" jump to "<<k<<endl;
 		}
 		/*  double format */
 		inds[i] = hs[k];
-		//cout<<"adding score "<<hs[k]<<" from position "<<k<<endl;
 	}
+    return true;
 }
 
 

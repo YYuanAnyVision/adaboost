@@ -19,8 +19,9 @@
 
 #include <omp.h>
 
-#define P2
+#define P1
 #define TEST_STAT_SLIDE
+//#define SAVE_IMAGE
 
 using namespace std;
 using namespace cv;
@@ -484,6 +485,7 @@ int runTrainAndTest( double &out_miss_rate, double &out_fp_per_image)
     /*  swap the Mat data */
     neg_train_data = Mat::zeros(1,1,CV_32F);
     pos_train_data = Mat::zeros(1,1,CV_32F);
+    sc.Save("for_test_sc.xml");
     
     /*----------------   test detectMultiScale over dataset , show ----------------*/
 #ifdef TEST_MUITI
@@ -668,16 +670,29 @@ int runTrainAndTest( double &out_miss_rate, double &out_fp_per_image)
 	int number_of_fp = 0;
 	cout<<"FP test ... "<<endl;
 	tk.reset();tk.start();
-	#pragma omp parallel for num_threads(Nthreads) reduction( +: number_of_fp)
+	//#pragma omp parallel for num_threads(Nthreads) reduction( +: number_of_fp)
 	for( int c=0;c<image_path_vector.size();c++)
 	{
 		vector<Rect> det_rects;
 		vector<double> det_confs;
 		Mat input_img = imread( image_path_vector[c]);
+
+        bf::path t_path( image_path_vector[c]);
+        string basename = bf::basename(t_path);
+
 		sc.detectMultiScale( input_img, det_rects, det_confs );
 		//#pragma omp critical
         {
-		    number_of_fp += det_rects.size();
+		    number_of_fp += det_rects.size(); 
+#ifdef SAVE_IMAGE
+            for(int i= 0;i<det_rects.size();i++)
+            {
+                stringstream ss;ss<<i;string index_string;ss>>index_string;
+                string save_path = "neg_fp/"+basename+"_"+index_string+".jpg";
+                Mat save_img = cropImage( input_img, det_rects[i]);
+                imwrite( save_path, save_img );
+            }
+#endif
         }
 	}
 	tk.stop();
@@ -738,18 +753,37 @@ int runTrainAndTest( double &out_miss_rate, double &out_fp_per_image)
 				}
 			}
 		}
+
+        bf::path t_path( image_path_vector[i]);
+        string basename = bf::basename(t_path);
         //#pragma omp critical
         {
             for(int c=0;c<isMatched_r.size();c++)
             {
                 if( !isMatched_r[c])
+                {
                     number_of_fn++;
+#ifdef SAVE_IMAGE
+                    stringstream ss;ss<<c;string index_string;ss>>index_string;
+                    string save_path = "pos_fn/"+basename+"_"+index_string+".jpg";
+                    Mat save_img = cropImage( test_img, target_rects[c] );
+                    imwrite( save_path, save_img);
+#endif
+                }
             }
 
             for(int c=0;c<isMatched_l.size();c++)
             {
                 if( !isMatched_l[c])
+                {
                     number_of_wrong++;
+#ifdef SAVE_IMAGE
+                    stringstream ss;ss<<c;string index_string;ss>>index_string;
+                    string save_path = "pos_fp/"+basename+"_"+index_string+".jpg";
+                    Mat save_img = cropImage( test_img, det_rects[c]);
+                    imwrite( save_path, save_img);
+#endif
+                }
             }
         }
 	}

@@ -174,6 +174,7 @@ class softcascade
 				}
 			}
 			score = h;
+            return true;
 		}
 		
 
@@ -222,6 +223,7 @@ class softcascade
                 }
                 confidence.at<double>(c,0) = score;
             }
+            return true;
         }
 
 		/* 
@@ -286,6 +288,14 @@ class softcascade
             m_feature_gen = in_fea_gen;
         }
 
+        /* 
+         * ===  FUNCTION  ======================================================================
+         *         Name:  visulizeFeature
+         *  Description:  
+         * =====================================================================================
+         */
+        void visulizeFeature();
+
 	private:
 
 		/* 
@@ -295,6 +305,18 @@ class softcascade
 		 * =====================================================================================
 		 */
 		bool setTreeDepth();
+        
+
+        /* 
+         * ===  FUNCTION  ======================================================================
+         *         Name:  getFeatureChannelAndPosition
+         *  Description:  return the channel index and position(x,y) for a feature index
+         * =====================================================================================
+         */
+        bool getFeatureChannelAndPosition( const int featureIndex, 
+                                           Point & position,
+                                           int &nchannel) const;
+
 
 
 	private:
@@ -311,6 +333,6 @@ class softcascade
 		int m_tree_depth;					/* depth of all leaf nodes (or 0 if leaf depth varies) */
 
 		cascadeParameter m_opts;            /* detectot options  */
-        feature_Pyramids m_feature_gen;     /*  feature generator */
+        feature_Pyramids m_feature_gen;     /* feature generator */
 };
 #endif

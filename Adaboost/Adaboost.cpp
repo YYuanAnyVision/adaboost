@@ -116,7 +116,6 @@ bool Adaboost::Train(	const Mat &neg_data,				/* in : neg data format-> featured
 		m_trees.push_back( bt );
 
 		/*  show the training error after adding the weak classifier */
-
 		errs.at<double>(c,0) = bt.getTrainError();
 		losses.at<double>(c,0) = loss;
 		/* output  training informations , checks what's going on inside */
@@ -165,14 +164,6 @@ bool Adaboost::Train(	const Mat &neg_data,				/* in : neg data format-> featured
 				cout <<setprecision(8)<< "errs in weak learner "<<setw(4)<<c<<"\terr="<<errs.at<double>(c,0)<<"\t loss ="<<losses.at<double>(c,0)<<endl;
 		}
 	}
-
-	/*  save the trained model  */
-	//if(!saveModel("lastTrain.xml"))
-	//{
-	//	cout<<"the model is saved as lastTrain.xml by default"<<endl;
-	//	cout<<"can not save the model .."<<endl;
-	//	return false;
-	//}
 	return true;
 }
 
