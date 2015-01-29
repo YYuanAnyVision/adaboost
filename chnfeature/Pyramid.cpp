@@ -480,7 +480,7 @@ void feature_Pyramids::computeChannels(const Mat &image,vector<Mat>& channels) c
 		for( int i = 0; i < 3; ++i )
 		{
 			Mat channels_tmp=channels_addr.rowRange(i*channels_addr_rows,(i+1)*channels_addr_rows);
-		    cv::resize(luv_channels[i],channels_tmp,channels_tmp.size(),0.0,0.0,1);
+		    cv::resize(luv_channels[i],channels_tmp,channels_tmp.size(),0.0,0.0,INTER_AREA);
 			channels.push_back(channels_tmp);
 		}
 	}
@@ -647,7 +647,7 @@ void feature_Pyramids:: chnsPyramid(const Mat &img,vector<vector<Mat> > &approxP
 					}
 					//smooth channels, optionally pad and concatenate channels
 					convTri(py_tmp,py_tmp,Km);
-					copyMakeBorder(py_tmp,py,pad_T,pad_T,pad_R,pad_R,IPL_BORDER_REPLICATE);
+					copyMakeBorder(py_tmp,py,pad_T,pad_T,pad_R,pad_R,BORDER_CONSTANT,Scalar(0,0,0));
 					approx_chns.push_back(py);
 				}
 

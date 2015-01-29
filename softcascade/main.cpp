@@ -19,7 +19,7 @@
 
 #include <omp.h>
 
-#define P1
+#define P2
 #define TEST_STAT_SLIDE
 
 using namespace std;
@@ -221,7 +221,7 @@ bool sampleWins(    const softcascade &sc, 	    /*  in: detector */
 		std::random_shuffle( neg_paths.begin(), neg_paths.end(),myrandom);
        
 		#pragma omp parallel for num_threads(Nthreads) /* openmp -->but no error check in runtime ... */
-		for( int c=0;c<number_of_neg_images;c++)
+		for( int c=0;c<number_of_neg_images ;c++)
 		{
 			vector<Rect> target_rects;
             vector<double> conf_v;
@@ -245,6 +245,7 @@ bool sampleWins(    const softcascade &sc, 	    /*  in: detector */
 			{
                 /* boostrap the negative samples */
                 sc.detectMultiScale( img, target_rects, conf_v );
+
                 if( target_rects.size() > number_target_per_image )
                     target_rects.resize( number_target_per_image);
 			}
@@ -387,13 +388,6 @@ int runTrainAndTest( double &out_miss_rate, double &out_fp_per_image)
 		/* 4--> sample negatives and compute features, accumulate negatives from previous stages */
         sampleWins( sc, stage, false, neg_samples, neg_origsamples );          /* remember the neg_samples is empty */
 
-        cout<<"show hard examples number:"<<neg_origsamples.size()<<endl;
-        for( int c=0;stage==3&&c<neg_origsamples.size();c++)
-        {
-            imshow("hard samples", neg_origsamples[c]);
-            waitKey(0);
-        }
-
         vector<Mat> accu_neg;
         if( stage ==0 )                                   /* stage == 0 */
         {
@@ -402,6 +396,7 @@ int runTrainAndTest( double &out_miss_rate, double &out_fp_per_image)
         else
         {
             int n1 = std::max(cas_para.nAccNeg,cas_para.nNeg)-neg_origsamples.size();   /* how many will be save from previous stage */
+			cout<<"add 'hard example' "<<neg_origsamples.size()<<", keep "<<n1<<" neg examples from previous stage "<<endl;
             if( n1 < neg_previousSamples.size())
             {
                 std::random_shuffle( neg_previousSamples.begin(), neg_previousSamples.end(), myrandom);
@@ -464,7 +459,7 @@ int runTrainAndTest( double &out_miss_rate, double &out_fp_per_image)
 
         /* ---------- ~show improvement over diffierent stages~ ------------*/
         vector<Rect> re;vector<double> confs;
-        Mat test_img = imread("crop001704.png");
+        Mat test_img = imread("crop001573.png");
 		if(test_img.empty())
 		{
 			cout<<"img empty, return "<<endl;
