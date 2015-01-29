@@ -19,7 +19,7 @@
 
 #include <omp.h>
 
-#define P1
+#define P2
 #define TEST_STAT_SLIDE
 //#define SAVE_IMAGE
 
@@ -485,6 +485,7 @@ int runTrainAndTest( double &out_miss_rate, double &out_fp_per_image)
     /*  swap the Mat data */
     neg_train_data = Mat::zeros(1,1,CV_32F);
     pos_train_data = Mat::zeros(1,1,CV_32F);
+
     sc.Save("for_test_sc.xml");
     
     /*----------------   test detectMultiScale over dataset , show ----------------*/
@@ -809,7 +810,7 @@ int runTrainAndTest( double &out_miss_rate, double &out_fp_per_image)
 /* detector parameter define */
 int main( int argc, char** argv)
 {
-    int number_to_go = 5;
+    int number_to_go = 1;
     vector<double> precision_v(number_to_go,0);
     vector<double> fp_v(number_to_go,0);
 

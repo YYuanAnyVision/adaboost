@@ -284,6 +284,7 @@ bool softcascade::checkModel() const
     }
     if( m_opts.stride < 0 || m_opts.shrink < 0 || m_opts.modelDs.width < 0 || m_opts.modelDs.height< 0 ||
             (m_opts.modelDsPad.width < m_opts.modelDs.width) || ( m_opts.modelDsPad.height < m_opts.modelDs.height ) || m_opts.nchannels < 0)
+        return false;
     return true;
 }
 
@@ -466,6 +467,7 @@ bool softcascade::detectMultiScale( const Mat &image,
         {
             
             Rect s( t_tar[i].x/appro_scales[c], t_tar[i].y/appro_scales[c], t_tar[i].width/scale_w[c], t_tar[i].height/scale_h[c]  );
+
             targets.push_back( s );
             confidence.push_back( t_conf[i]);
         }
@@ -529,20 +531,32 @@ void softcascade::visulizeFeature()
     {
         for( int c=0;c<m_fids.cols;c++)
         {
-            cout<<"testing "<<r<<" "<<c;
             int fea = m_fids.at<int>( r, c);
-            if( fea == 0)
-            {
-                cout<<endl;
+            if( fea == 0 || m_child.at<int>(r,m_child.at<int>(r,c))!=0 )
                 continue;
-            }
             Point position; int n_c;
-            cout<<" write to channel "<<n_c<<" with row "<<position.y<<" col "<<position.x<<" done "<<endl;
             getFeatureChannelAndPosition( fea, position, n_c);
             v_features[n_c].at<float>( position.y, position.x) += abs(m_hs.at<double>(r,c));
         }
     }
-    cout<<" -- final "<<endl;
-    saveMatToFile( "v.data", v_features[9] );
+	for( int c=0;c<v_features.size();c++)
+	{
+		stringstream ss;ss<<c;string tmp_index;ss>>tmp_index;
+		saveMatToFile( "v"+tmp_index+".data", v_features[c] );
+	}
+	
+	for( int c=0;c<v_features.size();c++)
+	{
+		double max_value;
+		double min_value;
+		minMaxLoc( v_features[c], &min_value, &max_value, 0, 0);
+		Mat normalize_image; normalize_image = (v_features[c] - min_value)/(max_value+min_value)*255;
+		resize( normalize_image, normalize_image, Size(0,0), 5, 5 );
+		Mat for_show_uchar; normalize_image.convertTo( for_show_uchar, CV_8U);
+		Mat for_show_flip; cv::flip( for_show_uchar, for_show_flip, 1);
+		imshow("for_show_uchar", for_show_uchar );
+		waitKey(0);
+	}
+
 }
 
