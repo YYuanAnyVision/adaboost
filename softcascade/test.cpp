@@ -37,18 +37,22 @@ int main( int argc, char** argv)
 	//{
 	//	cout<<"fea index "<<c<<" "<<for_test_data.at<float>(c,0)<<endl;
 	//}
+    TickMeter tk;
     softcascade sc;
     sc.Load("for_test_sc.xml");
-    //Mat test_img = imread(argv[1]);
-    //vector<Rect> det_rects;
-    //vector<double> det_confs;
-    //sc.detectMultiScale( test_img, det_rects, det_confs );
-    //for( int c =0; c<det_rects.size(); c++)
-    //{
-    //    rectangle( test_img, det_rects[c], Scalar(255,0,0) );
-    //}
-    //imshow("test", test_img);
-    //waitKey(0);
-    sc.visulizeFeature();
+    Mat test_img = imread(argv[1]);
+    vector<Rect> det_rects;
+    vector<double> det_confs;
+    tk.start();
+    sc.detectMultiScale( test_img, det_rects, det_confs );
+    tk.stop();
+    cout<<"Detect a size "<<test_img.size()<<" image, time consuming :"<<tk.getTimeSec()<<" second"<<endl;
+    for( int c =0; c<det_rects.size(); c++)
+    {
+        rectangle( test_img, det_rects[c], Scalar(255,0,0) );
+    }
+    imshow("test", test_img);
+    waitKey(0);
+    //sc.visulizeFeature();
 	return 0;
 }

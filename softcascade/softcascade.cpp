@@ -27,7 +27,6 @@ template <typename T> void _apply( const T *input_data,                 /* in : 
                                    vector<Rect> &results,               /* out: detected results */
                                    vector<double> &confidence )         /* out: detection confidence, same size as results */
 {
-    
     const int shrink      = opts.shrink;
     const int modelHeight = opts.modelDsPad.height;
     const int modelWidth  = opts.modelDsPad.width;
@@ -58,6 +57,12 @@ template <typename T> void _apply( const T *input_data,                 /* in : 
             for(int w=0;w<modelWidth/shrink;w++)
                 cids[counter++] = c*in_width*in_height+in_width*h + w;
 
+    int *t_child_start   = (int*)child.ptr<int>(0);
+    int *t_fids_start    = (int*)fids.ptr<int>(0);
+    double *t_thrs_start = (double*)thrs.ptr<double>(0);
+    double *t_hs_start   = (double*)hs.ptr<double>(0);
+    int iter_offset = child.cols;                   /* shift the pointer to next tree */
+
     /*  apply classifier to each block */
     for(int c=0;c<n_height;c++)
     {
@@ -69,20 +74,25 @@ template <typename T> void _apply( const T *input_data,                 /* in : 
             /*  full tree case, save the look up operation with t_child*/
             if( tree_depth != 0)
             {
+                int *t_child   = t_child_start;
+                int *t_fids    = t_fids_start;
+                double *t_thrs = t_thrs_start;
+                double *t_hs   = t_hs_start;
+
                 for( int t=0;t<number_of_trees;t++)
                 {
                     int position = 0;
-                    
-                    const int *t_child   = child.ptr<int>(t);
-                    const int *t_fids    = fids.ptr<int>(t);
-                    const double *t_thrs = thrs.ptr<double>(t);
-                    const double *t_hs   = hs.ptr<double>(t);
-
                     while( t_child[position])
                     {
                         position = (( probe_feature_starter[cids[t_fids[position]]] < t_thrs[position]) ? position*2+1 : position*2+2);
                     }
                     h += t_hs[position];
+
+                    t_child += iter_offset;
+                    t_fids += iter_offset;
+                    t_thrs += iter_offset;
+                    t_hs += iter_offset;
+
                     if( h <=opts.cascThr)       /* reject once the score is less than cascade threshold */
                         break;
                 }
@@ -391,6 +401,8 @@ bool softcascade::Save( string path_to_model )      /*  in: where to save the mo
     fs<<"m_opts_nNeg"<<m_opts.nNeg;
     fs<<"m_opts_nPerNeg"<<m_opts.nPerNeg;
     fs<<"m_opts_nAccNeg"<<m_opts.nAccNeg;
+    fs<<"m_opts_pad"<<m_opts.pad;
+    fs<<"m_opts_nchannels"<<m_opts.nchannels;
     fs.release();
     cout<<"Saving Model Done "<<endl;
     return true;
@@ -428,6 +440,8 @@ bool softcascade::Load( string path_to_model )      /* in : path of the model, s
     fs["m_opts_nNeg"]>>m_opts.nNeg;
     fs["m_opts_nPerNeg"]>>m_opts.nPerNeg;
     fs["m_opts_nAccNeg"]>>m_opts.nAccNeg;
+    fs["m_opts_pad"]>>m_opts.pad;
+    fs["m_opts_nchannels"]>>m_opts.nchannels;
     
     cout<<"Loading Model Done "<<endl;
     cout<<"# Model Info --> "<<m_opts.infos<<endl;
@@ -456,8 +470,12 @@ bool softcascade::detectMultiScale( const Mat &image,
     vector<double> scale_w;
     vector<double> scale_h;
 
+    TickMeter tk;
+    tk.start();
     m_feature_gen.chnsPyramid( image, approPyramid, appro_scales, scale_h, scale_w);
-
+    tk.stop();
+    cout<<"feature computation , time "<<tk.getTimeSec()<<" second"<<endl;
+    tk.reset();tk.start();
     for( int c=0;c<approPyramid.size();c++)
     {
         vector<Rect> t_tar;
@@ -472,8 +490,10 @@ bool softcascade::detectMultiScale( const Mat &image,
             confidence.push_back( t_conf[i]);
         }
     }
+    tk.stop();
+    cout<<"classifier muiti scan , Time "<<tk.getTimeSec()<<" second "<<endl;
     /* TODO filter the detection results according to the minSize maxSize */
-
+    
     /*  non max supression */
     NonMaxSupress( targets, confidence );
 
