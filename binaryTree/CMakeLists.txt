@@ -1,3 +1,6 @@
+include_directories(/media/yuanyang/disk1/project/public/include/)
+include_directories(/media/yuanyang/disk1/project/public/framework/include/)
+
 find_package(OpenCV REQUIRED)
 find_package(OpenMP REQUIRED)	
 #find_package(Boost COMPONENTS system filesystem REQUIRED)

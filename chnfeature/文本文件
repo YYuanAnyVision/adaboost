@@ -1,0 +1,9 @@
+ //vector<Mat> ori_v;cv::split( ori, ori_v);
+    //vector<Mat> mag_v;cv::split( mag, mag_v);
+    //for( int c=0;c<bins_mat_tmp.size();c++)
+    //{
+    //    cout<<"for c == "<<c<<endl;
+    //    Mat mask = ori_v[0] ==c; mag_v[0].copyTo(bins_mat_tmp[c], mask);
+    //    mask = ori_v[1] ==c; cv::add( mag_v[1], bins_mat_tmp[c],bins_mat_tmp[c],mask);
+    //}
+ 

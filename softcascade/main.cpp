@@ -10,12 +10,14 @@
 
 #include "boost/filesystem.hpp"
 #include "boost/lambda/bind.hpp"
+#include "boost/date_time/gregorian/gregorian.hpp"
 
 #include "../Adaboost/Adaboost.hpp"
 #include "../misc/misc.hpp"
 #include "softcascade.hpp"
 #include "../chnfeature/Pyramid.h"
 #include "../misc/NonMaxSupress.h"
+#include "../log/tlog.h"
 
 #include <omp.h>
 
@@ -28,6 +30,8 @@ using namespace cv;
 
 namespace bf = boost::filesystem;
 namespace bl = boost::lambda;
+
+TLog* logger;
 
 bool isSameTarget( Rect r1, Rect r2)
 {
@@ -284,6 +288,7 @@ bool sampleWins(    const softcascade &sc, 	    /*  in: detector */
  
 int runTrainAndTest( double &out_miss_rate, double &out_fp_per_image)
 {
+    logger->print( LogLevel_Info, "runTrainAndTest() start\n" );
     std::srand ( unsigned ( std::time(0) ) );
     Mat Km = get_Km(1);
 
@@ -297,6 +302,7 @@ int runTrainAndTest( double &out_miss_rate, double &out_fp_per_image)
 	 *-----------------------------------------------------------------------------*/
     feature_Pyramids ff1;
     softcascade sc;
+    sc.pLog = logger;
 
     tree_para tree_par;
 	cascadeParameter cas_para;
@@ -321,8 +327,8 @@ int runTrainAndTest( double &out_miss_rate, double &out_fp_per_image)
     cas_para.posGtDir  = "/home/pcipci/mzx/ped_detect/Inria/train/posGt_opencv/";
 	cas_para.negImgDir = "/home/pcipci/mzx/ped_detect/Inria/train/neg/";
 #endif
-
-    cas_para.infos = "2015-1-25, YuanYang, Test";
+    string strTime = boost::gregorian::to_iso_string(boost::gregorian::day_clock::local_day() ); 
+    cas_para.infos = strTime;
     cas_para.shrink = det_opt.shrink;
     cas_para.pad   = det_opt.pad;
     cas_para.nchannels = 10;
@@ -429,7 +435,7 @@ int runTrainAndTest( double &out_miss_rate, double &out_fp_per_image)
         cout<<"pos_train_data's size "<<pos_train_data.size()<<"feature dim "<<pos_train_data.rows<<endl;
 
 		/* 5-->  train boosted classifiers */
-        Adaboost ab;ab.SetDebug(false);  
+        Adaboost ab;ab.SetDebug(false);ab.pLog = logger;
         cout<<"-- Training with "<<cas_para.nWeaks[stage]<<" weak classifiers."<<endl;
         ab.Train( neg_train_data, pos_train_data, cas_para.nWeaks[stage], tree_par);
         
@@ -487,7 +493,6 @@ int runTrainAndTest( double &out_miss_rate, double &out_fp_per_image)
     pos_train_data = Mat::zeros(1,1,CV_32F);
 
     sc.Save("for_test_sc.xml");
-    
     /*----------------   test detectMultiScale over dataset , show ----------------*/
 #ifdef TEST_MUITI
     bf::directory_iterator end_it;
@@ -792,7 +797,6 @@ int runTrainAndTest( double &out_miss_rate, double &out_fp_per_image)
     cout<<"number of fn is "<<number_of_fn<<endl;
 	tk.stop();
 	cout<<"Test FN done. Time consuming "<<tk.getTimeSec()<<" seconds."<<endl;
-	
 	number_of_fp += number_of_wrong;
 	cout<<"number of fp is "<<number_of_fp<<endl;
     cout<<"number of target is "<<number_of_target<<endl;
@@ -801,16 +805,38 @@ int runTrainAndTest( double &out_miss_rate, double &out_fp_per_image)
     cout<<"FP(per image) is "<<1.0*number_of_fp/(number_of_neg_images + number_of_pos_images)<<endl;
     out_miss_rate = 1-1.0*number_of_fn/number_of_target;
     out_fp_per_image = 1.0*number_of_fp/(number_of_neg_images + number_of_pos_images);
+    logger->print( LogLevel_Info, "Test on slide stat, Precision %f, FP %f \n", out_miss_rate, out_fp_per_image );
 #endif
     return 0;
 }
 
 
-
 /* detector parameter define */
 int main( int argc, char** argv)
 {
-    int number_to_go = 1;
+    logger = new TLog("Ped_Detection");
+    if( !logger)
+    {
+        cout<<"can not open Log "<<endl;
+        return -1;
+    }
+    if( !logger->SetFileName("train_softcascade", "va-algorithm"))
+    {
+        cout<<"can not open log "<<endl;
+        return -1;
+    }
+    if( !logger->SetFilePath( "." ))
+    {
+        cout<<"can not open log "<<endl;
+        return -1;
+    }
+    if( !logger->open())
+    {
+        cout<<"can not open file "<<endl;
+        return -1;
+    }
+
+    int number_to_go = 5;
     vector<double> precision_v(number_to_go,0);
     vector<double> fp_v(number_to_go,0);
 

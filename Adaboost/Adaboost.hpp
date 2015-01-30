@@ -4,6 +4,7 @@
 #include <vector>
 #include "opencv2/highgui/highgui.hpp"
 #include "../binaryTree/binarytree.hpp"
+#include "../log/tlog.h"
 
 using namespace cv;
 using namespace std;
@@ -11,6 +12,7 @@ using namespace std;
 class Adaboost
 {
 	public:
+        TLog *pLog;
 
 		/* 
 		 * ===  FUNCTION  ======================================================================

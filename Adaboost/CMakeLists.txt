@@ -1,3 +1,6 @@
+include_directories(/media/yuanyang/disk1/project/public/include/)
+include_directories(/media/yuanyang/disk1/project/public/framework/include/)
+
 find_package(OpenCV REQUIRED)
 find_package(OpenMP REQUIRED)	
 #find_package(Boost COMPONENTS system filesystem REQUIRED)
@@ -10,5 +13,5 @@ endif()
 add_library( adaboost  Adaboost.hpp Adaboost.cpp )
 add_executable( ada_test  test_adaboost.cpp )
 
-target_link_libraries(  ada_test ${OpenCV_LIBS} adaboost binaryTree)
+target_link_libraries(  ada_test ${OpenCV_LIBS} adaboost binaryTree tlog)
 

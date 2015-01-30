@@ -1,4 +1,5 @@
 #include <iostream>
+#include <sstream>
 #include <vector>
 #include "opencv2/contrib/contrib.hpp"
 #include "opencv2/highgui/highgui.hpp"
@@ -50,6 +51,8 @@ int main( int argc, char** argv)
     for( int c =0; c<det_rects.size(); c++)
     {
         rectangle( test_img, det_rects[c], Scalar(255,0,0) );
+        stringstream ss;ss<<det_confs[c];string conf_string;ss>>conf_string;
+        putText( test_img, "conf "+conf_string, Point( det_rects[c].x, det_rects[c].y ), FONT_HERSHEY_COMPLEX, 0.8, Scalar(255,0,0));
     }
     imshow("test", test_img);
     waitKey(0);

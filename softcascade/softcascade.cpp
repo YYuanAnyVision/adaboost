@@ -11,6 +11,7 @@
 #include "../misc/NonMaxSupress.h"
 #include "../misc/misc.hpp"
 
+
 using namespace cv;
 using namespace std;
 
@@ -161,6 +162,7 @@ bool softcascade::Combine(vector<Adaboost> &ads )
         if( bts.empty() )
         {
             cout<<"<softcascade::Combine><error> Adaboost struct is empty .. "<<endl;
+            pLog->print(LogLevel_Error, "<softcascade::Combine><error> Adaboost struct is empty .. \n");
             return false;
         }
         else
@@ -283,12 +285,14 @@ bool softcascade::checkModel() const
 {
     if( m_fids.empty() || m_thrs.empty() || m_child.empty() || m_weights.empty()|| m_hs.empty() || m_depth.empty())
     {
+        pLog->print(LogLevel_Error,"<softcascade::checkModel><error> Model is empty\n");
         cout<<"<softcascade::checkModel><error> Model is empty "<<endl;
         return false;
     }
     if( !m_fids.isContinuous() || !m_thrs.isContinuous() || !m_child.isContinuous() ||
             !m_depth.isContinuous() || !m_hs.isContinuous() || !m_weights.isContinuous())
     {
+        pLog->print(LogLevel_Error,"<softcascade::checkModel><error> Model is not continuous\n");
         cout<<"<softcascade::checkModel><error> Model is not continuous "<<endl;
         return false;
     }
@@ -308,12 +312,14 @@ bool softcascade::Apply( const vector<Mat> &input_data,      /*  in: channels fe
 
     if(!input_data[0].isContinuous())
     {
+        pLog->print(LogLevel_Error,"<softcascade::Apply><error> input_data shoule be continuous \n");
         cout<<"<softcascade::Apply><error> input_data shoule be continuous ~"<<endl;
         return false;
     }
 
     if( m_opts.nchannels != input_data.size())
     {
+        pLog->print(LogLevel_Error,"<softcascade::Apply><error> input_data's size should equ nchannels\n");
         cout<<"<softcascade::Apply><error> input_data's size should equ nchannels "<<endl;
         return false;
     }
@@ -323,6 +329,7 @@ bool softcascade::Apply( const vector<Mat> &input_data,      /*  in: channels fe
     {
         if( (const float*)(input_data[0].data) + (m_opts.nchannels-1)*input_data[0].cols*input_data[0].rows != (const float*)input_data[m_opts.nchannels-1].data )
         {
+            pLog->print(LogLevel_Error,"<softcascade::Apply><error> input_data's memory not continuous\n");
             cout<<"<softcascade::Apply><error> input_data's memory not continuous "<<endl;
             return false;
         }
@@ -332,6 +339,7 @@ bool softcascade::Apply( const vector<Mat> &input_data,      /*  in: channels fe
     {
         if( (const double*)(input_data[0].data)+(m_opts.nchannels-1)*input_data[0].cols*input_data[0].rows!=(const double*)input_data[m_opts.nchannels-1].data )
         {
+            pLog->print(LogLevel_Error,"<softcascade::Apply><error> input_data's memory not continuous\n");
             cout<<"<softcascade::Apply><error> input_data's memory not continuous "<<endl;
             return false;
         }
@@ -341,6 +349,7 @@ bool softcascade::Apply( const vector<Mat> &input_data,      /*  in: channels fe
     {
         if( (const int*)(input_data[0].data)+(m_opts.nchannels-1)*input_data[0].cols*input_data[0].rows!=(const int*)input_data[m_opts.nchannels-1].data )
         {
+            pLog->print(LogLevel_Error,"<softcascade::Apply><error> input_data's memory not continuous \n");
             cout<<"<softcascade::Apply><error> input_data's memory not continuous "<<endl;
             return false;
         }
@@ -349,6 +358,7 @@ bool softcascade::Apply( const vector<Mat> &input_data,      /*  in: channels fe
     }
     else
     {
+        pLog->print(LogLevel_Error,"softcascade::Apply><error> unsupported data type, must be one of CV_64F, CV_32F or CV_32S\n");
         cout<<"softcascade::Apply><error> unsupported data type, must be one of CV_64F, CV_32F or CV_32S "<<endl;
         return false;
     }
@@ -363,6 +373,7 @@ bool softcascade::Save( string path_to_model )      /*  in: where to save the mo
     FileStorage fs( path_to_model, FileStorage::WRITE);
     if( !fs.isOpened())
     {
+        pLog->print( LogLevel_Error, "<softcascade::Save><error> can not open file %s for writing \n", path_to_model.c_str());
         cout<<"<softcascade::Save><error> can not open file "<<path_to_model<<" for writing ."<<endl;
         return false;
     }
@@ -413,7 +424,8 @@ bool softcascade::Load( string path_to_model )      /* in : path of the model, s
     FileStorage fs(path_to_model, FileStorage::READ );
     if(!fs.isOpened())
     {
-        cout<<"<softcascade::Load><error> Can not load model file "<<path_to_model<<endl;
+        pLog->print( LogLevel_Error, "<softcascade::Save><error> can not load model file  %s\n", path_to_model.c_str());
+        cout<<"<softcascade::Load><error> can not load model file "<<path_to_model<<endl;
         return false;
     }
     
@@ -470,12 +482,7 @@ bool softcascade::detectMultiScale( const Mat &image,
     vector<double> scale_w;
     vector<double> scale_h;
 
-    TickMeter tk;
-    tk.start();
     m_feature_gen.chnsPyramid( image, approPyramid, appro_scales, scale_h, scale_w);
-    tk.stop();
-    cout<<"feature computation , time "<<tk.getTimeSec()<<" second"<<endl;
-    tk.reset();tk.start();
     for( int c=0;c<approPyramid.size();c++)
     {
         vector<Rect> t_tar;
@@ -490,8 +497,6 @@ bool softcascade::detectMultiScale( const Mat &image,
             confidence.push_back( t_conf[i]);
         }
     }
-    tk.stop();
-    cout<<"classifier muiti scan , Time "<<tk.getTimeSec()<<" second "<<endl;
     /* TODO filter the detection results according to the minSize maxSize */
     
     /*  non max supression */

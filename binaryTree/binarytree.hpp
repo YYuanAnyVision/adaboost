@@ -7,6 +7,7 @@
 #ifndef BINARYTREE_HPP
 #define BINARYTREE_HPP
 #include "opencv2/highgui/highgui.hpp"
+#include "../log/tlog.h"
 
 using namespace cv;
 
@@ -59,6 +60,7 @@ class binaryTree
 {
 	
 	public:
+        TLog *pLog;
 
 		/* 
 		 * ===  FUNCTION  ======================================================================

@@ -9,6 +9,7 @@
 #include "../binaryTree/binarytree.hpp"
 
 #include "../chnfeature/Pyramid.h"
+#include "../log/tlog.h"
 
 using namespace std;
 using namespace cv;
@@ -74,6 +75,8 @@ struct cascadeParameter
 class softcascade
 {
 	public:
+        
+        TLog *pLog;
 
 		/* 
 		 * ===  FUNCTION  ======================================================================

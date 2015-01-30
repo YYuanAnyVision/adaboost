@@ -96,9 +96,14 @@ int main( int argc, char** argv)
 
     feature_Pyramids ff1;
     vector<vector<Mat> > feature;
+    vector<Mat>  feature_p;
     vector<double> scales;
     vector<double> scalesw;
     vector<double> scalesh;
+    cv::TickMeter tk;tk.start();
+    ff1.computeChannels( input_image, feature_p);
+    tk.stop();
+    cout<<"time computing channels is "<<tk.getTimeSec()<<endl;
     ff1.chnsPyramid( input_image, feature, scales, scalesw, scalesh );
 
 //    vector<Mat> features;
@@ -111,13 +116,13 @@ int main( int argc, char** argv)
 //    saveMatToFile("p6.data", features[8]);
 //    saveMatToFile("p7.data", features[9]);
 	cout<<"number of scale is "<<feature.size()<<endl;
-	saveMatToFile("p3.data", feature[11][3]);
-	saveMatToFile("p4.data", feature[11][4]);
-	saveMatToFile("p5.data", feature[11][5]);
-	saveMatToFile("p6.data", feature[11][6]);
-	saveMatToFile("p7.data", feature[11][7]);
-	saveMatToFile("p8.data", feature[11][8]);
-	saveMatToFile("p9.data", feature[11][9]);
+	saveMatToFile("p3.data", feature[0][3]);
+	saveMatToFile("p4.data", feature[0][4]);
+	saveMatToFile("p5.data", feature[0][5]);
+	saveMatToFile("p6.data", feature[0][6]);
+	saveMatToFile("p7.data", feature[0][7]);
+	saveMatToFile("p8.data", feature[0][8]);
+	saveMatToFile("p9.data", feature[0][9]);
 
 
     //TickMeter tk;

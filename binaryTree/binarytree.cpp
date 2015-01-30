@@ -70,6 +70,7 @@ bool binaryTree::computeCDF(	const Mat & sampleData,				// in samples	1 x number
 		cdf[c] = 0.0;
 	if( sampleData.type() != CV_8U || weights.type() != CV_64F || nBins != cdf.size() || sampleData.rows != 1 || sampleData.cols != weights.rows)
 	{
+        pLog->print(LogLevel_Error, "in function computeCDF : Wrong Data Formar in function computeCDF, return \n");
 		cout<<"in function computeCDF : Wrong Data Formar in function computeCDF, return "<<endl;
 		return false;
 	}
@@ -109,6 +110,8 @@ bool binaryTree::binaryTreeTrain(
 			norm_neg_weight.type()!= CV_64F || norm_pos_weight.type()!= CV_64F ||
 			fids_st.type() != CV_32S || nthreads < 0 || nBins < 0 || prior < 0)
 	{
+
+        pLog->print(LogLevel_Error, "in functin binaryTreeTrain : wrong input ...\n");
 		cout<<"in functin binaryTreeTrain : wrong input ..."<<endl;
 		return false;
 	}
@@ -197,17 +200,20 @@ bool binaryTree::Train( data_pack & train_data,			/* input&output : training dat
 	/* sanity check*/
 	if( neg_data.empty() || pos_data.empty()  || neg_data.channels()!=1 || pos_data.channels()!=1)
 	{
+        pLog->print(LogLevel_Error, "in function binaryTree::Train : input wrong format\n");
 		cout<<"in function binaryTree::Train : input wrong format"<<endl;
 		return false;
 	}
     if( !checkTreeParas(paras) )
     {
+        pLog->print(LogLevel_Error, "in function binaryTree::Train : wrong paras \n");
         cout<<"in function binaryTree::Train : wrong paras "<<endl;
         return false;
     }
 
 	if( neg_data.type() != pos_data.type() )
 	{
+        pLog->print(LogLevel_Error, "in function binaryTree::Train : neg and pos data should be the same type \n");
 		cout<<"in function binaryTree::Train : neg and pos data should be the same type "<<endl;
 		return false;
 	}
@@ -215,6 +221,7 @@ bool binaryTree::Train( data_pack & train_data,			/* input&output : training dat
 	int feature_dim = neg_data.rows;
 	if( feature_dim != pos_data.rows)
 	{
+        pLog->print(LogLevel_Error, "in function binaryTree::Train : feature dim should be the same between neg and pos samples \n");
 		cout<<"in function binaryTree::Train : feature dim should be the same between neg and pos samples "<<endl;
 		return false;
 	}
@@ -512,6 +519,7 @@ bool binaryTree::Train( data_pack & train_data,			/* input&output : training dat
 	
 	if( m_error > 0.5)
 	{
+        pLog->print(LogLevel_Error, "fatal error, train error should not be greater than 0.5, causing Adaboost training crash \n");
 		cout<<"fatal error, train error should not be greater than 0.5, causing Adaboost training crash "<<endl;
 		return false;
 	}
@@ -561,11 +569,13 @@ bool binaryTree::Apply( const Mat &inputData, Mat &predictedLabel )	 const	/* in
 {
 	if(!inputData.isContinuous() ||  inputData.channels()!=1 )
 	{
+        pLog->print(LogLevel_Error, "in function Apply : please make the input data continuous and only single channel is supported\n");
 		cout<<"in function Apply : please make the input data continuous and only single channel is supported"<<endl;
 		return false;
 	}
 	if(m_tree.child.empty() || m_tree.depth.empty() || m_tree.fids.empty() || m_tree.hs.empty() || m_tree.thrs.empty() || m_tree.weights.empty())
 	{
+        pLog->print(LogLevel_Error, "in function Apply : tree not ready, in function Apply\n ");
 		cout<<"in function Apply : tree not ready, in function Apply "<<endl;
 		return false;
 	}
@@ -573,6 +583,7 @@ bool binaryTree::Apply( const Mat &inputData, Mat &predictedLabel )	 const	/* in
 	if( !m_tree.child.isContinuous() || !m_tree.depth.isContinuous() || !m_tree.fids.isContinuous() || 
 			!m_tree.hs.isContinuous() || !m_tree.thrs.isContinuous() || !m_tree.weights.isContinuous())
 	{
+        pLog->print(LogLevel_Error, " tree model is not continuous, will result errors later\n ");
 		cout<<" tree model is not continuous, will result errors later "<<endl;
 		return false;
 	}
@@ -608,6 +619,7 @@ bool binaryTree::Apply( const Mat &inputData, Mat &predictedLabel )	 const	/* in
 	}
 	else
 	{
+        pLog->print(LogLevel_Error, "in function Apply :unsupported data type, Should be one channel, CV_8U, CV_32F, CV_32S, CV_64F\n");
 		cout<<"in function Apply :unsupported data type, Should be one channel, CV_8U, CV_32F, CV_32S, CV_64F" <<endl;
 		return false;
 	}
@@ -649,6 +661,7 @@ bool binaryTree::setTreeModel( const biTree& model )		/*  in : model */
 			number_of_element != model.weights.cols ||
 			number_of_element != model.depth.cols)
 	{
+        pLog->print(LogLevel_Error, "Model file incorrect \n");
 		cout<<"Model file incorrect "<<endl;
 		return false;
 	}

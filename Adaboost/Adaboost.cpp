@@ -16,11 +16,13 @@ bool Adaboost::Train(	const Mat &neg_data,				/* in : neg data format-> featured
 {
 	if( neg_data.rows != pos_data.rows || neg_data.type() != pos_data.type())
 	{
+        pLog->print(LogLevel_Error, "In function Adaboost:Train : neg_data and pos_data should be the same type, and having the same rows( column feature vector)\n");
 		cout<<"In function Adaboost:Train : neg_data and pos_data should be the same type, and having the same rows( column feature vector)"<<endl;
 		return false;
 	}
 	if(  neg_data.empty() || pos_data.empty() )
 	{
+        pLog->print(LogLevel_Error, "In function Adaboost:Train : data empty\n");
 		cout<<"In function Adaboost:Train : data empty "<<endl;
 		return false;
 	}
@@ -55,7 +57,7 @@ bool Adaboost::Train(	const Mat &neg_data,				/* in : neg data format-> featured
 			cout<<"\n\n\n"<<endl;
 			cout<<"############################################## round "<<c<<" ##########################################"<<endl;
 		}
-		binaryTree bt; bt.SetDebug(m_debug);
+		binaryTree bt; bt.SetDebug(m_debug);bt.pLog = pLog;
 		
 		double time_single_shot = getTickCount();
 		if(! bt.Train( train_pack , treepara ) )
@@ -179,11 +181,13 @@ bool Adaboost::Apply( const Mat &test_data,				/*  in: test data format-> featur
 {
 	if( m_feature_dim != test_data.rows)
 	{
+        pLog->print(LogLevel_Error, "input Dimension Wrong, or you should use column feature\n");
 		cout<<"input Dimension Wrong, or you should use column feature "<<endl;
 		return false;
 	}
 	if( m_trees.empty())
 	{
+        pLog->print(LogLevel_Error, "tree ne ? tree ne? tree doumeiyou ,nishuo ge mao\n");
 		cout<<"tree ne ? tree ne? tree doumeiyou ,nishuo ge mao"<<endl;
 		return false;
 	}
@@ -203,6 +207,8 @@ bool Adaboost::ApplyLabel( const Mat &test_data,			/*  in: test data format-> fe
 	Mat predicted_confidence;
 	if( !Apply( test_data, predicted_confidence ))
 	{
+
+        pLog->print(LogLevel_Error, "Wrong predict the label \n");
 		cout<<"Wrong predict the label "<<endl;
 		return false;
 	}
@@ -249,6 +255,7 @@ bool Adaboost::saveModel( string filename ) const
 	cout<<"saving the model ..."<<endl;
 	if(m_trees.empty())
 	{
+        pLog->print(LogLevel_Error, "model is empty \n");
 		cout<<"model is empty ..."<<endl;
 		return false;
 	}
@@ -289,6 +296,7 @@ bool Adaboost::saveModel( string filename ) const
 	FileStorage fs( filename, FileStorage::WRITE);
 	if( !fs.isOpened())
 	{
+        pLog->print(LogLevel_Error, "can not open xml file to save model \n");
 		cout<<"can create the model xml file .."<<endl;
 		return false;
 	}
@@ -321,6 +329,7 @@ bool Adaboost::loadModel( string filename )
 	FileStorage fs( filename, FileStorage::READ );
 	if( !fs.isOpened())
 	{
+        pLog->print(LogLevel_Error, "can not open file %s", filename.c_str());
 		cout<<"can not open file "<<filename<<endl;
 		return false;
 	}
