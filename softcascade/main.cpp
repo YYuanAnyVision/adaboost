@@ -19,7 +19,7 @@
 
 #include <omp.h>
 
-#define P1
+#define P2
 #define TEST_STAT_SLIDE
 //#define SAVE_IMAGE
 

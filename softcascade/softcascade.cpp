@@ -470,12 +470,7 @@ bool softcascade::detectMultiScale( const Mat &image,
     vector<double> scale_w;
     vector<double> scale_h;
 
-    TickMeter tk;
-    tk.start();
     m_feature_gen.chnsPyramid( image, approPyramid, appro_scales, scale_h, scale_w);
-    tk.stop();
-    cout<<"feature computation , time "<<tk.getTimeSec()<<" second"<<endl;
-    tk.reset();tk.start();
     for( int c=0;c<approPyramid.size();c++)
     {
         vector<Rect> t_tar;
@@ -490,8 +485,6 @@ bool softcascade::detectMultiScale( const Mat &image,
             confidence.push_back( t_conf[i]);
         }
     }
-    tk.stop();
-    cout<<"classifier muiti scan , Time "<<tk.getTimeSec()<<" second "<<endl;
     /* TODO filter the detection results according to the minSize maxSize */
     
     /*  non max supression */
