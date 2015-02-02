@@ -73,6 +73,11 @@ public:
 
 	void compute_lambdas(const vector<Mat> &fold);
 
+	bool convt_2_luv( const Mat input_image, 
+					  Mat &L_channel,
+					  Mat &U_channel,
+					  Mat &v_channel) const;
+
 	const detector_opt &getParas() const;
 
   private:

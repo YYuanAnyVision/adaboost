@@ -92,16 +92,26 @@ void MultiImage_OneWin(const std::string& MultiShow_WinName, const vector<Mat>& 
 
 int main( int argc, char** argv)
 {
+	const int k=256; float R[k], G[k], B[k];
+	if(size_t(R)&15)
+		cout<<"bingo"<<endl;
+	cout<<(size_t(R))<<endl;
+	cout<<static_cast<const void*>(R)<<endl;
     Mat input_image = imread(argv[1]);
 
-    feature_Pyramids ff1;
-    vector<vector<Mat> > feature;
-    vector<double> scales;
-    vector<double> scalesw;
-    vector<double> scalesh;
+	Mat L,U,V;
 
-    vector<Mat> features;
-    ff1.computeChannels( input_image, features);
+    feature_Pyramids ff1;
+
+	ff1.convt_2_luv( input_image, L, U, V);
+
+    //vector<vector<Mat> > feature;
+    //vector<double> scales;
+    //vector<double> scalesw;
+    //vector<double> scalesh;
+
+    //vector<Mat> features;
+    //ff1.computeChannels( input_image, features);
 
     //cv::TickMeter tk;
     //tk.start();
@@ -112,9 +122,9 @@ int main( int argc, char** argv)
 
 //    vector<Mat> features;
 //    ff1.computeChannels( input_image, features);
-    saveMatToFile("p1.data", features[3]);
-    saveMatToFile("p2.data", features[4]);
-    saveMatToFile("p3.data", features[5]);
+    saveMatToFile("p1.data", L);
+    saveMatToFile("p2.data", U);
+    saveMatToFile("p3.data", V);
 //    saveMatToFile("p4.data", features[6]);
 //    saveMatToFile("p5.data", features[7]);
 //    saveMatToFile("p6.data", features[8]);

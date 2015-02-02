@@ -84,6 +84,80 @@ void convTri_sse( const float *I, float *O, int width, int height, int r, int s=
   alFree(T);
 }
 
+// Constants for rgb2luv conversion and lookup table for y-> l conversion
+template<class oT> oT* rgb2luv_setup( oT z, oT *mr, oT *mg, oT *mb,
+  oT &minu, oT &minv, oT &un, oT &vn )
+{
+  // set constants for conversion
+  const oT y0=(oT) ((6.0/29)*(6.0/29)*(6.0/29));
+  const oT a= (oT) ((29.0/3)*(29.0/3)*(29.0/3));
+  un=(oT) 0.197833; vn=(oT) 0.468331;
+  mr[0]=(oT) 0.430574*z; mr[1]=(oT) 0.222015*z; mr[2]=(oT) 0.020183*z;
+  mg[0]=(oT) 0.341550*z; mg[1]=(oT) 0.706655*z; mg[2]=(oT) 0.129553*z;
+  mb[0]=(oT) 0.178325*z; mb[1]=(oT) 0.071330*z; mb[2]=(oT) 0.939180*z;
+  oT maxi=(oT) 1.0/270; minu=-88*maxi; minv=-134*maxi;
+  // build (padded) lookup table for y->l conversion assuming y in [0,1]
+  static oT lTable[1064]; static bool lInit=false;
+  if( lInit ) return lTable; oT y, l;
+  for(int i=0; i<1025; i++) {
+    y = (oT) (i/1024.0);
+    l = y>y0 ? 116*(oT)pow((double)y,1.0/3.0)-16 : y*a;
+    lTable[i] = l*maxi;
+  }
+  for(int i=1025; i<1064; i++) lTable[i]=lTable[i-1];
+  lInit = true; return lTable;
+}
+
+// Convert from rgb to luv
+template<class iT, class oT> void rgb2luv( const iT *I, 
+											oT *J, 
+											int n, 
+											oT nrm ) 
+{
+  oT minu, minv, un, vn, mr[3], mg[3], mb[3];
+  oT *lTable = rgb2luv_setup(nrm,mr,mg,mb,minu,minv,un,vn);
+  oT *L=J, *U=L+n, *V=U+n; 
+  const iT *R=I+2, *G=I+1, *B=I;			// opencv , B,G,R,B,G,R..
+  for( int i=0; i<n; i++ ) 
+  {
+    oT r, g, b, x, y, z, l;
+    r=(oT)*R; R=R+3; 
+	g=(oT)*G; G=G+3;
+	b=(oT)*B; B=B+3;
+    x = mr[0]*r + mg[0]*g + mb[0]*b;
+    y = mr[1]*r + mg[1]*g + mb[1]*b;
+    z = mr[2]*r + mg[2]*g + mb[2]*b;
+    l = lTable[(int)(y*1024)];
+    *(L++) = l; z = 1/(x + 15*y + 3*z + (oT)1e-35);
+    *(U++) = l * (13*4*x*z - 13*un) - minu;
+    *(V++) = l * (13*9*y*z - 13*vn) - minv;
+  }
+}
+
+bool feature_Pyramids::convt_2_luv( const Mat input_image, 
+					  Mat &L_channel,
+					  Mat &U_channel,
+					  Mat &V_channel) const
+{
+	if( input_image.channels() != 3 || input_image.empty())
+		return false;
+	/* L U V channel is continunous in memory ~ */
+	Mat luv_big = Mat::zeros( input_image.rows*3, input_image.cols, CV_32F);
+	L_channel = luv_big.rowRange( 0, input_image.rows);
+	U_channel = luv_big.rowRange( input_image.rows, input_image.rows*2);
+	V_channel = luv_big.rowRange( input_image.rows*2, input_image.rows*3);
+	int number_of_element = input_image.cols * input_image.rows;
+	if( input_image.depth() == CV_8U)
+		rgb2luv( (const uchar*)(input_image.data), (float*)(luv_big.data), number_of_element, 1.0f/255);
+	else if( input_image.depth() == CV_32F)
+		rgb2luv( (const float*)(input_image.data), (float*)(luv_big.data), number_of_element, 1.0f/255);
+	else if( input_image.depth() == CV_64F)
+		rgb2luv( (const double*)(input_image.data), (float*)(luv_big.data), number_of_element, 1.0f/255);
+	else
+		return false;
+	return true;
+}
+
 
 Mat get_Km(int smooth )
 { 
@@ -420,7 +494,7 @@ void feature_Pyramids::computeGradient(const Mat &img,
 	}
 
     tk.stop();
-  //  cout<<"compute grad and ori time "<<tk.getTimeMilli()<<endl;
+	cout<<"compute grad and ori time "<<tk.getTimeMilli()<<endl;
 
     Mat grad1_smooth, grad2_smooth;
     
@@ -439,7 +513,7 @@ void feature_Pyramids::computeGradient(const Mat &img,
 	convTri(grad2,grad2_smooth,norm_const);
 
     tk.stop();
-   // cout<<"smooth time "<<tk.getTimeMilli()<<endl;
+    cout<<"smooth time "<<tk.getTimeMilli()<<endl;
     tk.reset();tk.start();
 	//normalization
     
@@ -461,7 +535,7 @@ void feature_Pyramids::computeGradient(const Mat &img,
     //--------------------------------
 
     tk.stop();
-    //cout<<"add time "<<tk.getTimeMilli()<<endl;
+    cout<<"add time "<<tk.getTimeMilli()<<endl;
 
 
 	mag_sum_s=grad1+grad2;
