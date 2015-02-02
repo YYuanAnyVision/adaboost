@@ -9,9 +9,6 @@
 #include "opencv2/highgui/highgui.hpp"
 #include "opencv2/imgproc/imgproc.hpp"
 #include "opencv2/opencv.hpp" 
-#include <cv.h>
-#include <cxcore.h> 
-#include <cvaux.h>
 
 using namespace std;
 using namespace cv;
@@ -55,7 +52,9 @@ public:
                     vector<double> &scalesw) const;
 	void chnsPyramid(const Mat &img,  vector<vector<Mat> > &chns_Pyramid,vector<double> &scales) const;
 
-	void convTri( const Mat &src, Mat &dst,const Mat &Km) const;
+	void convTri( const Mat &src, Mat &dst,const Mat &Km) const;        //1 opencv version
+
+	void convTri( const Mat &src, Mat &dst, int conv_size) const;       //2 sse version, faster
 
 	void getscales(const Mat &img,vector<Size> &ap_size,vector<int> &real_scal,vector<double> &scales,vector<double> &scalesh,vector<double> &scalesw) const;
 
@@ -63,7 +62,12 @@ public:
 
 	void computeChannels( const Mat &image,vector<Mat>& channels) const;
 
-	void computeGradient(const Mat &img, Mat& grad, Mat& qangle,Mat& mag_sum_s) const;	
+	void computeGradient(const Mat &img, 
+                         Mat& grad1, 
+                         Mat& grad2, 
+                         Mat& qangle1,
+                         Mat& qangle2,
+                         Mat& mag_sum_s) const;	
 
 	void setParas (const  detector_opt &in_para ) ;
 
@@ -76,6 +80,9 @@ public:
 	  detector_opt m_opt;
 	  	
 	  vector<double>lam;
+
+      Mat m_normPad;        //pad_size = normPad(5)
+      Mat m_km;             //pad_size = smooth(1);
 
 };
 Mat get_Km(int smooth);

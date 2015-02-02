@@ -99,25 +99,34 @@ int main( int argc, char** argv)
     vector<double> scales;
     vector<double> scalesw;
     vector<double> scalesh;
-    ff1.chnsPyramid( input_image, feature, scales, scalesw, scalesh );
+
+    vector<Mat> features;
+    ff1.computeChannels( input_image, features);
+
+    //cv::TickMeter tk;
+    //tk.start();
+    //for(int c=0;c<20;c++)
+    //    ff1.chnsPyramid( input_image, feature, scales, scalesw, scalesh );
+    //tk.stop();
+    //cout<<"time x10 "<<tk.getTimeMilli()/20<<endl;
 
 //    vector<Mat> features;
 //    ff1.computeChannels( input_image, features);
-//    saveMatToFile("p1.data", features[3]);
-//    saveMatToFile("p2.data", features[4]);
-//    saveMatToFile("p3.data", features[5]);
+    saveMatToFile("p1.data", features[3]);
+    saveMatToFile("p2.data", features[4]);
+    saveMatToFile("p3.data", features[5]);
 //    saveMatToFile("p4.data", features[6]);
 //    saveMatToFile("p5.data", features[7]);
 //    saveMatToFile("p6.data", features[8]);
 //    saveMatToFile("p7.data", features[9]);
-	cout<<"number of scale is "<<feature.size()<<endl;
-	saveMatToFile("p3.data", feature[11][3]);
-	saveMatToFile("p4.data", feature[11][4]);
-	saveMatToFile("p5.data", feature[11][5]);
-	saveMatToFile("p6.data", feature[11][6]);
-	saveMatToFile("p7.data", feature[11][7]);
-	saveMatToFile("p8.data", feature[11][8]);
-	saveMatToFile("p9.data", feature[11][9]);
+//	cout<<"number of scale is "<<feature.size()<<endl;
+//	saveMatToFile("p3.data", feature[11][3]);
+//	saveMatToFile("p4.data", feature[11][4]);
+//	saveMatToFile("p5.data", feature[11][5]);
+//	saveMatToFile("p6.data", feature[11][6]);
+//	saveMatToFile("p7.data", feature[11][7]);
+//	saveMatToFile("p8.data", feature[11][8]);
+//	saveMatToFile("p9.data", feature[11][9]);
 
 
     //TickMeter tk;
