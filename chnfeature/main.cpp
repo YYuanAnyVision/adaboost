@@ -92,6 +92,8 @@ void MultiImage_OneWin(const std::string& MultiShow_WinName, const vector<Mat>& 
 
 int main( int argc, char** argv)
 {
+
+    for ( int c=0; c<5;c++ ) cout<<"a",cout<<"b";
 	const int k=256; float R[k], G[k], B[k];
 	if(size_t(R)&15)
 		cout<<"bingo"<<endl;
@@ -99,11 +101,15 @@ int main( int argc, char** argv)
 	cout<<static_cast<const void*>(R)<<endl;
     Mat input_image = imread(argv[1]);
 
+    feature_Pyramids ff1;
+    Mat smooth_input;
+    int shrink = 4;
+    cv::resize( input_image, input_image, Size( input_image.cols/shrink*shrink, input_image.rows/shrink*shrink), 0,0 );
+    cout<<"input_image size "<<input_image.size()<<endl;
+
 	Mat L,U,V;
 
-    feature_Pyramids ff1;
 
-	ff1.convt_2_luv( input_image, L, U, V);
 
     //vector<vector<Mat> > feature;
     //vector<double> scales;
@@ -113,18 +119,26 @@ int main( int argc, char** argv)
     //vector<Mat> features;
     //ff1.computeChannels( input_image, features);
 
-    //cv::TickMeter tk;
-    //tk.start();
-    //for(int c=0;c<20;c++)
-    //    ff1.chnsPyramid( input_image, feature, scales, scalesw, scalesh );
-    //tk.stop();
-    //cout<<"time x10 "<<tk.getTimeMilli()/20<<endl;
+    Mat mag,ori;
+    Mat gghist;
+    ff1.convt_2_luv( input_image, L, U, V);
+    ff1.convTri( L, smooth_input, 1, 3);
+    ff1.computeGradMag( L,U,V, mag, ori, false);
+
+    cv::TickMeter tk;
+    tk.start();
+    for(int c=0;c<20;c++)
+        ff1.conputeGradHist( mag, ori, gghist, 4, 6, false);
+    tk.stop();
+    cout<<"time -> "<<tk.getTimeMilli()/20<<endl;
+
 
 //    vector<Mat> features;
 //    ff1.computeChannels( input_image, features);
-    saveMatToFile("p1.data", L);
-    saveMatToFile("p2.data", U);
-    saveMatToFile("p3.data", V);
+      saveMatToFile("gghist.data", gghist);
+      saveMatToFile("ori.data", ori);
+//    saveMatToFile("p2.data", U);
+//    saveMatToFile("p3.data", V);
 //    saveMatToFile("p4.data", features[6]);
 //    saveMatToFile("p5.data", features[7]);
 //    saveMatToFile("p6.data", features[8]);

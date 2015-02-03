@@ -54,7 +54,11 @@ public:
 
 	void convTri( const Mat &src, Mat &dst,const Mat &Km) const;        //1 opencv version
 
-	void convTri( const Mat &src, Mat &dst, int conv_size) const;       //2 sse version, faster
+    //2 sse version, faster
+	void convTri( const Mat &src,       // in :data, for color image, this is the first channel, and set dim =3
+                  Mat &dst, 
+                  int conv_size, 
+                  int dim) const;       // in :dim, DO NOT SET dim=3 for gray image, and should make 3 channels continuous 
 
 	void getscales(const Mat &img,vector<Size> &ap_size,vector<int> &real_scal,vector<double> &scales,vector<double> &scalesh,vector<double> &scalesw) const;
 
@@ -78,6 +82,23 @@ public:
 					  Mat &U_channel,
 					  Mat &v_channel) const;
 
+    /* for color image this should be the first channel, (L for LUV, B for BGR), and the channels should be continuous in memory */
+    bool computeGradMag( const Mat &input_image,      //in  : input image (first channel for color image ) 
+                         const Mat &input_image2,     //in  : input image channel 2, set empty for gray image
+                         const Mat &input_image3,     //in  : input image channel 3, set empty for gray image
+                         Mat &mag,                    //out : output mag
+                         Mat &ori,                    //out : output ori
+                         bool full,                   //in  : ture -> 0-2pi, otherwise 0-pi
+                         int channel = 0              //in  : choose specific channel to compute the mag and ori
+                         ) const;
+
+    bool conputeGradHist( const Mat &mag,             //in : mag
+                          const Mat &ori,             //in : ori
+                          Mat &Ghist,           //out: gradient hist 
+                          int binSize,          //in : number of bin
+                          int oritent,          //in : number of ori
+                          bool full = false     //in : ture->0-2pi, false->0-pi
+                          ) const;
 	const detector_opt &getParas() const;
 
   private:
