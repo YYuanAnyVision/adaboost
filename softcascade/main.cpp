@@ -19,8 +19,8 @@
 
 #include <omp.h>
 
-#define P1
-#define TEST_STAT_SLIDE
+#define P2
+#define TEST_MUITI
 //#define SAVE_IMAGE
 
 using namespace std;
@@ -300,7 +300,7 @@ int runTrainAndTest( double &out_miss_rate, double &out_fp_per_image)
 
     tree_para tree_par;
 	cascadeParameter cas_para;
-    detector_opt det_opt;
+    channels_opt det_opt;
  
     tree_par.nBins = 256;
     tree_par.maxDepth = 2;
@@ -370,11 +370,11 @@ int runTrainAndTest( double &out_miss_rate, double &out_fp_per_image)
             for ( int c=0;c<pos_samples.size();c++) 
             {
                 vector<Mat> feas;
-                ff1.computeChannels( pos_samples[c], feas );
+                ff1.computeChannels_sse( pos_samples[c], feas );
                 
                 for(int i=0;i<feas.size();i++)
                 {
-                    ff1.convTri( feas[i], feas[i], Km );
+                    ff1.convTri( feas[i], feas[i], 1,1);
                 }
 
                 Mat tmp = pos_train_data.col(c);
@@ -415,10 +415,10 @@ int runTrainAndTest( double &out_miss_rate, double &out_fp_per_image)
         for ( int c=0;c<accu_neg.size();c++)
         {
             vector<Mat> feas;
-            ff1.computeChannels( accu_neg[c], feas );
+            ff1.computeChannels_sse( accu_neg[c], feas );
             for(int i=0;i<feas.size();i++)
             {
-                ff1.convTri( feas[i], feas[i], Km );
+                ff1.convTri( feas[i], feas[i], 1, 1);
             }
             Mat tmp = neg_train_data.col(c);
             makeTrainData( feas, tmp , cas_para.modelDsPad, cas_para.shrink);
@@ -560,11 +560,11 @@ int runTrainAndTest( double &out_miss_rate, double &out_fp_per_image)
     for ( int c=0;c<test_pos_all.size();c++) 
     {
         vector<Mat> feas;
-        ff1.computeChannels( test_pos_all[c], feas );
+        ff1.computeChannels_sse( test_pos_all[c], feas );
         
         for(int i=0;i<feas.size();i++)
         {
-            ff1.convTri( feas[i], feas[i], Km );
+            ff1.convTri( feas[i], feas[i], 1, 1 );
         }
 
         Mat tmp = pos_test_data.col(c);
@@ -601,11 +601,11 @@ int runTrainAndTest( double &out_miss_rate, double &out_fp_per_image)
     for ( int c=0;c<test_neg_orig.size();c++) 
     {
         vector<Mat> feas;
-        ff1.computeChannels( test_neg_orig[c], feas );
+        ff1.computeChannels_sse( test_neg_orig[c], feas );
         
         for(int i=0;i<feas.size();i++)
         {
-            ff1.convTri( feas[i], feas[i], Km );
+            ff1.convTri( feas[i], feas[i], 1, 1 );
         }
 
         Mat tmp = neg_test_data.col(c);

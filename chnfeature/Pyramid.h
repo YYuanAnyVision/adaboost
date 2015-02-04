@@ -13,7 +13,7 @@
 using namespace std;
 using namespace cv;
 
-struct detector_opt
+struct channels_opt 
 {
 	int nPerOct ;//number of scales per octave
 	int nOctUp ; //number of up_sampled octaves to compute
@@ -24,7 +24,7 @@ struct detector_opt
 	int nApprox;// number of approx
 	Size minDS ; //minimum image size for channel computation
 	Size pad;
-	detector_opt()
+	channels_opt ()
 	{
 		nPerOct=8 ;
 		nOctUp=0 ;
@@ -45,35 +45,94 @@ public:
 
 	~feature_Pyramids();
 
-	void chnsPyramid(const Mat &img, 
-                    vector<vector<Mat> > &approxPyramid,
-                    vector<double> &scales,
-                    vector<double> &scalesh,
-                    vector<double> &scalesw) const;
+	/* 
+     * ===  FUNCTION  ======================================================================
+     *         Name:  chnsPyramid
+     *  Description:  get image feature channels Pyramids for object detection
+     * =====================================================================================
+     */
+	bool chnsPyramid(const Mat &img,                                    //in:  image
+                    vector<vector<Mat> > &approxPyramid,			    //out: feature channels pyramid
+                    vector<double> &scales,							            //contain:really compute && approx
+                    vector<double> &scalesh,						    //out: all scales
+                    vector<double> &scalesw) const;					    //out: the height of per layer
+																	    //out: the width of per layer
+	bool chnsPyramid(const Mat &img,
+					 vector<vector<Mat> > &chns_Pyramid,			     //in: image
+					 vector<double> &scales							     //out: feature channels pyramid
+					 ) const;										     //out: all scales
+	 /* 
+     * ===  FUNCTION  ======================================================================
+     *         Name:  convTri
+     *  Description:   convolve one row of I by a 2rx1 triangle filter
+     * =====================================================================================
+     */
+	void convTri( const Mat &src,                                        //in:  inputArray
+						Mat &dst,										 //out: outpuTarray
+						const Mat &Km									 //in:  the kernel of Convolution
+						) const;        
+  	/* ===  FUNCTION  ======================================================================
+	*         Name:  get_scales
+	*  Description:  get the scales of image features pyramid 
+	* =====================================================================================
+	*/
+	void getscales(const Mat &img,                                        //in:  image
+				  vector<Size> &ap_size,								  //out: the size of per layer
+				  vector<int> &real_scal,								  //out: the ID of layer we really compute
+				  vector<double> &scales,								  //out: all scales
+				  vector<double> &scalesh,								  //out: the height of per layer
+				  vector<double> &scalesw								  //out: the width of per layer
+				  ) const;
+	/* ===  FUNCTION  ======================================================================
+	*         Name:  get_lambdas
+	*  Description:  get lambdas---use the parameter to estimate approximated pyramid layer
+	* =====================================================================================
+	*/
+	void get_lambdas(vector<vector<Mat> > &chns_Pyramid,                  //in:  image feature pyramid
+					vector<double> &lambdas,							  //out: lambdas
+					vector<int> &real_scal,								  //in:  the layer of image pyramid
+					vector<double> &scales								  //in:  all scales 
+					)const;
+	  /* ===  FUNCTION  ======================================================================
+	*         Name:  computeChannels
+	*  Description:  compute feature channels--contain:L U V & magnitude & the Gradient Hist(the number depends on parameter--nbins)
+	* =====================================================================================
+	*/
+	void computeChannels( const Mat &image,                                //in:  image
+						vector<Mat>& channels							   //out: feature channels
+						) const;
+	 /* 
+     * ===  FUNCTION  ======================================================================
+     *         Name:  computeGradMag
+     *  Description:  compute gradient magnitude and orientation at each location \
+     *                for color image this should be the first channel, (L for LUV, B for BGR), and the channels should be continuous in memory 
+     * =====================================================================================
+     */
+	void computeGradient(const Mat &img,                             //in:  image
+                         Mat& grad1, 								 //out: Gradient magnitude 0
+                         Mat& grad2, 								 //out: Gradient magnitude 1
+                         Mat& qangle1,								 //out: Gradient angle 0
+                         Mat& qangle2,								 //out: Gradient angle 1
+                         Mat& mag_sum_s) const;						 //out: Gradient magnitude
+	/* ===  FUNCTION  ======================================================================
+	*         Name:  setParas
+	*  Description:   set the parameter of this object
+	* =====================================================================================
+	*/
+	void setParas (const  channels_opt  &in_para ) ;
+	/* ===  FUNCTION  ======================================================================
+	*         Name:  compute_lambdas
+	*  Description:  compute lambdas---use the parameter to estimate approximated pyramid layer
+	* =====================================================================================
+	*/
+	bool compute_lambdas(const vector<Mat> &fold);
 
-	void chnsPyramid(const Mat &img,  vector<vector<Mat> > &chns_Pyramid,vector<double> &scales) const;
-
-	void convTri( const Mat &src, Mat &dst,const Mat &Km) const;        
-  
-	void getscales(const Mat &img,vector<Size> &ap_size,vector<int> &real_scal,vector<double> &scales,vector<double> &scalesh,vector<double> &scalesw) const;
-
-	void get_lambdas(vector<vector<Mat> > &chns_Pyramid,vector<double> &lambdas,vector<int> &real_scal,vector<double> &scales)const;
-
-	void computeChannels( const Mat &image,vector<Mat>& channels) const;
-
-	void computeGradient(const Mat &img, 
-                         Mat& grad1, 
-                         Mat& grad2, 
-                         Mat& qangle1,
-                         Mat& qangle2,
-                         Mat& mag_sum_s) const;	
-
-	void setParas (const  detector_opt &in_para ) ;
-
-	void compute_lambdas(const vector<Mat> &fold);
-
-
-	const detector_opt &getParas() const;
+	/* ===  FUNCTION  ======================================================================
+	*         Name:  getParas
+	*  Description:  get the parameter of this object
+	* =====================================================================================
+	*/
+	const channels_opt  &getParas() const;
 
 
 
@@ -156,9 +215,22 @@ public:
                          vector<double> &scales) const;         //out: scale of each pyramid
 
 
+/* 
+     * ===  FUNCTION  ======================================================================
+     *         Name:  chnsPyramid_sse
+     *  Description:  compute channels pyramid with approximation, fast
+     * =====================================================================================
+     */
+	bool chnsPyramid_sse(const Mat &img,                                    //in:  image
+						vector<vector<Mat> > &approxPyramid,			    //out: feature channels pyramid
+						vector<double> &scales,							    //out: all scales
+						vector<double> &scalesh,						    //out: the height scales
+						vector<double> &scalesw) const;					    //out: the width scales
+
+
   private:
 
-	  detector_opt m_opt;
+	  channels_opt  m_opt;
 	  	
 	  vector<double>lam;
 

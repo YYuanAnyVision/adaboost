@@ -470,7 +470,7 @@ bool softcascade::detectMultiScale( const Mat &image,
     vector<double> scale_w;
     vector<double> scale_h;
 
-    m_feature_gen.chnsPyramid( image, approPyramid, appro_scales, scale_h, scale_w);
+    m_feature_gen.chnsPyramid_sse( image, approPyramid, appro_scales, scale_h, scale_w);
     for( int c=0;c<approPyramid.size();c++)
     {
         vector<Rect> t_tar;

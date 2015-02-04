@@ -109,6 +109,8 @@ int main( int argc, char** argv)
 
     vector<vector<Mat> > fealsl;
     vector<double> scales;
+    vector<double> scalesw;
+    vector<double> scalesh;
 
     
 
@@ -129,17 +131,15 @@ int main( int argc, char** argv)
     cv::TickMeter tk;
     tk.start();
     for(int c=0;c<10;c++)
-        ff1.chnsPyramid( input_image, fealsl, scales);
+        ff1.chnsPyramid( input_image, fealsl, scales, scalesw, scalesh);
     tk.stop();
     cout<<"opencv time -> "<<tk.getTimeMilli()/10<<endl;
-    
-    fealsl.clear();
 
-    tk.reset();tk.start();
-    for(int c=0;c<20;c++)
-        ff1.chnsPyramid_sse( input_image, fealsl, scales);
-    tk.stop();
-    cout<<"sse time -> "<<tk.getTimeMilli()/20<<endl;
+    //tk.reset();tk.start();
+    //for(int c=0;c<20;c++)
+    //    ff1.chnsPyramid_sse( input_image, fealsl, scales, scalesw, scalesh);
+    //tk.stop();
+    //cout<<"sse time -> "<<tk.getTimeMilli()/20<<endl;
 
 //    vector<Mat> features;
 //    ff1.computeChannels( input_image, features);
