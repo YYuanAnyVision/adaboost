@@ -6,20 +6,20 @@
 #include "opencv2/highgui/highgui.hpp"
 #include "opencv2/imgproc/imgproc.hpp"
 #include "opencv2/contrib/contrib.hpp"
-
-#include "Pyramid.h"
+#include "../misc/misc.hpp"
 #include "sseFun.h"
+#include "Pyramid.h"
 
 using namespace std;
 using namespace cv;
 
 
- bool feature_Pyramids::conputeGradHist(  const Mat &mag,             //in : mag
-                                          const Mat &ori,             //in : ori
+ bool feature_Pyramids::computeGradHist(  const Mat &mag,       //in : mag
+                                          const Mat &ori,       //in : ori
                                           Mat &Ghist,           //out: g hist
                                           int binSize,          //in : number of bin
                                           int oritent,          //in : number of ori
-                                          bool full     //in : ture->0-2pi, false->0-pi
+                                          bool full             //in : ture->0-2pi, false->0-pi
                                           ) const
 {
     if( mag.depth() !=CV_32F || ori.depth()!=CV_32F || mag.empty() || ori.empty() )
@@ -32,17 +32,24 @@ using namespace cv;
         cout<<"mag , ori size do not match "<<endl;
         return false;
     }
-    
-    Ghist = Mat::zeros( mag.rows/binSize*oritent, mag.cols/binSize, CV_32F );
+    if( Ghist.empty())
+        Ghist = Mat::zeros( mag.rows/binSize*oritent, mag.cols/binSize, CV_32F );
+    else
+    {
+        if( Ghist.rows != mag.rows/binSize*oritent || Ghist.cols != mag.cols/binSize)
+        {
+            cout<<"error - > Ghist is pre allocated, but the size doesn't match "<<endl;
+        }
+    }
     gradHist( (float*)mag.data, (float*)ori.data, (float*)Ghist.data, mag.rows, mag.cols, binSize, oritent, 0, full);
 
     return true;
 }
 
 bool feature_Pyramids::convt_2_luv( const Mat input_image, 
-					  Mat &L_channel,
-					  Mat &U_channel,
-					  Mat &V_channel) const
+					                 Mat &L_channel,
+					                 Mat &U_channel,
+					                 Mat &V_channel) const
 {
 	if( input_image.channels() != 3 || input_image.empty())
 		return false;
@@ -55,9 +62,9 @@ bool feature_Pyramids::convt_2_luv( const Mat input_image,
 	if( input_image.depth() == CV_8U)
 		rgb2luv_sse( (const uchar*)(input_image.data), (float*)(luv_big.data), number_of_element, 1.0f/255);
 	else if( input_image.depth() == CV_32F)
-		rgb2luv_sse( (const float*)(input_image.data), (float*)(luv_big.data), number_of_element, 1.0f/255);
+		rgb2luv_sse( (const float*)(input_image.data), (float*)(luv_big.data), number_of_element, 1.0f);
 	else if( input_image.depth() == CV_64F)
-		rgb2luv_sse( (const double*)(input_image.data), (float*)(luv_big.data), number_of_element, 1.0f/255);
+		rgb2luv_sse( (const double*)(input_image.data), (float*)(luv_big.data), number_of_element, 1.0);
 	else
 		return false;
 	return true;
@@ -101,7 +108,8 @@ bool feature_Pyramids::computeGradMag(  const Mat &input_image,
         in_data += channel*input_image.cols*input_image.rows;
         dim = 1;
     }
-    gradMag( (float*)(input_image.data), (float *)(mag.data), (float *)(ori.data), input_image.rows, 
+
+    gradMag( (const float*)(input_image.data), (float *)(mag.data), (float *)(ori.data), input_image.rows, 
                 input_image.cols, dim, full );
 
     Mat smooth_mag;
@@ -109,11 +117,146 @@ bool feature_Pyramids::computeGradMag(  const Mat &input_image,
     convTri( mag, smooth_mag, norm_pad, 1);
     float norm_const = 0.005;
 
-
     gradMagNorm( (float*)mag.data, (float*)smooth_mag.data, mag.rows, mag.cols, norm_const);
 
     return true;
 }
+
+ bool feature_Pyramids::computeChannels_sse( const Mat &image,                  // in : input image, BGR 
+                                                vector<Mat>& channels) const    //out : 10 channle features, continuous in memory
+{
+    const int limited_size = 8;
+    if( image.channels() != 3 || image.empty() || image.cols <limited_size || image.rows < limited_size)
+    {
+        cout<<" only works with color imagem which size is larger than 8"<<endl;
+        return false;
+    }
+
+    /*set para*/
+	int nbins=m_opt.nbins;
+	int binsize=m_opt.binsize;
+	int shrink =m_opt.shrink;
+	int smoothSize=m_opt.smooth;
+
+	int channels_addr_rows=(image.rows)/shrink;
+	int channels_addr_cols=(image.cols)/shrink;
+	Mat channels_addr=Mat::zeros((nbins+4)*channels_addr_rows,channels_addr_cols,CV_32FC1);
+
+    /*  convert to LUV with normalization to [0,1] */
+    /*  first crop it to the proper size, use crop instead of resize to keep the nature radio of image */
+    int w_cropped_size = image.cols - image.cols%shrink;
+    int h_cropped_size = image.rows - image.rows%shrink;
+    if( w_cropped_size < limited_size|| h_cropped_size < limited_size)
+    {
+        cout<<"image is too small "<<endl;
+        return false;
+    }
+    Mat crop_input = image.rowRange( 0, h_cropped_size).colRange(0, w_cropped_size );
+    
+    /* 1--> convert it to LUV with normalization */
+    Mat L,U,V;
+    if(!convt_2_luv( crop_input, L, U, V))
+    {
+        cout<<"error in convt_2_luv function "<<endl;
+        return false;
+    }
+
+    /*  smooth all the three channel */
+    Mat smooth_LUV;                      //LUV togather, 3 times bigger than L
+    convTri( L,smooth_LUV, smoothSize, 3);  //L U V is all been smoothed, giving just L ( since they have the same size and continuous in memory)
+    
+    /*  resize and add to channels */
+    for ( int c=0; c<3;c++) 
+    {
+        Mat c_resized = channels_addr.rowRange( c*channels_addr_rows, (c+1)*channels_addr_rows);
+        cv::resize( smooth_LUV.rowRange( c*crop_input.rows, (c+1)*crop_input.rows), c_resized, c_resized.size(), 0.0, 0.0, INTER_AREA);
+        channels.push_back(c_resized);
+    }
+    
+    /* 2--> compute the magnitude and oritentation */
+    Mat Mag,Ori;
+    computeGradMag(L, U, V, Mag, Ori, false);
+    Mat mag_resized = channels_addr.rowRange( 3*channels_addr_rows, 4*channels_addr_rows);
+    cv::resize( Mag, mag_resized, mag_resized.size(), 0.0, 0.0, INTER_AREA);
+    channels.push_back( mag_resized );
+
+    /*  3--> compute Gradient hist */ 
+    /* size will be nbins*channels_addr_rows x channels_addr_cols */
+    Mat gghist = channels_addr.rowRange( 4*channels_addr_rows, (4+nbins)*channels_addr_rows);   
+    if(!computeGradHist( Mag, Ori, gghist, binsize, nbins, false))
+    {
+        cout<<"computeGradHist wrong "<<endl;
+        return false;
+    }
+    
+    if(gghist.rows/nbins != channels_addr_rows || gghist.cols!= channels_addr_cols)
+    {
+        cout<<"fatal error, some thing wrong in computeGradHist, size does not match ~"<<endl;
+        return false;
+    }
+    
+    /* push it into channels */
+    for ( int c=0;c<nbins ; c++)
+    {
+        Mat ghist_temp = gghist.rowRange( c*channels_addr_rows, (c+1)*channels_addr_rows);
+        channels.push_back( ghist_temp );
+    }
+
+    /* check the pointer */
+    float * add1 = (float*)channels[0].data;
+    for( int c=1;c<channels.size();c++)
+	{
+	    if(!(static_cast<void*>(add1+c*channels[0].cols*channels[0].rows) == static_cast<void*>(channels[c].data)))
+            return false;
+	}
+    return true;
+}
+
+bool feature_Pyramids::chnsPyramid_sse(const Mat &img,                      //in : input image
+                                     vector<vector<Mat> > &chns_Pyramid,    //out: output features
+                                     vector<double> &scales) const          //out: scale of each pyramid
+{
+    if( img.empty() || !img.isContinuous() || img.cols < 8 || img.rows <8)
+    {
+        cout<<"image is too samll or not Continuous"<<endl;
+        return false;
+    }
+    
+	int shrink =m_opt.shrink;
+	int smooth =m_opt.smooth;
+
+	/*get scales*/
+	vector<Size> ap_size;
+	vector<int> real_scal;
+	vector<double> scalesh;
+	vector<double> scalesw;
+	//clear
+	scales.clear();
+	chns_Pyramid.clear();
+
+	getscales(img,ap_size,real_scal,scales,scalesh,scalesw);
+
+	Mat img_tmp;
+	Mat img_half;
+	//compute real 
+	for (int s_r=0;s_r<(int)scales.size();s_r++)
+	{
+		vector<Mat> chns;
+		cv::resize(img,img_tmp,ap_size[s_r]*shrink,0.0,0.0,1);
+		if(!computeChannels_sse(img_tmp,chns))
+        {
+            cout<<"error computing computeChannels_sse "<<endl;
+            return false;
+        }
+		for (int c = 0; c < chns.size(); c++)
+		{
+			convTri(chns[c],chns[c],1,1);
+		}
+		chns_Pyramid.push_back(chns);
+	}
+    return true;
+}
+
 
 
 
@@ -232,11 +375,22 @@ void feature_Pyramids::convTri( const Mat &src, Mat &dst,const Mat &Km) const   
 void feature_Pyramids::convTri( const Mat &src, Mat &dst, int conv_size, int dim) const      //2 sse version, faster
 {
 	CV_Assert(src.channels()==1 && conv_size > 0);//不支持多通道
-    dst = Mat::zeros(  src.rows*dim, src.cols , CV_32F );
+    Mat tmp;
+    if (dst.empty())
+        tmp = Mat::zeros(  src.rows*dim, src.cols , CV_32F );
+    else if( static_cast<void*>(dst.data) == static_cast<void*>(src.data))  /* output is the same as input, use tmp */
+        tmp = Mat::zeros(  src.rows*dim, src.cols , CV_32F );
+    else if( dst.rows!=(src.rows*dim) || dst.cols!=src.cols )               /* pre allocated, but size does not macth */
+        tmp = Mat::zeros(  src.rows*dim, src.cols , CV_32F );
+    else                                                                    /* use pre allocated memory */
+        tmp = dst;
+
     if( conv_size > 1)
-        convTri_sse( (const float*)( src.data), (float *)( dst.data), src.cols, src.rows, conv_size, dim);
+        convTri_sse( (const float*)( src.data), (float *)( tmp.data), src.cols, src.rows, conv_size, dim);
     else
-        convTri1( (const float*)( src.data), (float *)( dst.data), src.rows, src.cols, dim, (float)(conv_size) );
+        convTri1( (const float*)( src.data), (float *)( tmp.data), src.rows, src.cols, dim, (float)(2.0) ); //means kernel is [1 2 1]
+
+    dst = tmp;
 }
 
 void feature_Pyramids::getscales(const Mat &img,vector<Size> &ap_size,vector<int> &real_scal,vector<double> &scales,vector<double> &scalesh,vector<double> &scalesw)const
@@ -709,13 +863,16 @@ void feature_Pyramids:: chnsPyramid(const Mat &img,vector<vector<Mat> > &approxP
 	vector<double>().swap(lambdas);
 	vector<vector<Mat> >().swap(chns_Pyramid);
 }
-void feature_Pyramids:: chnsPyramid(const Mat &img,  vector<vector<Mat> > &chns_Pyramid,vector<double> &scales) const//nApprox==0时
+
+/* compute Pyramid without using approximation, slower */
+void feature_Pyramids:: chnsPyramid(const Mat &img,  
+                                    vector<vector<Mat> > &chns_Pyramid,
+                                    vector<double> &scales) const
 {
 	int shrink =m_opt.shrink;
 	int smooth =m_opt.smooth;
 
 	/*get scales*/
-	Size ap_tmp_size;
 	vector<Size> ap_size;
 	vector<int> real_scal;
 	vector<double> scalesh;
@@ -723,8 +880,6 @@ void feature_Pyramids:: chnsPyramid(const Mat &img,  vector<vector<Mat> > &chns_
 	//clear
 	scales.clear();
 	chns_Pyramid.clear();
-	scalesh.clear();
-	scalesw.clear();
 
 	getscales(img,ap_size,real_scal,scales,scalesh,scalesw);
 
@@ -734,23 +889,11 @@ void feature_Pyramids:: chnsPyramid(const Mat &img,  vector<vector<Mat> > &chns_
 	for (int s_r=0;s_r<(int)scales.size();s_r++)
 	{
 		vector<Mat> chns;
-		cv::resize(img,img_tmp,ap_size[s_r]*shrink,0.0,0.0,INTER_AREA);
-		/*if (img_half.empty())
-		{
-			resize(img,img_tmp,ap_size[real_scal[s_r]]*shrink,0.0,0.0,INTER_AREA);
-		}else 
-		{
-			resize(img_half,img_tmp,ap_size[real_scal[s_r]]*shrink,0.0,0.0,1);
-		}
-		if (abs(scales[real_scal[s_r]]-0.5)<=0.01)
-		{
-			img_half=img_tmp;
-		}*/
+		cv::resize(img,img_tmp,ap_size[s_r]*shrink,0.0,0.0,1);
 		computeChannels(img_tmp,chns);
 		for (int c = 0; c < chns.size(); c++)
 		{
 			convTri(chns[c],chns[c],m_km);
-
 		}
 		chns_Pyramid.push_back(chns);
 	}
@@ -783,7 +926,6 @@ void feature_Pyramids::compute_lambdas(const vector<Mat> &fold)
 	vector<vector<vector<double> > > Pyramid_set_mean;
 
 	//test
-	//nimages=2000;	
 	for (int n=0;n<nimages;n++)
 	{   
 		image= fold[n];

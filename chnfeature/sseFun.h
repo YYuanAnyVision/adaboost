@@ -48,7 +48,7 @@ void convTri1( const float *InputData,		// in : input data
 			   int height,					// in : the height of the image
 			   int width,					// in : the width of the image
 			   int dim,						// in : dim is 1 for single channel image, 3 for color image
-			   float p,						// in :
+			   float p,						// in : 
 			   int s=1);					// in : resample factor, only 1 or 2 is supported
 
 
@@ -58,45 +58,118 @@ void convTri1( const float *InputData,		// in : input data
  *  Description:  convolve one row of I by a 2rx1 triangle filter
  * =====================================================================================
  */
-void convTriY( float *I, 
-			   float *O, 
-			   int w, 
-			   int r, 
-			   int s) ;
-
-void convTri_sse( const float *I, float *O, int width, int height, int r,int d = 1, int s=1 );
+void convTriY( const float *InputData,  // in : input data
+			   float *OouputData,       // out: output data
+			   int width,               // in : the width of the image
+			   int rad,                 // in : radius
+			   int s=1);                // in : resample factor, only 1 or 2 is supported
 
 
-// compute x and y gradients for just one row (uses sse)
-void grad1( const float *I,   //in :data
-            float *Gx,  //out: gradient of x
-            float *Gy,  //out: gradient of y
-            int h,      //in : height
-            int w,      //in : width
-            int x );     //in : index of row
 
+/* 
+ * ===  FUNCTION  ======================================================================
+ *         Name:  convTri_sse
+ *  Description:   convolve image of I by a 2rx1 triangle filter
+ * =====================================================================================
+ */
+
+void convTri_sse( const float *InputData,       // in : input image's header
+                  float *OutputData,            // out: output image's header, same size as input 
+                  int width,                    // in : width of the image
+                  int height,                   // in : height of the image
+                  int r,                        // in : radius of the smooth kernel
+                  int d = 1,                    // in : dimension of the input image, 1 for single channel, 3 for color image
+                  int s=1 );                    // in : resample factor, only 1 or 2 is supported
+
+
+
+/* 
+ * ===  FUNCTION  ======================================================================
+ *         Name:  grad1
+ *  Description:  compute x and y gradients for just one row (uses sse)
+ * =====================================================================================
+ */
+void grad1( const float *Inputdata,         //in : input data
+            float *Gx,                      //out: gradient of x
+            float *Gy,                      //out: gradient of y
+            int height,                     //in : height of the image
+            int width,                      //in : width of the image
+            int x );                        //in : index of row
+
+/* 
+ * ===  FUNCTION  ======================================================================
+ *         Name:  acosTable
+ *  Description:  return the acos lookup tabel, static 
+ * =====================================================================================
+ */
 float* acosTable();
 
-// compute gradient magnitude and orientation at each location (uses sse)
-void gradMag( float *I, float *M, float *O, int h, int w, int d, bool full );
+
+/* 
+ * ===  FUNCTION  ======================================================================
+ *         Name:  gradMag
+ *  Description:  compute gradient magnitude and orientation at each location (uses sse)
+ * =====================================================================================
+ */
+void gradMag( const float *InputData,   // in : input image data
+              float *Mag,               //out : output magnitude 
+              float *Ori,               //out : output orientation
+              int height,               // in : height of the image
+              int width,                // in : width of the image
+              int dim,                  // in : dim of the image, 1 for single, 3 for color
+              bool full );              // in : true for 0-2pi, false for 0-pi
+
+/* 
+ * ===  FUNCTION  ======================================================================
+ *         Name:  gradMaggradMagNorm
+ *  Description:  normalize gradient magnitude at each location (uses sse) 
+ *                M = M/(S + norm)
+ * =====================================================================================
+ */
+void gradMagNorm( float *M,           // in&out: input Matrix
+                  const float *S,     // in  : S, Smoothed matrix
+                  int height,         // in  : height of the matrix
+                  int width,          // in  : width of the matrix
+                  float norm );       // in  : norm factor
 
 
-// normalize gradient magnitude at each location (uses sse)
-void gradMagNorm( float *M,                     // output: M = M/(S + norm)
-                  const float *S,               // input : Source Matrix
-                  int h, int w, float norm );    // input : parameters
+/* 
+ * ===  FUNCTION  ======================================================================
+ *         Name:  gradQuantize
+ *  Description:  helper for gradHist, quantize Ori and Maginto Ori0, Ori1 and Mag0, Mag1( interpolated) (uses sse)
+ * =====================================================================================
+ */
+void gradQuantize( const float *Ori,        //in : orientation matrix
+                   const float *Mag,        //in : magnitude matrix
+                   int *Ori0,               //out: quantized orientation 1             
+                   int *Ori1,               //out: quantized oritentation 2
+                   float *Mag0,             //out: quantized magnitude 1
+                   float *Mag1,             //out: quantized magnitude 2
+                   int numberOfBlock,       //in : number of block
+                   int numberOfElement,     //in : number of element of the row 
+                   float norm,              //in : optional normlized value 
+                   int nOrients,            //in : number of orientaton
+                   bool full,               //in : ture for 0-2pi, false for 0-pi
+                   bool interpolate );      //in : use interpolated or not
 
 
-// helper for gradHist, quantize O and M into O0, O1 and M0, M1 (uses sse)
-void gradQuantize( const float *O, const float *M, int *O0, int *O1, float *M0, float *M1,
-                   int nb, int n, float norm, int nOrients, bool full, bool interpolate );
 
 
-
-
-// Constants for rgb2luv conversion and lookup table for y-> l conversion
-template<class oT> oT* rgb2luv_setup( oT z, oT *mr, oT *mg, oT *mb,
-                                      oT &minu, oT &minv, oT &un, oT &vn )
+/* 
+ * ===  FUNCTION  ======================================================================
+ *         Name:  rgb2luv_setup
+ *  Description:  Constants for rgb2luv conversion and lookup table for y-> l conversion
+ *       return: the L value lookup table
+ * =====================================================================================
+ */
+template<class oT> oT* rgb2luv_setup( oT z,     //in : base factor value, default 1, otherwise euqals the norm factor 
+                                      oT *mr,   //out: red
+                                      oT *mg,   //out: green
+                                      oT *mb,   //out: blue
+                                      oT &minu, //out: min value of the U channel
+                                      oT &minv, //out: min value of the V channel
+                                      oT &un,   //out: U channel shift
+                                      oT &vn )  //out: V channel shift
 {
     // set constants for conversion
     const oT y0=(oT) ((6.0/29)*(6.0/29)*(6.0/29));
@@ -115,20 +188,26 @@ template<class oT> oT* rgb2luv_setup( oT z, oT *mr, oT *mg, oT *mb,
         lTable[i] = l*maxi;
     }
     for(int i=1025; i<1064; i++) lTable[i]=lTable[i-1];
-    lInit = true; return lTable;
+    lInit = true; 
+    return lTable;
 }
 
 
-// Convert from rgb to luv
-template<class iT, class oT> void rgb2luv( const iT *I, 
-                                           oT *J,
-                                           int n,
-                                           oT nrm )
+/* 
+ * ===  FUNCTION  ======================================================================
+ *         Name:  rgb2luv
+ *  Description:  Convert from rgb to luv
+ * =====================================================================================
+ */
+template<class iT, class oT> void rgb2luv( const iT *InputData,     //in : inputData
+                                           oT *OutputData,          //out: outputData
+                                           int n,                   //in : number of the element
+                                           oT nrm )                 //in : normlize value,( output factor)
 {
     oT minu, minv, un, vn, mr[3], mg[3], mb[3];
     oT *lTable = rgb2luv_setup(nrm,mr,mg,mb,minu,minv,un,vn);
-    oT *L=J, *U=L+n, *V=U+n;
-    const iT *R=I+2, *G=I+1, *B=I;			// opencv , B,G,R,B,G,R..
+    oT *L=OutputData, *U=L+n, *V=U+n;
+    const iT *R=InputData+2, *G=InputData+1, *B=InputData;			// opencv , B,G,R,B,G,R..
     for( int i=0; i<n; i++ )
     {
         oT r, g, b, x, y, z, l;
@@ -145,8 +224,17 @@ template<class iT, class oT> void rgb2luv( const iT *I,
     }
 }
 
-// Convert from rgb to luv using sse
-template<class iT> void rgb2luv_sse( iT *I, float *J, int n, float nrm ) 
+
+/* 
+ * ===  FUNCTION  ======================================================================
+ *         Name:  rgb2luv_sse
+ *  Description:  Convert from rgb to luv using sse
+ * =====================================================================================
+ */
+template<class iT> void rgb2luv_sse( const iT *I,   // in : input_image's header
+                                     float *J,      //out : output image's header
+                                     int n,         // in : number of the elements
+                                     float nrm )    // in : normlized value( scale factor )
 {
     const int k=256; float R[k], G[k], B[k];
     if( (size_t(R)&15||size_t(G)&15||size_t(B)&15||size_t(I)&15||size_t(J)&15)
@@ -162,7 +250,7 @@ template<class iT> void rgb2luv_sse( iT *I, float *J, int n, float nrm )
         /* ------------ RGB is now RRRRRGGGGGBBBBB ----------*/
         // convert to floats (and load input into cache)
         R1=R; G1=G; B1=B;
-        iT *Bi=I+i*3, *Gi=Bi+1, *Ri=Bi+2;
+        const iT *Bi=I+i*3, *Gi=Bi+1, *Ri=Bi+2;
         for( i1=0; i1<(n1-i); i1++ )
         {
             R1[i1] = (float) (*Ri);Ri = Ri+3;
