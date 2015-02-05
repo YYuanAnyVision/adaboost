@@ -19,8 +19,8 @@
 
 #include <omp.h>
 
-#define P2
-#define TEST_MUITI
+#define P1
+#define TEST_STAT_SLIDE
 //#define SAVE_IMAGE
 
 using namespace std;

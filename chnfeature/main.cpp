@@ -93,14 +93,18 @@ void MultiImage_OneWin(const std::string& MultiShow_WinName, const vector<Mat>& 
 int main( int argc, char** argv)
 {
 
+    cv::TickMeter tk;
     for ( int c=0; c<5;c++ ) cout<<"a",cout<<"b";
 	const int k=256; float R[k], G[k], B[k];
 	if(size_t(R)&15)
 		cout<<"bingo"<<endl;
 	cout<<(size_t(R))<<endl;
 	cout<<static_cast<const void*>(R)<<endl;
-    Mat input_image = imread(argv[1]);
 
+
+
+    Mat input_image = imread(argv[1]);
+    
 
 
     feature_Pyramids ff1;
@@ -128,27 +132,34 @@ int main( int argc, char** argv)
    // ff1.convTri( L, smooth_input, 1, 3);
    // ff1.computeGradMag( L,U,V, mag, ori, false);
 
-    cv::TickMeter tk;
     tk.start();
     for(int c=0;c<10;c++)
         ff1.chnsPyramid( input_image, fealsl, scales, scalesw, scalesh);
     tk.stop();
     cout<<"opencv time -> "<<tk.getTimeMilli()/10<<endl;
 
-    //tk.reset();tk.start();
-    //for(int c=0;c<20;c++)
-    //    ff1.chnsPyramid_sse( input_image, fealsl, scales, scalesw, scalesh);
-    //tk.stop();
-    //cout<<"sse time -> "<<tk.getTimeMilli()/20<<endl;
+    saveMatToFile("opencvL.data", fealsl[0][0]);
+    saveMatToFile("opencvU.data", fealsl[0][1]);
+    saveMatToFile("opencvV.data", fealsl[0][2]);
+
+    tk.reset();tk.start();
+    for(int c=0;c<20;c++)
+        ff1.chnsPyramid_sse( input_image, fealsl, scales, scalesw, scalesh);
+    tk.stop();
+    cout<<"sse time -> "<<tk.getTimeMilli()/20<<endl;
+
+    saveMatToFile("matlabL.data", fealsl[0][0]);
+    saveMatToFile("matlabU.data", fealsl[0][1]);
+    saveMatToFile("matlabV.data", fealsl[0][2]);
 
 //    vector<Mat> features;
 //    ff1.computeChannels( input_image, features);
 //    saveMatToFile("p2.data", U);
 //    saveMatToFile("p3.data", V);
-        saveMatToFile("p1.data", fealsl[0][3]);
-        saveMatToFile("p2.data", fealsl[0][4]);
-        saveMatToFile("p3.data", fealsl[3][3]);
-        saveMatToFile("p4.data", fealsl[3][4]);
+      //  saveMatToFile("p1.data", fealsl[0][3]);
+      //  saveMatToFile("p2.data", fealsl[0][4]);
+      //  saveMatToFile("p3.data", fealsl[3][3]);
+      //  saveMatToFile("p4.data", fealsl[3][4]);
 //    saveMatToFile("p5.data", features[7]);
 //    saveMatToFile("p6.data", features[8]);
 //    saveMatToFile("p7.data", features[9]);
