@@ -96,7 +96,8 @@ bool sampleWins(    const softcascade &sc, 	    /*  in: detector */
                     int stage, 			        /*  in: stage */
                     bool isPositive,            /*  in: true->sample positive, false -> sample negative */
                     vector<Mat> &samples,       /* out: target objects, flipped( only for positive)*/
-                    vector<Mat> &origsamples)   /* out: original target */
+                    vector<Mat> &origsamples,   /* out: original target */
+					bool miningPos = false;)    /*  in: sample hard negative from posSamples */
 {
     cout<<"Sampling ..."<<endl;
 	int Nthreads = omp_get_max_threads();
@@ -111,7 +112,7 @@ bool sampleWins(    const softcascade &sc, 	    /*  in: detector */
     else
         number_to_sample = opts.nNeg;
     
-    if(isPositive)
+    if(isPositive)	//sample Positive samples or mining negative samples from positive..
     {
         bf::path pos_img_path( opts.posImgDir );
         bf::path pos_gt_path( opts.posGtDir );
@@ -144,6 +145,7 @@ bool sampleWins(    const softcascade &sc, 	    /*  in: detector */
             /* read the gt according to the image name */
             gt_path_vector.push_back(opts.posGtDir + basename + ".txt");
         }
+		
 
         #pragma omp parallel for num_threads(Nthreads) /* openmp -->but no error check in runtime ... */
         for( int i=0;i<image_path_vector.size();i++)
@@ -204,6 +206,64 @@ bool sampleWins(    const softcascade &sc, 	    /*  in: detector */
     }
     else /* for negative samples */
     {
+
+		/*  first mining negative samples from pos img */
+		if( miningPos )
+		{
+			bf::path pos_img_path( opts.posImgDir );
+        	bf::path pos_gt_path( opts.posGtDir );
+
+        	if( !bf::exists( pos_img_path) || !bf::exists(pos_gt_path))
+        	{
+        	    cout<<"pos img or gt path does not exist!"<<endl;
+        	    cout<<"check "<<pos_img_path<<"  and "<<pos_gt_path<<endl;
+        	    return false;
+        	}
+        	int number_pos_img = getNumberOfFilesInDir( opts.posGtDir );
+
+        	/* iterate the folder*/
+        	bf::directory_iterator end_it;
+        	vector<string> image_path_vector;
+        	vector<string> gt_path_vector;
+
+        	for( bf::directory_iterator file_iter(pos_img_path); file_iter!=end_it; file_iter++)
+        	{
+        	    bf::path s = *(file_iter);
+        	    string basename = bf::basename( s );
+        	    string pathname = file_iter->path().string();
+        	    string extname  = bf::extension( s );
+				
+				if( extname!=".jpg" && extname!=".bmp" && extname!=".png" &&
+						extname!=".JPG" && extname!=".BMP" && extname!=".PNG")
+					continue;
+
+        	    image_path_vector.push_back( pathname );
+        	    /* read the gt according to the image name */
+        	    gt_path_vector.push_back(opts.posGtDir + basename + ".txt");
+        	}
+
+			#pragma omp parallel for num_threads(Nthreads) /* openmp -->but no error check in runtime ... */
+        	for( int i=0;i<image_path_vector.size();i++)
+        	{
+        	    Mat im = imread( image_path_vector[i]);
+        	   
+        	    vector<Rect> target_rects;
+        	    FileStorage fst( gt_path_vector[i], FileStorage::READ | FileStorage::FORMAT_XML);
+        	    fst["boxes"]>>target_rects;
+        	    fst.release();
+
+        	    /*  resize the rect to fixed widht / height ratio, for pedestrain det , is 41/100 for INRIA database */
+        	    for ( int i=0;i<target_rects.size();i++) 
+        	    {
+        	        #pragma omp critical
+        	        {
+        	            origsamples.push_back( target_obj );
+        	        }
+        	    }
+        	}
+			
+		}
+
 		bf::path neg_img_path(opts.negImgDir);
 		int number_target_per_image = opts.nPerNeg;
 
