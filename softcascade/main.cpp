@@ -135,6 +135,10 @@ bool sampleWins(    const softcascade &sc, 	    /*  in: detector */
             string basename = bf::basename( s );
             string pathname = file_iter->path().string();
             string extname  = bf::extension( s );
+			
+			if( extname!=".jpg" && extname!=".bmp" && extname!=".png" &&
+					extname!=".JPG" && extname!=".BMP" && extname!=".PNG")
+				continue;
 
             image_path_vector.push_back( pathname );
             /* read the gt according to the image name */
@@ -217,6 +221,10 @@ bool sampleWins(    const softcascade &sc, 	    /*  in: detector */
         for( bf::directory_iterator file_iter(neg_img_path); file_iter!=end_it; file_iter++)
 		{
             string pathname = file_iter->path().string();
+			string extname  = bf::extension( *file_iter);
+			if( extname!=".jpg" && extname!=".bmp" && extname!=".png" &&
+					extname!=".JPG" && extname!=".BMP" && extname!=".PNG")
+				continue;
 			neg_paths.push_back( pathname );
 		}
 		std::random_shuffle( neg_paths.begin(), neg_paths.end(),myrandom);
@@ -503,6 +511,11 @@ int runTrainAndTest( double &out_miss_rate, double &out_fp_per_image)
     for( bf::directory_iterator file_iter(test_data_path); file_iter!=end_it; file_iter++)
     {
         string pathname = file_iter->path().string();
+		string extname  = bf::extension( *file_iter);
+		if( extname!=".jpg" && extname!=".bmp" && extname!=".png" &&
+				extname!=".JPG" && extname!=".BMP" && extname!=".PNG")
+			continue;
+
         Mat test_img = imread( pathname );
 
         vector<Rect> re;vector<double> confs;
@@ -665,6 +678,12 @@ int runTrainAndTest( double &out_miss_rate, double &out_fp_per_image)
     for( bf::directory_iterator file_iter(neg_img_dir); file_iter!=end_it; file_iter++)
     {
         string pathname = file_iter->path().string();
+
+		string extname  = bf::extension( *file_iter);
+		if( extname!=".jpg" && extname!=".bmp" && extname!=".png" &&
+				extname!=".JPG" && extname!=".BMP" && extname!=".PNG")
+			continue;
+
         image_path_vector.push_back( pathname );
     }
 
@@ -715,6 +734,10 @@ int runTrainAndTest( double &out_miss_rate, double &out_fp_per_image)
 		string basename = bf::basename(s);
         string pathname = file_iter->path().string();
         string extname  = bf::extension(s);
+
+		if( extname!=".jpg" && extname!=".bmp" && extname!=".png" &&
+				extname!=".JPG" && extname!=".BMP" && extname!=".PNG")
+			continue;
 
         image_path_vector.push_back( pathname );
         gt_path_vector.push_back( testset_pos_gt_path + basename + ".txt");
