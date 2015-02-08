@@ -96,8 +96,7 @@ bool sampleWins(    const softcascade &sc, 	    /*  in: detector */
                     int stage, 			        /*  in: stage */
                     bool isPositive,            /*  in: true->sample positive, false -> sample negative */
                     vector<Mat> &samples,       /* out: target objects, flipped( only for positive)*/
-                    vector<Mat> &origsamples,   /* out: original target */
-					bool miningPos = false;)    /*  in: sample hard negative from posSamples */
+                    vector<Mat> &origsamples)   /* out: original target */
 {
     cout<<"Sampling ..."<<endl;
 	int Nthreads = omp_get_max_threads();
@@ -206,64 +205,6 @@ bool sampleWins(    const softcascade &sc, 	    /*  in: detector */
     }
     else /* for negative samples */
     {
-
-		/*  first mining negative samples from pos img */
-		if( miningPos )
-		{
-			bf::path pos_img_path( opts.posImgDir );
-        	bf::path pos_gt_path( opts.posGtDir );
-
-        	if( !bf::exists( pos_img_path) || !bf::exists(pos_gt_path))
-        	{
-        	    cout<<"pos img or gt path does not exist!"<<endl;
-        	    cout<<"check "<<pos_img_path<<"  and "<<pos_gt_path<<endl;
-        	    return false;
-        	}
-        	int number_pos_img = getNumberOfFilesInDir( opts.posGtDir );
-
-        	/* iterate the folder*/
-        	bf::directory_iterator end_it;
-        	vector<string> image_path_vector;
-        	vector<string> gt_path_vector;
-
-        	for( bf::directory_iterator file_iter(pos_img_path); file_iter!=end_it; file_iter++)
-        	{
-        	    bf::path s = *(file_iter);
-        	    string basename = bf::basename( s );
-        	    string pathname = file_iter->path().string();
-        	    string extname  = bf::extension( s );
-				
-				if( extname!=".jpg" && extname!=".bmp" && extname!=".png" &&
-						extname!=".JPG" && extname!=".BMP" && extname!=".PNG")
-					continue;
-
-        	    image_path_vector.push_back( pathname );
-        	    /* read the gt according to the image name */
-        	    gt_path_vector.push_back(opts.posGtDir + basename + ".txt");
-        	}
-
-			#pragma omp parallel for num_threads(Nthreads) /* openmp -->but no error check in runtime ... */
-        	for( int i=0;i<image_path_vector.size();i++)
-        	{
-        	    Mat im = imread( image_path_vector[i]);
-        	   
-        	    vector<Rect> target_rects;
-        	    FileStorage fst( gt_path_vector[i], FileStorage::READ | FileStorage::FORMAT_XML);
-        	    fst["boxes"]>>target_rects;
-        	    fst.release();
-
-        	    /*  resize the rect to fixed widht / height ratio, for pedestrain det , is 41/100 for INRIA database */
-        	    for ( int i=0;i<target_rects.size();i++) 
-        	    {
-        	        #pragma omp critical
-        	        {
-        	            origsamples.push_back( target_obj );
-        	        }
-        	    }
-        	}
-			
-		}
-
 		bf::path neg_img_path(opts.negImgDir);
 		int number_target_per_image = opts.nPerNeg;
 
@@ -527,25 +468,25 @@ int runTrainAndTest( double &out_miss_rate, double &out_fp_per_image)
         cout<<"Train : avg_train_neg_score is "<<avg_train_neg_score<<endl;
 
         /* ---------- ~show improvement over diffierent stages~ ------------*/
-        vector<Rect> re;vector<double> confs;
-        Mat test_img = imread("crop001573.png");
-		if(test_img.empty())
-		{
-			cout<<"img empty, return "<<endl;
-			return -1;
-		}
-        tk.reset();tk.start();
-        sc.detectMultiScale( test_img, re, confs );
-        tk.stop();
-        cout<<"Time consuming for detect a size "<<test_img.size()<<" pic is "<<tk.getTimeSec()<<endl;
-        for( int c=0;c<re.size();c++)
-        {
-            if( confs[c] < 1 )
-                continue;
-            rectangle( test_img, re[c], Scalar(255,0,0), 3);
-        }
-        stringstream ss;ss<<stage;string stage_index;ss>>stage_index;
-		tk.stop();
+        //vector<Rect> re;vector<double> confs;
+        //Mat test_img = imread("crop001573.png");
+		//if(test_img.empty())
+		//{
+		//	cout<<"img empty, return "<<endl;
+		//	return -1;
+		//}
+        //tk.reset();tk.start();
+        //sc.detectMultiScale( test_img, re, confs );
+        //tk.stop();
+        //cout<<"Time consuming for detect a size "<<test_img.size()<<" pic is "<<tk.getTimeSec()<<endl;
+        //for( int c=0;c<re.size();c++)
+        //{
+        //    if( confs[c] < 1 )
+        //        continue;
+        //    rectangle( test_img, re[c], Scalar(255,0,0), 3);
+        //}
+        //stringstream ss;ss<<stage;string stage_index;ss>>stage_index;
+		//tk.stop();
         //imshow("show",test_img);
         //waitKey(0);
 
