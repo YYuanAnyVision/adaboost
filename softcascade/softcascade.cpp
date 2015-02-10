@@ -481,6 +481,16 @@ bool softcascade::detectMultiScale( const Mat &image,
             
             Rect s( t_tar[i].x/appro_scales[c], t_tar[i].y/appro_scales[c], t_tar[i].width/scale_w[c], t_tar[i].height/scale_h[c]  );
 
+             /* some times the rects on the border are out of the image */
+            if( s.x + s.width > image.cols )
+                s.width = image.cols - s.x - 1;
+            if( s.y + s.height > image.rows )
+                s.height = image.rows - s.y - 1;
+            if( s.x < 0)
+                s.x = 0;
+            if( s.y < 0)
+                s.y - 0;
+
             targets.push_back( s );
             confidence.push_back( t_conf[i]);
         }
