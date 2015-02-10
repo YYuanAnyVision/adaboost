@@ -140,9 +140,16 @@ bool sampleWins(    const softcascade &sc, 	    /*  in: detector */
 					extname!=".JPG" && extname!=".BMP" && extname!=".PNG")
 				continue;
 
+            /* check if both groundTruth and image exist */
+            bf::path gt_path( opts.posGtDir + basename + ".xml");
+            if(!bf::exists( gt_path))   // image already exists ..
+            {
+                continue;
+            }
+
             image_path_vector.push_back( pathname );
             /* read the gt according to the image name */
-            gt_path_vector.push_back(opts.posGtDir + basename + ".txt");
+            gt_path_vector.push_back(opts.posGtDir + basename + ".xml");
         }
 		
 
@@ -740,8 +747,15 @@ int runTrainAndTest( double &out_miss_rate, double &out_fp_per_image)
 				extname!=".JPG" && extname!=".BMP" && extname!=".PNG")
 			continue;
 
+        /* check if both groundTruth and image exist */
+        bf::path gt_path(testset_pos_gt_path + basename + ".xml");
+        if(!bf::exists( gt_path))   // image already exists ..
+        {
+            continue;
+        }
+
         image_path_vector.push_back( pathname );
-        gt_path_vector.push_back( testset_pos_gt_path + basename + ".txt");
+        gt_path_vector.push_back( testset_pos_gt_path + basename + ".xml");
     }
 	cout<<"Test FN "<<endl;
 	tk.reset();tk.start();

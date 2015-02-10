@@ -28,12 +28,12 @@ struct channels_opt
 	{
 		nPerOct=8 ;
 		nOctUp=0 ;
-		shrink=4;
+        shrink=4;
 		smooth =1;
 		minDS=Size(41,100) ;
 		pad=Size(12,16);
 		nbins=6;
-		binsize=4;
+        binsize= shrink;
 		nApprox=7;
 	}
 };
