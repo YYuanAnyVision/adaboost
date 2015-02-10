@@ -18,7 +18,7 @@ void gradHist( const float *M,const float *O, float *H, int h, int w, int bin, i
     // main loop
     for( x=0; x<h0; x++ )
     {
-        // compute target orientation bins for entire column - very fast
+        // compute target orientation bins for entire row - very fast
         gradQuantize(O+x*w,M+x*w,O0,O1,M0,M1,nb,w0,sInv2,nOrients,full,softBin>=0);
         if( softBin<0 && softBin%2==0 ) {
             // no interpolation w.r.t. either orienation or spatial bin
@@ -41,7 +41,45 @@ void gradHist( const float *M,const float *O, float *H, int h, int w, int bin, i
             else if( bin==4 ) for(y=0; y<w0;) { GH; GH; GH; GH; H1++; }
             else for( y=0; y<w0;) { for( int y1=0; y1<bin; y1++ ) { GH; } H1++; }
 #undef GH
-        }
+        }else {
+	      // interpolate using trilinear interpolation
+	      float ms[4], xyd, yb, xd, yd; __m128 _m, _m0, _m1;
+	      bool hasLf, hasRt; int xb0, yb0;
+	      if( x==0 ) { init=(0+.5f)*sInv-0.5f; xb=init; }
+	      hasLf = xb>=0; xb0 = hasLf?(int)xb:-1; hasRt = xb0 < wb-1;
+	      xd=xb-xb0; xb+=sInv; yb=init; y=0;
+	      // macros for code conciseness
+	      #define GHinit yd=yb-yb0; yb+=sInv; H0=H+xb0*hb+yb0; xyd=xd*yd; \
+	        ms[0]=1-xd-yd+xyd; ms[1]=yd-xyd; ms[2]=xd-xyd; ms[3]=xyd;
+	      #define GH(H,ma,mb) H1=H; STRu(*H1,ADD(LDu(*H1),MUL(ma,mb)));
+	      // leading cols, no top bin
+	      for( ; y<bin/2; y++ ) {
+	        yb0=-1; GHinit;
+	        if(hasLf) { H0[O0[y]+1]+=ms[1]*M0[y]; H0[O1[y]+1]+=ms[1]*M1[y]; }
+	        if(hasRt) { H0[O0[y]+hb+1]+=ms[3]*M0[y]; H0[O1[y]+hb+1]+=ms[3]*M1[y]; }
+	      }
+	      // main cols, has top and bottom bins, use SSE for minor speedup
+	      if( softBin<0 ) for( ; ; y++ ) {
+	        yb0 = (int) yb; if(yb0>=hb-1) break; GHinit; _m0=SET(M0[y]);
+	        if(hasLf) { _m=SET(0,0,ms[1],ms[0]); GH(H0+O0[y],_m,_m0); }
+	        if(hasRt) { _m=SET(0,0,ms[3],ms[2]); GH(H0+O0[y]+hb,_m,_m0); }
+	      } else for( ; ; y++ ) {
+	        yb0 = (int) yb; if(yb0>=hb-1) break; GHinit;
+	        _m0=SET(M0[y]); _m1=SET(M1[y]);
+	        if(hasLf) { _m=SET(0,0,ms[1],ms[0]);
+	          GH(H0+O0[y],_m,_m0); GH(H0+O1[y],_m,_m1); }
+	        if(hasRt) { _m=SET(0,0,ms[3],ms[2]);
+	          GH(H0+O0[y]+hb,_m,_m0); GH(H0+O1[y]+hb,_m,_m1); }
+	      }
+	      // final clos, no bottom bin
+	      for( ; y<h0; y++ ) {
+	        yb0 = (int) yb; GHinit;
+	        if(hasLf) { H0[O0[y]]+=ms[0]*M0[y]; H0[O1[y]]+=ms[0]*M1[y]; }
+	        if(hasRt) { H0[O0[y]+hb]+=ms[2]*M0[y]; H0[O1[y]+hb]+=ms[2]*M1[y]; }
+	      }
+	      #undef GHinit
+	      #undef GH
+	    }
     }
     alFree(O0); alFree(O1); alFree(M0); alFree(M1);
     // normalize boundary bins which only get 7/8 of weight of interior bins

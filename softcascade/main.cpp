@@ -111,7 +111,7 @@ bool sampleWins(    const softcascade &sc, 	    /*  in: detector */
     else
         number_to_sample = opts.nNeg;
     
-    if(isPositive)
+    if(isPositive)	//sample Positive samples or mining negative samples from positive..
     {
         bf::path pos_img_path( opts.posImgDir );
         bf::path pos_gt_path( opts.posGtDir );
@@ -135,11 +135,16 @@ bool sampleWins(    const softcascade &sc, 	    /*  in: detector */
             string basename = bf::basename( s );
             string pathname = file_iter->path().string();
             string extname  = bf::extension( s );
+			
+			if( extname!=".jpg" && extname!=".bmp" && extname!=".png" &&
+					extname!=".JPG" && extname!=".BMP" && extname!=".PNG")
+				continue;
 
             image_path_vector.push_back( pathname );
             /* read the gt according to the image name */
             gt_path_vector.push_back(opts.posGtDir + basename + ".txt");
         }
+		
 
         #pragma omp parallel for num_threads(Nthreads) /* openmp -->but no error check in runtime ... */
         for( int i=0;i<image_path_vector.size();i++)
@@ -217,6 +222,10 @@ bool sampleWins(    const softcascade &sc, 	    /*  in: detector */
         for( bf::directory_iterator file_iter(neg_img_path); file_iter!=end_it; file_iter++)
 		{
             string pathname = file_iter->path().string();
+			string extname  = bf::extension( *file_iter);
+			if( extname!=".jpg" && extname!=".bmp" && extname!=".png" &&
+					extname!=".JPG" && extname!=".BMP" && extname!=".PNG")
+				continue;
 			neg_paths.push_back( pathname );
 		}
 		std::random_shuffle( neg_paths.begin(), neg_paths.end(),myrandom);
@@ -459,25 +468,25 @@ int runTrainAndTest( double &out_miss_rate, double &out_fp_per_image)
         cout<<"Train : avg_train_neg_score is "<<avg_train_neg_score<<endl;
 
         /* ---------- ~show improvement over diffierent stages~ ------------*/
-        vector<Rect> re;vector<double> confs;
-        Mat test_img = imread("crop001573.png");
-		if(test_img.empty())
-		{
-			cout<<"img empty, return "<<endl;
-			return -1;
-		}
-        tk.reset();tk.start();
-        sc.detectMultiScale( test_img, re, confs );
-        tk.stop();
-        cout<<"Time consuming for detect a size "<<test_img.size()<<" pic is "<<tk.getTimeSec()<<endl;
-        for( int c=0;c<re.size();c++)
-        {
-            if( confs[c] < 1 )
-                continue;
-            rectangle( test_img, re[c], Scalar(255,0,0), 3);
-        }
-        stringstream ss;ss<<stage;string stage_index;ss>>stage_index;
-		tk.stop();
+        //vector<Rect> re;vector<double> confs;
+        //Mat test_img = imread("crop001573.png");
+		//if(test_img.empty())
+		//{
+		//	cout<<"img empty, return "<<endl;
+		//	return -1;
+		//}
+        //tk.reset();tk.start();
+        //sc.detectMultiScale( test_img, re, confs );
+        //tk.stop();
+        //cout<<"Time consuming for detect a size "<<test_img.size()<<" pic is "<<tk.getTimeSec()<<endl;
+        //for( int c=0;c<re.size();c++)
+        //{
+        //    if( confs[c] < 1 )
+        //        continue;
+        //    rectangle( test_img, re[c], Scalar(255,0,0), 3);
+        //}
+        //stringstream ss;ss<<stage;string stage_index;ss>>stage_index;
+		//tk.stop();
         //imshow("show",test_img);
         //waitKey(0);
 
@@ -503,6 +512,11 @@ int runTrainAndTest( double &out_miss_rate, double &out_fp_per_image)
     for( bf::directory_iterator file_iter(test_data_path); file_iter!=end_it; file_iter++)
     {
         string pathname = file_iter->path().string();
+		string extname  = bf::extension( *file_iter);
+		if( extname!=".jpg" && extname!=".bmp" && extname!=".png" &&
+				extname!=".JPG" && extname!=".BMP" && extname!=".PNG")
+			continue;
+
         Mat test_img = imread( pathname );
 
         vector<Rect> re;vector<double> confs;
@@ -665,6 +679,12 @@ int runTrainAndTest( double &out_miss_rate, double &out_fp_per_image)
     for( bf::directory_iterator file_iter(neg_img_dir); file_iter!=end_it; file_iter++)
     {
         string pathname = file_iter->path().string();
+
+		string extname  = bf::extension( *file_iter);
+		if( extname!=".jpg" && extname!=".bmp" && extname!=".png" &&
+				extname!=".JPG" && extname!=".BMP" && extname!=".PNG")
+			continue;
+
         image_path_vector.push_back( pathname );
     }
 
@@ -715,6 +735,10 @@ int runTrainAndTest( double &out_miss_rate, double &out_fp_per_image)
 		string basename = bf::basename(s);
         string pathname = file_iter->path().string();
         string extname  = bf::extension(s);
+
+		if( extname!=".jpg" && extname!=".bmp" && extname!=".png" &&
+				extname!=".JPG" && extname!=".BMP" && extname!=".PNG")
+			continue;
 
         image_path_vector.push_back( pathname );
         gt_path_vector.push_back( testset_pos_gt_path + basename + ".txt");
