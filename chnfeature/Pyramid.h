@@ -227,6 +227,13 @@ public:
 						vector<double> &scalesh,						    //out: the height scales
 						vector<double> &scalesw) const;					    //out: the width scales
 
+    bool fhog( const Mat &img,
+               Mat &fhog_feature,
+               int binSize = 8,
+               int oritent = 9,
+               float clip = 0.2
+               ) const;
+
 
   private:
 

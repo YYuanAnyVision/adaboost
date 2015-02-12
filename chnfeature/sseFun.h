@@ -303,4 +303,8 @@ template<class iT> void rgb2luv_sse( const iT *I,   // in : input_image's header
 }
 
 
+// compute FHOG features
+void ssefhog( float *M, float *O, float *H, int h, int w, int binSize,
+  int nOrients, int softBin, float clip );
+
 #endif

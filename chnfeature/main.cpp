@@ -108,16 +108,12 @@ int main( int argc, char** argv)
 
 
     feature_Pyramids ff1;
-    Mat smooth_input;
-    int shrink = 4;
-
-    vector<vector<Mat> > fealsl;
-    vector<double> scales;
-    vector<double> scalesw;
-    vector<double> scalesh;
-
     
+    Mat fhog_feature;
+    ff1.fhog( input_image, fhog_feature);
 
+    saveMatToFile("fhog.data", fhog_feature );
+    
     //vector<vector<Mat> > feature;
     //vector<double> scales;
     //vector<double> scalesw;
@@ -132,25 +128,25 @@ int main( int argc, char** argv)
    // ff1.convTri( L, smooth_input, 1, 3);
    // ff1.computeGradMag( L,U,V, mag, ori, false);
 
-    tk.start();
-    for(int c=0;c<10;c++)
-        ff1.chnsPyramid( input_image, fealsl, scales, scalesw, scalesh);
-    tk.stop();
-    cout<<"opencv time -> "<<tk.getTimeMilli()/10<<endl;
+    //tk.start();
+    //for(int c=0;c<10;c++)
+    //    ff1.chnsPyramid( input_image, fealsl, scales, scalesw, scalesh);
+    //tk.stop();
+    //cout<<"opencv time -> "<<tk.getTimeMilli()/10<<endl;
 
-    saveMatToFile("opencvL.data", fealsl[0][0]);
-    saveMatToFile("opencvU.data", fealsl[0][1]);
-    saveMatToFile("opencvV.data", fealsl[0][2]);
+    //saveMatToFile("opencvL.data", fealsl[0][0]);
+    //saveMatToFile("opencvU.data", fealsl[0][1]);
+    //saveMatToFile("opencvV.data", fealsl[0][2]);
 
-    tk.reset();tk.start();
-    for(int c=0;c<20;c++)
-        ff1.chnsPyramid_sse( input_image, fealsl, scales, scalesw, scalesh);
-    tk.stop();
-    cout<<"sse time -> "<<tk.getTimeMilli()/20<<endl;
+    //tk.reset();tk.start();
+    //for(int c=0;c<20;c++)
+    //    ff1.chnsPyramid_sse( input_image, fealsl, scales, scalesw, scalesh);
+    //tk.stop();
+    //cout<<"sse time -> "<<tk.getTimeMilli()/20<<endl;
 
-    saveMatToFile("matlabL.data", fealsl[0][0]);
-    saveMatToFile("matlabU.data", fealsl[0][1]);
-    saveMatToFile("matlabV.data", fealsl[0][2]);
+    //saveMatToFile("matlabL.data", fealsl[0][0]);
+    //saveMatToFile("matlabU.data", fealsl[0][1]);
+    //saveMatToFile("matlabV.data", fealsl[0][2]);
 
 //    vector<Mat> features;
 //    ff1.computeChannels( input_image, features);

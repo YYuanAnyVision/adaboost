@@ -119,6 +119,59 @@ bool feature_Pyramids::chnsPyramid_sse( const Mat &img,                         
 
 
 
+bool feature_Pyramids::fhog( const Mat &input_image,
+                            Mat &fhog_feature,
+                            int binSize,
+                            int oritent,
+                            float clip
+                            ) const
+{
+    int dimension = 1;
+    if(input_image.empty())
+    {
+        cout<<"input_image is empty in function fhog"<<endl;
+        return false;
+    }
+
+    if( input_image.channels() == 3)
+        dimension = 3;
+    else if( input_image.channels() == 1)
+        dimension = 1;
+    else
+    {
+        cout<<"input_image's dimension should be 1 or 3 in function fhog"<<endl;
+        return false;
+    }
+    
+    Mat f_input_image;      /*  convert to float  image */
+    const float *f_input_data;
+    if( input_image.depth() == CV_8U )
+    {
+        input_image.convertTo( f_input_image, CV_32F, 1.0f/255);
+        f_input_data = (float*)f_input_image.data;
+    }
+    else
+        f_input_data = (float*)f_input_image.data;
+
+    Mat mag = Mat::zeros( input_image.size(), CV_32F);
+    Mat ori = Mat::zeros( input_image.size(), CV_32F);
+    gradMag( f_input_data, (float *)(mag.data), (float *)(ori.data), input_image.rows, input_image.cols, dimension, true );
+    
+    fhog_feature = Mat::zeros( input_image.rows*( oritent*3+5)/binSize, input_image.cols/binSize, CV_32F );
+
+    ssefhog( (float*)(mag.data), 
+            (float *)(ori.data), 
+            (float *)(fhog_feature.data),
+            input_image.rows,
+            input_image.cols, 
+            binSize, oritent, -1 ,clip);
+    return true;
+}
+
+
+
+
+
 
 bool feature_Pyramids::computeGradHist(  const Mat &mag,       //in : mag
                                           const Mat &ori,       //in : ori
