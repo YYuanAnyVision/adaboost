@@ -227,20 +227,38 @@ public:
 						vector<double> &scalesh,						    //out: the height scales
 						vector<double> &scalesw) const;					    //out: the width scales
 
-    bool fhog( const Mat &img,
-               Mat &fhog_feature,
-               int binSize = 8,
-               int oritent = 9,
-               float clip = 0.2
+    
+    /* 
+     * ===  FUNCTION  ======================================================================
+     *         Name:  fhog
+     *  Description:  compute hog or fhog feature of a given image, 
+     *                if img.depth()==CV_32F, the value should be in the range [0, 1]
+     * =====================================================================================
+     */
+    bool fhog( const Mat &img,                  //in : input image ( w x h )
+               Mat &fhog_feature,               //out: output feature ( w/binSize*(3*oritent+5) x h/binSize for fhog, w/binSize*(4*oritent) x h/binSize for hog)
+               vector<Mat> &hog_channels,       //out: share the same memory with fhog_feature, just a wrapper for operation, each channels -> one orientation
+               int type = 0,                    //in :  0 -> fhog, otherwise -> hog
+               int binSize = 8,                 //in : binSize ,better be 8
+               int oritent = 9,                 //in : oritent ,better be 9 
+               float clip = 0.2                 //in : clip value, better be 0.2
                ) const;
 
 
+    /* 
+     * ===  FUNCTION  ======================================================================
+     *         Name:  visualizeHog
+     *  Description:  visualize hog feature for debug
+     * =====================================================================================
+     */
+    void visualizeHog(const vector<Mat> &chns,         // in : each chns corresponding to one orientation
+                      Mat &glyphImg,                    //out : show
+                      int glyphSize=20, 
+                      double range=0.5);
+
   private:
-
 	  channels_opt  m_opt;
-	  	
 	  vector<double>lam;
-
       Mat m_normPad;        //pad_size = normPad(5)
       Mat m_km;             //pad_size = smooth(1);
 

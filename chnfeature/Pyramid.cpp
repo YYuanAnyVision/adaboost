@@ -117,57 +117,123 @@ bool feature_Pyramids::chnsPyramid_sse( const Mat &img,                         
 	return true;
 }
 
-
-
-bool feature_Pyramids::fhog( const Mat &input_image,
-                            Mat &fhog_feature,
-                            int binSize,
-                            int oritent,
-                            float clip
-                            ) const
+bool feature_Pyramids::fhog( const Mat &input_image,//in : input image ( w x h )
+                             Mat &fhog_feature,     //out: output feature ( w/binSize*(3*oritent+5) x h/binSize for fhog, w/binSize*(4*oritent) x h/binSize for hog)
+                             vector<Mat> &fea_chns, //out: share the same memory with feature, just a wrapper for operation, each channels -> one orientation
+                             int type,              //in :  0 -> fhog, otherwise -> hog
+                             int binSize,           //in : binSize ,better be 8
+                             int oritent,           //in : oritent ,better be 9 
+                             float clip             //in : clip value, better be 0.2
+                             ) const
 {
-    int dimension = 1;
+    int dimension = 1;          //convert input_image to gray image if needed
     if(input_image.empty())
     {
         cout<<"input_image is empty in function fhog"<<endl;
         return false;
     }
+    Mat gray_input;
 
     if( input_image.channels() == 3)
-        dimension = 3;
+    {
+        cvtColor( input_image, gray_input, CV_BGR2GRAY);
+    }
     else if( input_image.channels() == 1)
-        dimension = 1;
+        gray_input = input_image;
+    
+    Mat f_input_image;      /*  convert to float image if needed */
+    const float *f_input_data;
+    if( gray_input.depth() == CV_8U  )
+    {
+        gray_input.convertTo( f_input_image, CV_32F, 1.0f/255);
+        f_input_data = (float*)f_input_image.data;
+    }
+    else if( gray_input.depth() == CV_64F)
+    {
+        gray_input.convertTo( f_input_image, CV_32F);
+        f_input_data = (float*)f_input_image.data;
+    }
+    else if( gray_input.depth() == CV_32F)
+        f_input_data = (float*)gray_input.data;
     else
     {
-        cout<<"input_image's dimension should be 1 or 3 in function fhog"<<endl;
+        cout<<"unsupported data type in Function fhog"<<endl;
         return false;
     }
-    
-    Mat f_input_image;      /*  convert to float  image */
-    const float *f_input_data;
-    if( input_image.depth() == CV_8U )
-    {
-        input_image.convertTo( f_input_image, CV_32F, 1.0f/255);
-        f_input_data = (float*)f_input_image.data;
-    }
-    else
-        f_input_data = (float*)f_input_image.data;
 
+    /*  compute the raw magnitue and orientation */
     Mat mag = Mat::zeros( input_image.size(), CV_32F);
     Mat ori = Mat::zeros( input_image.size(), CV_32F);
     gradMag( f_input_data, (float *)(mag.data), (float *)(ori.data), input_image.rows, input_image.cols, dimension, true );
-    
-    fhog_feature = Mat::zeros( input_image.rows*( oritent*3+5)/binSize, input_image.cols/binSize, CV_32F );
 
-    ssefhog( (float*)(mag.data), 
-            (float *)(ori.data), 
-            (float *)(fhog_feature.data),
-            input_image.rows,
-            input_image.cols, 
-            binSize, oritent, -1 ,clip);
+    /* father code the mag and ori due to different feature type */
+    if(type == 0)       // fhog
+    {
+        fhog_feature = Mat::zeros( input_image.rows*( oritent*3+5)/binSize, input_image.cols/binSize, CV_32F );
+        ssefhog( (const float*)(mag.data), (const float *)(ori.data), (float *)(fhog_feature.data),input_image.rows,input_image.cols, binSize, oritent ,clip);
+
+        /*  "store" it in fea_chns */
+        for(int c=0;c<oritent*3+5;c++)
+        {
+            Mat chns_temp = fhog_feature.rowRange( input_image.rows/binSize*c, input_image.rows/binSize*(c+1) );
+            fea_chns.push_back( chns_temp);
+        }
+    }
+    else            //hog
+    {
+        fhog_feature = Mat::zeros( input_image.rows*oritent*4/binSize, input_image.cols/binSize, CV_32F );
+        ssehog( (const float*)(mag.data), 
+                (const float *)(ori.data), 
+                (float *)(fhog_feature.data),input_image.rows,input_image.cols, binSize, oritent ,false, clip);
+
+        /*  "store" it in fea_chns */
+        for(int c=0;c<oritent*4;c++)
+        {
+            Mat chns_temp = fhog_feature.rowRange( input_image.rows/binSize*c, input_image.rows/binSize*(c+1) );
+            fea_chns.push_back( chns_temp);
+        }
+    }
+
     return true;
 }
 
+
+void feature_Pyramids::visualizeHog(const vector<Mat> &chns,         // in : each chns corresponding to one orientation
+                                    Mat &glyphImg, 
+                                    int glyphSize, 
+                                    double range)
+{
+    int numOrient = chns.size();
+    int hogW = chns[0].cols, hogH = chns[0].rows;
+    double radius = glyphSize*0.48;
+    int thickness = 1+glyphSize*0.02;
+    double scale = 255.0/range;
+
+    glyphImg = cv::Mat::zeros(hogH*glyphSize, hogW*glyphSize, CV_8U);
+
+    for (int i=0; i<numOrient; i++)
+    {
+        cv::Point pt1, pt2, offset;
+        double angle = i*CV_PI/numOrient+CV_PI/2;
+        const cv::Mat &hog = chns[i];
+        pt1.x = glyphSize/2 + std::cos(angle)*radius;
+        pt1.y = glyphSize/2 + std::sin(angle)*radius;
+        pt2.x = glyphSize/2 - std::cos(angle)*radius;
+        pt2.y = glyphSize/2 - std::sin(angle)*radius;
+
+        for (int j=0; j<hogW; j++)
+        {
+            for (int k=0; k<hogH; k++)
+            {
+                offset.x = j*glyphSize;
+                offset.y = k*glyphSize;
+                cv::line(glyphImg, pt1+offset, pt2+offset,
+                         scale*hog.at<float>(k, j), thickness);
+            }
+        }
+
+    }
+}
 
 
 

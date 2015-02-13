@@ -153,8 +153,6 @@ void gradQuantize( const float *Ori,        //in : orientation matrix
                    bool interpolate );      //in : use interpolated or not
 
 
-
-
 /* 
  * ===  FUNCTION  ======================================================================
  *         Name:  rgb2luv_setup
@@ -303,8 +301,35 @@ template<class iT> void rgb2luv_sse( const iT *I,   // in : input_image's header
 }
 
 
-// compute FHOG features
-void ssefhog( float *M, float *O, float *H, int h, int w, int binSize,
-  int nOrients, int softBin, float clip );
+/* 
+ * ===  FUNCTION  ======================================================================
+ *         Name:  ssefhog
+ *  Description: compute FHOG features, using sse
+ * =====================================================================================
+ */
+void ssefhog( const float *Mag,     // in : magnitude
+              const float *Ori,     // in : orientation
+              float *feature,       // out: computed feature
+              int height,           // in : height of the image
+              int width,            // in : width of the image
+              int binSize,          // in : binSize of the cell, eg 8
+              int nOrients,         // in : number of orientation, eg 9
+              float clip );         // in : clip value, if mag > clip, then mag = clip, eg 0.2
+
+/* 
+ * ===  FUNCTION  ======================================================================
+ *         Name:  ssehog
+ *  Description:  compute the hog features;
+ * =====================================================================================
+ */
+void ssehog(const float *Mag,   //in : magnitude     
+            const float *Ori,   //in : orientation       
+            float *feature,     //out: computed feature
+            int hight,          //in : height of the image
+            int width,          //in : width of the image
+            int binSize,        //in : binSize of the cell, eg 8
+            int nOrients,       //in : number of the orientation, eg 9
+            bool full,          //in : true - [0, 2pi], false -> [0, pi]
+            float clip );       //in : clip value, mag = (mag> clip?clip:mag)
 
 #endif

@@ -103,16 +103,25 @@ int main( int argc, char** argv)
 
 
 
-    Mat input_image = imread(argv[1]);
-    
+    Mat input_image = imread(argv[1], CV_LOAD_IMAGE_GRAYSCALE);
 
+    imshow("input",input_image);
 
     feature_Pyramids ff1;
-    
+    vector<Mat> f_chns;
+    tk.start();
     Mat fhog_feature;
-    ff1.fhog( input_image, fhog_feature);
-
-    saveMatToFile("fhog.data", fhog_feature );
+    ff1.fhog( input_image, fhog_feature, f_chns, 0);
+    tk.stop();
+    cout<<"time consuming "<<tk.getTimeMilli()<<endl;
+    cout<<"feature has "<<f_chns.size()<<" channels "<<endl;
+    cout<<"size of the feature is "<<fhog_feature.size()<<endl;
+    Mat draw;
+    vector<Mat> zero_pi_channel( f_chns.begin() + 18, f_chns.begin()+27);
+    cout<<"contrast unsensitive channels "<<zero_pi_channel.size()<<endl;
+    ff1.visualizeHog( zero_pi_channel, draw);
+    imshow("show", draw);
+    waitKey(0);
     
     //vector<vector<Mat> > feature;
     //vector<double> scales;

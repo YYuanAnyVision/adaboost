@@ -1,3 +1,4 @@
+#include <iostream>
 #include <math.h>
 #include <string.h>
 
@@ -6,11 +7,17 @@
 #define PI 3.14159265358979323846264338
 
 
-
+using namespace std;
 
 // HOG helper: compute HOG or FHOG channels
-void hogChannels( float *H, const float *R, const float *N,
-  int hb, int wb, int nOrients, float clip, int type )
+void hogChannels( float *H,             
+                  const float *R, 
+                  const float *N,
+                  int hb, 
+                  int wb, 
+                  int nOrients, 
+                  float clip, 
+                  int type )
 {
   #define GETT(blk) t=R1[y]*N1[y-(blk)]; if(t>clip) t=clip; c++;
   const float r=.2357f; int o, x, y, c; float t;
@@ -61,16 +68,31 @@ float* hogNormMatrix( float *H, int nOrients, int hb, int wb, int bin ) {
   return N;
 }
 
+// compute HOG features
+void ssehog( const float *M, const float *O, float *H, int h, int w, int binSize,
+  int nOrients, bool full, float clip )
+{
+  float *N, *R; const int hb=h/binSize, wb=w/binSize, nb=hb*wb;
+  // compute unnormalized gradient histograms
+  R = (float*) wrCalloc(wb*hb*nOrients,sizeof(float));
+  gradHist( M, O, R, h, w, binSize, nOrients, 1, full );
+  // compute block normalization values
+  N = hogNormMatrix( R, nOrients, hb, wb, binSize );
+  // perform four normalizations per spatial block
+  hogChannels( H, R, N, hb, wb, nOrients, clip, 0 );
+  wrFree(N); wrFree(R);
+}
+
 
 // compute FHOG features
-void ssefhog( float *M, float *O, float *H, int h, int w, int binSize,
-  int nOrients, int softBin, float clip )
+void ssefhog( const float *M,const  float *O, float *H, int h, int w, int binSize,
+  int nOrients, float clip )
 {
   const int hb=h/binSize, wb=w/binSize, nb=hb*wb, nbo=nb*nOrients;
   float *N, *R1, *R2; int o, x;
   // compute unnormalized constrast sensitive histograms
   R1 = (float*) wrCalloc(wb*hb*nOrients*2,sizeof(float));
-  gradHist( M, O, R1, h, w, binSize, nOrients*2, softBin, true );
+  gradHist( M, O, R1, h, w, binSize, nOrients*2, -1, true );
   // compute unnormalized contrast insensitive histograms
   R2 = (float*) wrCalloc(wb*hb*nOrients,sizeof(float));
   for( o=0; o<nOrients; o++ ) for( x=0; x<nb; x++ )
@@ -267,13 +289,16 @@ void grad1( const float *I,   //in :data
     //compute row of Gy
     Ip=I-w; In=I+w; r=.5f;
     if(x==0) { r=1; Ip+=w; } else if(x==h-1) { r=1; In-=w; }      //on the border
-    if( w<4 || w%4>0 || (size_t(I)&15) || (size_t(Gy)&15) ) {     //data align?
-        for( int c=0; c<w; c++ ) *Gy++=(*In++-*Ip++)*r;
+    if( w<4 || w%4>0 || (size_t(I)&15) || (size_t(Gy)&15) ) 
+    {     //data align?
+        for( int c=0; c<w; c++ ) 
+        {
+            *Gy++=(*In++-*Ip++)*r;
+        }
     } else {
         _G=(__m128*) Gy; _Ip=(__m128*) Ip; _In=(__m128*) In; _r = SET(r);
         for(int c=0; c<w; c+=4) *_G++=MUL(SUB(*_In++,*_Ip++),_r);
     }
-
     // compute row of Gx
 #define GRADX(r) *Gx++=(*In++-*Ip++)*r;
     Ip=I; In=Ip+1;
@@ -310,7 +335,7 @@ void gradMag( const float *I, float *M, float *O, int h, int w, int d, bool full
     Gx=(float*) alMalloc(s,16); _Gx=(__m128*) Gx;
     Gy=(float*) alMalloc(s,16); _Gy=(__m128*) Gy;
 
-    // compute gradient magnitude and orientation for each column
+    // compute gradient magnitude and orientation for each row
     for( x=0; x<h; x++ )
     {
         // compute gradients (Gx, Gy) with maximum squared magnitude (M2)
