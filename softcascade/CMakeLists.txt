@@ -1,3 +1,4 @@
+add_definitions(-Wall)
 include_directories(/media/yuanyang/disk1/project/public/include/)
 include_directories(/media/yuanyang/disk1/project/public/framework/include/)
 

@@ -72,7 +72,7 @@ float* hogNormMatrix( float *H, int nOrients, int hb, int wb, int bin ) {
 void ssehog( const float *M, const float *O, float *H, int h, int w, int binSize,
   int nOrients, bool full, float clip )
 {
-  float *N, *R; const int hb=h/binSize, wb=w/binSize, nb=hb*wb;
+  float *N, *R; const int hb=h/binSize, wb=w/binSize;
   // compute unnormalized gradient histograms
   R = (float*) wrCalloc(wb*hb*nOrients,sizeof(float));
   gradHist( M, O, R, h, w, binSize, nOrients, 1, full );
@@ -91,10 +91,11 @@ void ssefhog( const float *M,const  float *O, float *H, int h, int w, int binSiz
   const int hb=h/binSize, wb=w/binSize, nb=hb*wb, nbo=nb*nOrients;
   float *N, *R1, *R2; int o, x;
   // compute unnormalized constrast sensitive histograms
-  R1 = (float*) wrCalloc(wb*hb*nOrients*2,sizeof(float));
+  // add binSize as the buffer for sse
+  R1 = (float*) wrCalloc(wb*hb*nOrients*2+binSize,sizeof(float));
   gradHist( M, O, R1, h, w, binSize, nOrients*2, -1, true );
   // compute unnormalized contrast insensitive histograms
-  R2 = (float*) wrCalloc(wb*hb*nOrients,sizeof(float));
+  R2 = (float*) wrCalloc(wb*hb*nOrients + binSize,sizeof(float));
   for( o=0; o<nOrients; o++ ) for( x=0; x<nb; x++ )
     R2[o*nb+x] = R1[o*nb+x]+R1[(o+nOrients)*nb+x];
   // compute block normalization values
@@ -116,6 +117,8 @@ void gradHist( const float *M,const float *O, float *H, int h, int w, int bin, i
 
     O0=(int*)alMalloc(w*sizeof(int),16); M0=(float*) alMalloc(w*sizeof(float),16);
     O1=(int*)alMalloc(w*sizeof(int),16); M1=(float*) alMalloc(w*sizeof(float),16);
+
+    cout<<"nb "<<nb<<",wb "<<wb<<", hb "<<hb<<",ori "<<nOrients<<endl;
 
     // main loop
     for( x=0; x<h0; x++ )
@@ -168,7 +171,8 @@ void gradHist( const float *M,const float *O, float *H, int h, int w, int bin, i
          if( softBin<0 ) for( ; ; y++ ) {      //fhog
            xb0 = (int) xb; if(xb0>=wb-1) break; GHinit; _m0=SET(M0[y]);
            if(hasTop) { _m=SET(0,0,ms[2],ms[0]); GH(H0+O0[y],_m,_m0); }
-           if(hasBot) { _m=SET(0,0,ms[3],ms[1]); GH(H0+O0[y]+wb,_m,_m0); }
+           if(hasBot) { _m=SET(0,0,ms[3],ms[1]); GH(H0+O0[y]+wb,_m,_m0);}
+
          } else for( ; ; y++ ) { // hog
            xb0 = (int) xb; if(xb0>=wb-1) break; GHinit;
            _m0=SET(M0[y]); _m1=SET(M1[y]);
@@ -177,7 +181,7 @@ void gradHist( const float *M,const float *O, float *H, int h, int w, int bin, i
            if(hasBot) { _m=SET(0,0,ms[3],ms[1]);
              GH(H0+O0[y]+wb,_m,_m0); GH(H0+O1[y]+wb,_m,_m1); }
          }
-        // final rows, no left bin
+        // final cols, no right bin
          for( ; y<w0; y++ ) {
            xb0 = (int) xb; GHinit;
            if(hasTop) { H0[O0[y]]+=ms[0]*M0[y]; H0[O1[y]]+=ms[0]*M1[y]; }
@@ -291,9 +295,14 @@ void grad1( const float *I,   //in :data
     if(x==0) { r=1; Ip+=w; } else if(x==h-1) { r=1; In-=w; }      //on the border
     if( w<4 || w%4>0 || (size_t(I)&15) || (size_t(Gy)&15) ) 
     {     //data align?
-        for( int c=0; c<w; c++ ) 
+        int col_index = 0;
+        while( col_index < w)
         {
-            *Gy++=(*In++-*Ip++)*r;
+            *Gy =(*In - *Ip)*r;
+            Gy++;In++;Ip++;
+            col_index++;
+            if( col_index >=w)
+                break;
         }
     } else {
         _G=(__m128*) Gy; _Ip=(__m128*) Ip; _In=(__m128*) In; _r = SET(r);

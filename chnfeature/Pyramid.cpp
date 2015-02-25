@@ -67,7 +67,7 @@ bool feature_Pyramids::chnsPyramid_sse( const Mat &img,                         
 	}
 	//compute based-scales
 	vector<int> approx_scal;
-	for (int s_r=0;s_r<scales.size();s_r++)
+	for (unsigned int s_r=0;s_r<scales.size();s_r++)
 	{
 		int tmp=s_r/(nApprox+1);
 		if (s_r-real_scal[tmp]>((nApprox+1)/2))
@@ -165,7 +165,6 @@ bool feature_Pyramids::fhog( const Mat &input_image,//in : input image ( w x h )
     Mat mag = Mat::zeros( input_image.size(), CV_32F);
     Mat ori = Mat::zeros( input_image.size(), CV_32F);
     gradMag( f_input_data, (float *)(mag.data), (float *)(ori.data), input_image.rows, input_image.cols, dimension, true );
-
     /* father code the mag and ori due to different feature type */
     if(type == 0)       // fhog
     {
@@ -958,7 +957,6 @@ void feature_Pyramids::computeChannels( const Mat &image,                 //in: 
 
 	vector<Mat> bins_mat,bins_mat_tmp;
 	int bins_mat_tmp_rows=mag1.rows/binsize;
-	int bins_mat_tmp_cols=mag1.cols/binsize;
 	for( int s=0;s<nbins;s++){
 		Mat channels_tmp=channels_addr.rowRange((s+4)*channels_addr_rows,(s+5)*channels_addr_rows);
 		if (binsize==shrink)

@@ -132,7 +132,7 @@ bool Adaboost::Train(	const Mat &neg_data,				/* in : neg data format-> featured
 
 	/*  records the number of nodes of each tree */
 	m_nodes = Mat( m_trees.size(), 1, CV_32S);			/*  number of node of the tree */
-	for( int c=0;c<m_trees.size();c++)
+	for( unsigned int c=0;c<m_trees.size();c++)
 	{
 		const biTree *ptr = m_trees[c].getTree();
 		m_nodes.at<int>(c,0) = (*ptr).fids.cols;
@@ -189,7 +189,7 @@ bool Adaboost::Apply( const Mat &test_data,				/*  in: test data format-> featur
 	}
 	
 	predicted_vector = Mat::zeros( test_data.cols, 1, CV_64F);
-	for( int c=0;c<m_trees.size();c++)
+	for( unsigned int c=0;c<m_trees.size();c++)
 	{
 		Mat p; m_trees[c].Apply( test_data, p);
 		predicted_vector += p;
@@ -274,7 +274,7 @@ bool Adaboost::saveModel( string filename ) const
 	Mat weights_pack	= Mat::zeros(   number_of_trees, max_number_nodes,(*sample).weights.type() );
 	Mat depth_pack		= Mat::zeros(   number_of_trees, max_number_nodes,(*sample).depth.type() );
 
-	for( int c=0;c<m_trees.size();c++)
+	for( unsigned int c=0;c<m_trees.size();c++)
 	{
 		const biTree *ptr = m_trees[c].getTree();
 		int nnodes = (*ptr).fids.cols;

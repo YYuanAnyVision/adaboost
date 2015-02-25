@@ -66,9 +66,9 @@ bool binaryTree::computeCDF(	const Mat & sampleData,				// in samples	1 x number
 								) const
 {
 	/*  initialize the cdf */
-	for ( int c=0;c<cdf.size() ;c++ )
+	for ( unsigned int c=0;c<cdf.size() ;c++ )
 		cdf[c] = 0.0;
-	if( sampleData.type() != CV_8U || weights.type() != CV_64F || nBins != cdf.size() || sampleData.rows != 1 || sampleData.cols != weights.rows)
+	if( sampleData.type() != CV_8U || weights.type() != CV_64F || (unsigned int)nBins != cdf.size() || sampleData.rows != 1 || sampleData.cols != weights.rows)
 	{
 		cout<<"in function computeCDF : Wrong Data Formar in function computeCDF, return "<<endl;
 		return false;
@@ -86,7 +86,7 @@ bool binaryTree::computeCDF(	const Mat & sampleData,				// in samples	1 x number
 	}
 
 	/* culmulating ...*/
-	for( int c=1;c<cdf.size();c++)
+	for( unsigned int c=1;c<cdf.size();c++)
 	{
 		cdf[c] += cdf[c-1];	
 	}
@@ -467,14 +467,14 @@ bool binaryTree::Train( data_pack & train_data,			/* input&output : training dat
 	}
 
     /* clear the momory*/
-    for( int c=0;c<wtsAll0.size();c++)
+    for( unsigned int c=0;c<wtsAll0.size();c++)
     {
         if( wtsAll0[c])
         {
             delete wtsAll0[c];wtsAll0[c]=NULL;
         }
     }
-    for( int c=0;c<wtsAll1.size();c++)
+    for( unsigned int c=0;c<wtsAll1.size();c++)
     {
         if( wtsAll1[c])
         {
