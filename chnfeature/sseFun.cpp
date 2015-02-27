@@ -108,6 +108,7 @@ void ssefhog( const float *M,const  float *O, float *H, int h, int w, int binSiz
   wrFree(N); wrFree(R1); wrFree(R2);
 }
 
+
 // compute nOrients gradient histograms per bin x bin block of pixels
 void gradHist( const float *M,const float *O, float *H, int h, int w, int bin, int nOrients, int softBin, bool full )
 {
@@ -160,7 +161,7 @@ void gradHist( const float *M,const float *O, float *H, int h, int w, int bin, i
           #define GH(H,ma,mb) H1=H; STRu(*H1,ADD(LDu(*H1),MUL(ma,mb)));
 
          // leading cols, no left bin
-         for( ; y<bin/2; y++ ) 
+         for( ; y<bin/2; y++ )
          {
            xb0=-1; GHinit;
            if(hasTop) { H0[O0[y]+1]+=ms[2]*M0[y]; H0[O1[y]+1]+=ms[2]*M1[y]; }

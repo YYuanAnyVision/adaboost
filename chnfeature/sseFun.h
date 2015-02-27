@@ -111,12 +111,13 @@ float* acosTable();
  *  Description:  compute gradient magnitude and orientation at each location (uses sse)
  * =====================================================================================
  */
-void gradMag( const float *InputData,   // in : input image data
-              float *Mag,               //out : output magnitude 
-              float *Ori,               //out : output orientation
+void gradMag( const float *InputData,   // in : input image data,  width x height
+              float *Mag,               //out : output magnitude, same size as InputData 
+              float *Ori,               //out : output orientation, same size as InputData
               int height,               // in : height of the image
               int width,                // in : width of the image
-              int dim,                  // in : dim of the image, 1 for single, 3 for color
+              int dim,                  // in : dim of the image, 1 for gray image, 3 for color image.For color image, 
+                                        //      the Mag and Ori will be the biggest one among all channels
               bool full );              // in : true for 0-2pi, false for 0-pi
 
 /* 
@@ -304,7 +305,7 @@ template<class iT> void rgb2luv_sse( const iT *I,   // in : input_image's header
 /* 
  * ===  FUNCTION  ======================================================================
  *         Name:  ssefhog
- *  Description: compute FHOG features, using sse
+ *  Description: compute FHOG features giving magnitude and oritentation, using sse
  * =====================================================================================
  */
 void ssefhog( const float *Mag,     // in : magnitude
