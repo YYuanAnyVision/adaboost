@@ -19,7 +19,7 @@ void gradHist( const float *Mag,	// in : magnitude, size width x height
 			   int width,			// in : width
 			   int binSize,			// in : size of spatial bin, degree of aggregation,  eg : 4, 
 			   int nOrients,		// in : number of orientation, eg : 6
-			   int softBin=0,		// in : only softBin == 0 is supported now
+               int softBin=0,		// in : softBin=1 -> hog, softBin=-1 -> fhog, softBin=0 -> channel feature
 			   bool full=false);	// in : true -> 0-2pi, false -> 0-pi			
 
 
@@ -323,10 +323,10 @@ void ssefhog( const float *Mag,     // in : magnitude
  *  Description:  compute the hog features;
  * =====================================================================================
  */
-void ssehog(const float *Mag,   //in : magnitude     
-            const float *Ori,   //in : orientation       
+void ssehog(const float *Mag,   //in : magnitude
+            const float *Ori,   //in : orientation
             float *feature,     //out: computed feature
-            int hight,          //in : height of the image
+            int height,          //in : height of the image
             int width,          //in : width of the image
             int binSize,        //in : binSize of the cell, eg 8
             int nOrients,       //in : number of the orientation, eg 9

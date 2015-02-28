@@ -10,14 +10,15 @@
 using namespace std;
 
 // HOG helper: compute HOG or FHOG channels
-void hogChannels( float *H,             
-                  const float *R, 
-                  const float *N,
-                  int hb, 
-                  int wb, 
-                  int nOrients, 
-                  float clip, 
-                  int type )
+void hogChannels( float *feature,               // out: output feature
+                  const float *gradientHist,    // in : gradient Hist
+                  const float *normalizedValue, // in :
+                  int hb,                       // in : number of block in height direction
+                  int wb,                       // in : number of block in width direction
+                  int nOrients,                 // in : number of orientation
+                  float clip,                   // in : clip value
+                  int type )                    // in : 0 - > store each orientation and normalization (nOrients*4 channels) hog
+                                                //      1 - > sum across all normalizatins, fhog. 2 -> sum accross all orientations
 {
   #define GETT(blk) t=R1[y]*N1[y-(blk)]; if(t>clip) t=clip; c++;
   const float r=.2357f; int o, x, y, c; float t;
@@ -25,8 +26,8 @@ void hogChannels( float *H,
 
   for( o=0; o<nOrients; o++ ) for( x=0; x<hb; x++ ) 
   {
-    const float *R1=R+o*nb+x*wb, *N1=N+x*wb1+wb1+1;
-    float *H1 = (type<=1) ? (H+o*nb+x*wb) : (H+x*wb);
+    const float *R1=gradientHist+o*nb+x*wb, *N1=normalizedValue+x*wb1+wb1+1;
+    float *H1 = (type<=1) ? (feature+o*nb+x*wb) : (feature+x*wb);
 
     if( type==0) for( y=0; y<wb; y++ ) {
       // store each orientation and normalization (nOrients*4 channels)
@@ -46,17 +47,23 @@ void hogChannels( float *H,
 }
 
 // HOG helper: compute 2x2 block normalization values (padded by 1 pixel)
-float* hogNormMatrix( float *H, int nOrients, int hb, int wb, int bin ) {
+float* hogNormMatrix( float *gradientHist,  //in : gradientHist
+                      int nOrients,         //in : number of orientation
+                      int hb,               //in : number of block in y direction
+                      int wb,               //in : number of block in x direction
+                      int binSize )         //in : binSize
+{
   float *N, *N1, *n; int o, x, y, dx, dy, hb1=hb+1, wb1=wb+1;
-  float eps = 1e-4f/4/bin/bin/bin/bin; // precise backward equality
+  float eps = 1e-4f/4/binSize/binSize/binSize/binSize; // precise backward equality
   N = (float*) wrCalloc(hb1*wb1,sizeof(float)); N1=N+wb1+1;
 
   for( o=0; o<nOrients; o++ )for( y=0; y<hb; y++ )for( x=0; x<wb; x++ )
-    N1[y*wb1+x] += H[o*wb*hb+y*wb+x]*H[o*wb*hb+y*wb+x];
+    N1[y*wb1+x] += gradientHist[o*wb*hb+y*wb+x]*gradientHist[o*wb*hb+y*wb+x];
 
    for( y=0; y<hb-1; y++ ) for( x=0; x<wb-1; x++ ) {
     n=N1+y*wb1+x; *n=1/float(sqrt(n[0]+n[1]+n[wb1]+n[wb1+1]+eps)); }
     
+   //special case on the border
   x=0;     dx= 1; dy= 1; y=0;                  N[x+y*wb1]=N[(x+dx)+(y+dy)*wb1];
   x=0;     dx= 1; dy= 0; for(y=0; y<hb1; y++)  N[x+y*wb1]=N[(x+dx)+(y+dy)*wb1];
   x=0;     dx= 1; dy=-1; y=hb1-1;              N[x+y*wb1]=N[(x+dx)+(y+dy)*wb1];
@@ -68,32 +75,47 @@ float* hogNormMatrix( float *H, int nOrients, int hb, int wb, int bin ) {
   return N;
 }
 
+
 // compute HOG features
-void ssehog( const float *M, const float *O, float *H, int h, int w, int binSize,
-  int nOrients, bool full, float clip )
+void ssehog(const float *Mag,   //in : magnitude
+            const float *Ori,   //in : orientation
+            float *feature,     //out: computed feature
+            int height,         //in : height of the image
+            int width,          //in : width of the image
+            int binSize,        //in : binSize of the cell, eg 8
+            int nOrients,       //in : number of the orientation, eg 9
+            bool full,          //in : true - [0, 2pi], false -> [0, pi]
+            float clip )        //in : clip value, mag = (mag> clip?clip:mag)
+
 {
-  float *N, *R; const int hb=h/binSize, wb=w/binSize;
+  float *NormalizedValue, *gradientHist; const int hb=height/binSize, wb=width/binSize;
   // compute unnormalized gradient histograms
-  R = (float*) wrCalloc(wb*hb*nOrients,sizeof(float));
-  gradHist( M, O, R, h, w, binSize, nOrients, 1, full );
+  gradientHist = (float*) wrCalloc(wb*hb*nOrients,sizeof(float));
+  gradHist( Mag, Ori, gradientHist, height, width, binSize, nOrients, 1, full );
   // compute block normalization values
-  N = hogNormMatrix( R, nOrients, hb, wb, binSize );
+  NormalizedValue = hogNormMatrix( gradientHist, nOrients, hb, wb, binSize );
   // perform four normalizations per spatial block
-  hogChannels( H, R, N, hb, wb, nOrients, clip, 0 );
-  wrFree(N); wrFree(R);
+  hogChannels( feature, gradientHist, NormalizedValue, hb, wb, nOrients, clip, 0 );
+  wrFree(NormalizedValue); wrFree(gradientHist);
 }
 
 
 // compute FHOG features
-void ssefhog( const float *M,const  float *O, float *H, int h, int w, int binSize,
-  int nOrients, float clip )
+void ssefhog( const float *Mag,     // in : magnitude
+              const float *Ori,     // in : orientation
+              float *feature,       // out: computed feature
+              int height,           // in : height of the image
+              int width,            // in : width of the image
+              int binSize,          // in : binSize of the cell, eg 8
+              int nOrients,         // in : number of orientation, eg 9
+              float clip )          // in : clip value, if mag > clip, then mag = clip, eg 0.2
 {
-  const int hb=h/binSize, wb=w/binSize, nb=hb*wb, nbo=nb*nOrients;
+  const int hb=height/binSize, wb=width/binSize, nb=hb*wb, nbo=nb*nOrients;
   float *N, *R1, *R2; int o, x;
   // compute unnormalized constrast sensitive histograms
   // add binSize as the buffer for sse
   R1 = (float*) wrCalloc(wb*hb*nOrients*2+binSize,sizeof(float));
-  gradHist( M, O, R1, h, w, binSize, nOrients*2, -1, true );
+  gradHist( Mag, Ori, R1, height, width, binSize, nOrients*2, -1, true );
   // compute unnormalized contrast insensitive histograms
   R2 = (float*) wrCalloc(wb*hb*nOrients + binSize,sizeof(float));
   for( o=0; o<nOrients; o++ ) for( x=0; x<nb; x++ )
@@ -101,104 +123,126 @@ void ssefhog( const float *M,const  float *O, float *H, int h, int w, int binSiz
   // compute block normalization values
   N = hogNormMatrix( R2, nOrients, hb, wb, binSize );
   // normalized histograms and texture channels
-  hogChannels( H+nbo*0, R1, N, hb, wb, nOrients*2, clip, 1 );
-  hogChannels( H+nbo*2, R2, N, hb, wb, nOrients*1, clip, 1 );
-  hogChannels( H+nbo*3, R1, N, hb, wb, nOrients*2, clip, 2 );
+  hogChannels( feature+nbo*0, R1, N, hb, wb, nOrients*2, clip, 1 );
+  hogChannels( feature+nbo*2, R2, N, hb, wb, nOrients*1, clip, 1 );
+  hogChannels( feature+nbo*3, R1, N, hb, wb, nOrients*2, clip, 2 );
 
   wrFree(N); wrFree(R1); wrFree(R2);
 }
 
 
 // compute nOrients gradient histograms per bin x bin block of pixels
-void gradHist( const float *M,const float *O, float *H, int h, int w, int bin, int nOrients, int softBin, bool full )
+/*
+ *  gradHist first quantize the orientation into nOrients bins, due to the interpolation,
+ *  angle theta will contribute to two successive bins(Orientation0 and Orientation1) and they
+ *  split the magnitude value( magnitude0 and magnitude1)
+ *
+ *  then put the gradient value into the spatial block accorrding to the diffierent method( hog or fhog)
+ *  output size: height/binSize x width/binSize x nOrients
+ *  momory continuous in row, like
+ *
+ *      G1
+ *      G2
+ *      G3
+ *      ...
+ *      Gn
+*/
+void gradHist( const float *Magnitude,  // in : magnitude, size width x height
+               const float *Orientation,// in : oritentation, same size as magnitude
+               float *gHist,            // out: gradHist,  size ( width/binSize x nOrients ) x height/binSize, big matrix
+               int height,              // in : height
+               int width,               // in : width
+               int binSize,             // in : size of spatial bin, degree of aggregation,  eg : 4,
+               int nOrients,            // in : number of orientation, eg : 6
+               int softBin,             // in : softBin=1 -> hog, softBin=-1 -> fhog, softBin=0 -> channel feature
+               bool full )              // in : true -> 0-2pi, false -> 0-pi
 {
-    const int hb=h/bin, wb=w/bin, h0=hb*bin, w0=wb*bin, nb=wb*hb;
-    const float s=(float)bin, sInv=1/s, sInv2=1/s/s;
-    float *H0, *H1, *M0, *M1; int x, y; int *O0, *O1; float yb, init;
+    const int height_block=height/binSize, width_block=width/binSize, h0=height_block*binSize, w0=width_block*binSize, nb=width_block*height_block;
+    const float s=(float)binSize, sInv=1/s, sInv2=1/s/s;
+    float *gHist0, *gHist1, *Magnitude0, *Magnitude1;
+    int row_index, col_index; int *Orientation0, *Orientation1; float yb, init;
 
-    O0=(int*)alMalloc(w*sizeof(int),16); M0=(float*) alMalloc(w*sizeof(float),16);
-    O1=(int*)alMalloc(w*sizeof(int),16); M1=(float*) alMalloc(w*sizeof(float),16);
-
-    cout<<"nb "<<nb<<",wb "<<wb<<", hb "<<hb<<",ori "<<nOrients<<endl;
+    Orientation0=(int*)alMalloc(width*sizeof(int),16); Magnitude0=(float*) alMalloc(width*sizeof(float),16);
+    Orientation1=(int*)alMalloc(width*sizeof(int),16); Magnitude1=(float*) alMalloc(width*sizeof(float),16);
 
     // main loop
-    for( x=0; x<h0; x++ )
+    for( row_index=0; row_index<h0; row_index++ )
     {
         // compute target orientation bins for entire row - very fast
-        gradQuantize(O+x*w,M+x*w,O0,O1,M0,M1,nb,w0,sInv2,nOrients,full,softBin>=0);
+        gradQuantize(Orientation+row_index*width,Magnitude+row_index*width,Orientation0,Orientation1,Magnitude0,Magnitude1,nb,w0,sInv2,nOrients,full,softBin>=0);
         if( softBin<0 && softBin%2==0 ) {
             // no interpolation w.r.t. either orienation or spatial bin
-            H1=H+(x/bin)*wb;
-#define GH H1[O0[y]]+=M0[y]; y++;
-            if( bin==1 )      for(y=0; y<w0;) { GH; H1++; }
-            else if( bin==2 ) for(y=0; y<w0;) { GH; GH; H1++; }
-            else if( bin==3 ) for(y=0; y<w0;) { GH; GH; GH; H1++; }
-            else if( bin==4 ) for(y=0; y<w0;) { GH; GH; GH; GH; H1++; }
-            else for( y=0; y<w0;) { for( int y1=0; y1<bin; y1++ ) { GH; } H1++; }
+            gHist1=gHist+(row_index/binSize)*width_block;
+#define GH gHist1[Orientation0[col_index]]+=Magnitude0[col_index]; col_index++;
+            if( binSize==1 )      for(col_index=0; col_index<w0;) { GH; gHist1++; }
+            else if( binSize==2 ) for(col_index=0; col_index<w0;) { GH; GH; gHist1++; }
+            else if( binSize==3 ) for(col_index=0; col_index<w0;) { GH; GH; GH; gHist1++; }
+            else if( binSize==4 ) for(col_index=0; col_index<w0;) { GH; GH; GH; GH; gHist1++; }
+            else for( col_index=0; col_index<w0;) { for( int y1=0; y1<binSize; y1++ ) { GH; } gHist1++; }
 #undef GH
 
-        } else if( softBin%2==0 || bin==1 ) { //channnel feature case
+        } else if( softBin%2==0 || binSize==1 ) { //channnel feature case
             // interpolate w.r.t. orientation only, not spatial bin
-            H1=H+(x/bin)*wb;
-#define GH H1[O0[y]]+=M0[y]; H1[O1[y]]+=M1[y]; y++;
-            if( bin==1 )      for(y=0; y<w0;) { GH; H1++; }
-            else if( bin==2 ) for(y=0; y<w0;) { GH; GH; H1++; }
-            else if( bin==3 ) for(y=0; y<w0;) { GH; GH; GH; H1++; }
-            else if( bin==4 ) for(y=0; y<w0;) { GH; GH; GH; GH; H1++; }
-            else for( y=0; y<w0;) { for( int y1=0; y1<bin; y1++ ) { GH; } H1++; }
+            gHist1=gHist+(row_index/binSize)*width_block;
+#define GH gHist1[Orientation0[col_index]]+=Magnitude0[col_index]; gHist1[Orientation1[col_index]]+=Magnitude1[col_index]; col_index++;
+            if( binSize==1 )      for(col_index=0; col_index<w0;) { GH; gHist1++; }
+            else if( binSize==2 ) for(col_index=0; col_index<w0;) { GH; GH; gHist1++; }
+            else if( binSize==3 ) for(col_index=0; col_index<w0;) { GH; GH; GH; gHist1++; }
+            else if( binSize==4 ) for(col_index=0; col_index<w0;) { GH; GH; GH; GH; gHist1++; }
+            else for( col_index=0; col_index<w0;) { for( int y1=0; y1<binSize; y1++ ) { GH; } gHist1++; }
 #undef GH
         }else {
 	      // interpolate using trilinear interpolation
 	      float ms[4], xyd, xb, xd, yd; __m128 _m, _m0, _m1;
           bool hasTop, hasBot; int xb0, yb0;
-          if( x==0 ) { init=(0+.5f)*sInv-0.5f; yb=init; }
-          hasTop = yb>=0; yb0 = hasTop?(int)yb:-1; hasBot = yb0 < hb-1;
-          yd=yb-yb0; yb+=sInv; xb=init; y=0;
+          if( row_index==0 ) { init=(0+.5f)*sInv-0.5f; yb=init; }
+          hasTop = yb>=0; yb0 = hasTop?(int)yb:-1; hasBot = yb0 < height_block-1;
+          yd=yb-yb0; yb+=sInv; xb=init; col_index=0;
 
            // macros for code conciseness
-          #define GHinit xd=xb-xb0; xb+=sInv; H0=H+yb0*wb+xb0; xyd=xd*yd; \
+          #define GHinit xd=xb-xb0; xb+=sInv; gHist0=gHist+yb0*width_block+xb0; xyd=xd*yd; \
            ms[0]=1-xd-yd+xyd; ms[1]=yd-xyd; ms[2]=xd-xyd; ms[3]=xyd;
-          #define GH(H,ma,mb) H1=H; STRu(*H1,ADD(LDu(*H1),MUL(ma,mb)));
+          #define GH(H,ma,mb) gHist1=H; STRu(*gHist1,ADD(LDu(*gHist1),MUL(ma,mb)));
 
          // leading cols, no left bin
-         for( ; y<bin/2; y++ )
+         for( ; col_index<binSize/2; col_index++ )
          {
            xb0=-1; GHinit;
-           if(hasTop) { H0[O0[y]+1]+=ms[2]*M0[y]; H0[O1[y]+1]+=ms[2]*M1[y]; }
-           if(hasBot) { H0[O0[y]+wb+1]+=ms[3]*M0[y]; H0[O1[y]+wb+1]+=ms[3]*M1[y]; }
+           if(hasTop) { gHist0[Orientation0[col_index]+1]+=ms[2]*Magnitude0[col_index]; gHist0[Orientation1[col_index]+1]+=ms[2]*Magnitude1[col_index]; }
+           if(hasBot) { gHist0[Orientation0[col_index]+width_block+1]+=ms[3]*Magnitude0[col_index]; gHist0[Orientation1[col_index]+width_block+1]+=ms[3]*Magnitude1[col_index]; }
          }
         
          // main cols, has left and right bins, use SSE for minor speedup
-         if( softBin<0 ) for( ; ; y++ ) {      //fhog
-           xb0 = (int) xb; if(xb0>=wb-1) break; GHinit; _m0=SET(M0[y]);
-           if(hasTop) { _m=SET(0,0,ms[2],ms[0]); GH(H0+O0[y],_m,_m0); }
-           if(hasBot) { _m=SET(0,0,ms[3],ms[1]); GH(H0+O0[y]+wb,_m,_m0);}
+         if( softBin<0 ) for( ; ; col_index++ ) {      //fhog
+           xb0 = (int) xb; if(xb0>=width_block-1) break; GHinit; _m0=SET(Magnitude0[col_index]);
+           if(hasTop) { _m=SET(0,0,ms[2],ms[0]); GH(gHist0+Orientation0[col_index],_m,_m0); }
+           if(hasBot) { _m=SET(0,0,ms[3],ms[1]); GH(gHist0+Orientation0[col_index]+width_block,_m,_m0);}
 
-         } else for( ; ; y++ ) { // hog
-           xb0 = (int) xb; if(xb0>=wb-1) break; GHinit;
-           _m0=SET(M0[y]); _m1=SET(M1[y]);
+         } else for( ; ; col_index++ ) { // hog
+           xb0 = (int) xb; if(xb0>=width_block-1) break; GHinit;
+           _m0=SET(Magnitude0[col_index]); _m1=SET(Magnitude1[col_index]);
            if(hasTop) { _m=SET(0,0,ms[2],ms[0]);
-             GH(H0+O0[y],_m,_m0); GH(H0+O1[y],_m,_m1); }
+             GH(gHist0+Orientation0[col_index],_m,_m0); GH(gHist0+Orientation1[col_index],_m,_m1); }
            if(hasBot) { _m=SET(0,0,ms[3],ms[1]);
-             GH(H0+O0[y]+wb,_m,_m0); GH(H0+O1[y]+wb,_m,_m1); }
+             GH(gHist0+Orientation0[col_index]+width_block,_m,_m0); GH(gHist0+Orientation1[col_index]+width_block,_m,_m1); }
          }
         // final cols, no right bin
-         for( ; y<w0; y++ ) {
+         for( ; col_index<w0; col_index++ ) {
            xb0 = (int) xb; GHinit;
-           if(hasTop) { H0[O0[y]]+=ms[0]*M0[y]; H0[O1[y]]+=ms[0]*M1[y]; }
-           if(hasBot) { H0[O0[y]+wb]+=ms[1]*M0[y]; H0[O1[y]+wb]+=ms[1]*M1[y]; }
+           if(hasTop) { gHist0[Orientation0[col_index]]+=ms[0]*Magnitude0[col_index]; gHist0[Orientation1[col_index]]+=ms[0]*Magnitude1[col_index]; }
+           if(hasBot) { gHist0[Orientation0[col_index]+width_block]+=ms[1]*Magnitude0[col_index]; gHist0[Orientation1[col_index]+width_block]+=ms[1]*Magnitude1[col_index]; }
          }
          #undef GHinit
          #undef GH
 	    }
     }
-    alFree(O0); alFree(O1); alFree(M0); alFree(M1);
+    alFree(Orientation0); alFree(Orientation1); alFree(Magnitude0); alFree(Magnitude1);
     // normalize boundary bins which only get 7/8 of weight of interior bins
     if( softBin%2!=0 ) for( int o=0; o<nOrients; o++ ) {
-        x=0; for( y=0; y<hb; y++ ) H[o*nb+x+y*wb]*=8.f/7.f;
-        y=0; for( x=0; x<wb; x++ ) H[o*nb+x+y*wb]*=8.f/7.f;
-        x=wb-1; for( y=0; y<hb; y++ ) H[o*nb+x+y*wb]*=8.f/7.f;
-        y=hb-1; for( x=0; x<wb; x++ ) H[o*nb+x+y*wb]*=8.f/7.f;
+        row_index=0; for( col_index=0; col_index<height_block; col_index++ ) gHist[o*nb+row_index+col_index*width_block]*=8.f/7.f;
+        col_index=0; for( row_index=0; row_index<width_block; row_index++ ) gHist[o*nb+row_index+col_index*width_block]*=8.f/7.f;
+        row_index=width_block-1; for( col_index=0; col_index<height_block; col_index++ ) gHist[o*nb+row_index+col_index*width_block]*=8.f/7.f;
+        col_index=height_block-1; for( row_index=0; row_index<width_block; row_index++ ) gHist[o*nb+row_index+col_index*width_block]*=8.f/7.f;
     }
 }
 
