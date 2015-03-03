@@ -95,6 +95,7 @@ size_t getNumberOfFilesInDir( string in_path )
 bool sampleWins(    const softcascade &sc, 	    /*  in: detector */
                     int stage, 			        /*  in: stage */
                     bool isPositive,            /*  in: true->sample positive, false -> sample negative */
+                    bool hasGroundTruth,        /*  in: hasGroundTruth = false -> no need for xml, positive samples are cropped */
                     vector<Mat> &samples,       /* out: target objects, flipped( only for positive)*/
                     vector<Mat> &origsamples)   /* out: original target */
 {
@@ -113,80 +114,124 @@ bool sampleWins(    const softcascade &sc, 	    /*  in: detector */
     
     if(isPositive)	//sample Positive samples or mining negative samples from positive..
     {
-        bf::path pos_img_path( opts.posImgDir );
-        bf::path pos_gt_path( opts.posGtDir );
-
-        if( !bf::exists( pos_img_path) || !bf::exists(pos_gt_path))
+        if( hasGroundTruth)
         {
-            cout<<"pos img or gt path does not exist!"<<endl;
-            cout<<"check "<<pos_img_path<<"  and "<<pos_gt_path<<endl;
-            return false;
-        }
-        int number_pos_img = getNumberOfFilesInDir( opts.posGtDir );
+            bf::path pos_img_path( opts.posImgDir );
+            bf::path pos_gt_path( opts.posGtDir );
 
-        /* iterate the folder*/
-        bf::directory_iterator end_it;
-        vector<string> image_path_vector;
-        vector<string> gt_path_vector;
-
-        for( bf::directory_iterator file_iter(pos_img_path); file_iter!=end_it; file_iter++)
-        {
-            bf::path s = *(file_iter);
-            string basename = bf::basename( s );
-            string pathname = file_iter->path().string();
-            string extname  = bf::extension( s );
-			
-			if( extname!=".jpg" && extname!=".bmp" && extname!=".png" &&
-					extname!=".JPG" && extname!=".BMP" && extname!=".PNG")
-				continue;
-
-            /* check if both groundTruth and image exist */
-            bf::path gt_path( opts.posGtDir + basename + ".xml");
-            if(!bf::exists( gt_path))   // image already exists ..
+            if( !bf::exists( pos_img_path) || !bf::exists(pos_gt_path))
             {
-                continue;
+                cout<<"pos img or gt path does not exist!"<<endl;
+                cout<<"check "<<pos_img_path<<"  and "<<pos_gt_path<<endl;
+                return false;
             }
+            int number_pos_img = getNumberOfFilesInDir( opts.posGtDir );
 
-            image_path_vector.push_back( pathname );
-            /* read the gt according to the image name */
-            gt_path_vector.push_back(opts.posGtDir + basename + ".xml");
-        }
-		
+            /* iterate the folder*/
+            bf::directory_iterator end_it;
+            vector<string> image_path_vector;
+            vector<string> gt_path_vector;
 
-        #pragma omp parallel for num_threads(Nthreads) /* openmp -->but no error check in runtime ... */
-        for( int i=0;i<image_path_vector.size();i++)
-        {
-            Mat im = imread( image_path_vector[i]);
-            /* can not return from openmp body !*/
-            //if(im.empty())
-            //{
-            //    cout<<"can not read image file "<<image_path_vector[i]<<endl;
-            //    return false;
-            //}
-
-            vector<Rect> target_rects;
-            FileStorage fst( gt_path_vector[i], FileStorage::READ | FileStorage::FORMAT_XML);
-            //if(!fst.isOpened())
-            //{
-            //    cout<<"can not read gt file "<<gt_path_vector[i]<<endl;
-            //    return false;
-            //}
-            fst["boxes"]>>target_rects;
-            fst.release();
-
-            /*  resize the rect to fixed widht / height ratio, for pedestrain det , is 41/100 for INRIA database */
-            for ( int i=0;i<target_rects.size();i++) 
+            for( bf::directory_iterator file_iter(pos_img_path); file_iter!=end_it; file_iter++)
             {
-                target_rects[i] = resizeToFixedRatio( target_rects[i], opts.modelDs.width*1.0/opts.modelDs.height, 1); /* respect to height */
+                bf::path s = *(file_iter);
+                string basename = bf::basename( s );
+                string pathname = file_iter->path().string();
+                string extname  = bf::extension( s );
+                
+                if( extname!=".jpg" && extname!=".bmp" && extname!=".png" &&
+                        extname!=".JPG" && extname!=".BMP" && extname!=".PNG")
+                    continue;
+
+                /* check if both groundTruth and image exist */
+                bf::path gt_path( opts.posGtDir + basename + ".xml");
+                if(!bf::exists( gt_path))   // image already exists ..
+                {
+                    continue;
+                }
+
+                image_path_vector.push_back( pathname );
+                /* read the gt according to the image name */
+                gt_path_vector.push_back(opts.posGtDir + basename + ".xml");
+            }
+            
+
+            #pragma omp parallel for num_threads(Nthreads) /* openmp -->but no error check in runtime ... */
+            for( int i=0;i<image_path_vector.size();i++)
+            {
+                Mat im = imread( image_path_vector[i]);
+
+                vector<Rect> target_rects;
+                FileStorage fst( gt_path_vector[i], FileStorage::READ | FileStorage::FORMAT_XML);
+                fst["boxes"]>>target_rects;
+                fst.release();
+
+                /*  resize the rect to fixed widht / height ratio, for pedestrain det , is 41/100 for INRIA database */
+                for ( int i=0;i<target_rects.size();i++) 
+                {
+                    target_rects[i] = resizeToFixedRatio( target_rects[i], opts.modelDs.width*1.0/opts.modelDs.height, 1); /* respect to height */
+                    /* grow it a little bit */
+                    int modelDsBig_width = std::max( 8*opts.shrink, opts.modelDsPad.width)+std::max(2, 64/opts.shrink)*opts.shrink;
+                    int modelDsBig_height = std::max( 8*opts.shrink,opts.modelDsPad.height)+std::max(2,64/opts.shrink)*opts.shrink;
+                    double w_ratio = modelDsBig_width*1.0/opts.modelDs.width;
+                    double h_ratio = modelDsBig_height*1.0/opts.modelDs.height;
+                    target_rects[i] = resizeBbox( target_rects[i], h_ratio, w_ratio);
+                    
+                    /* finally crop the image */
+                    Mat target_obj = cropImage( im, target_rects[i]);
+                    cv::resize( target_obj, target_obj, cv::Size(modelDsBig_width, modelDsBig_height), 0, 0, INTER_AREA);
+                    #pragma omp critical
+                    {
+                        origsamples.push_back( target_obj );
+                    }
+                }
+            }
+        }
+        else
+        {
+            bf::path pos_img_path( opts.posImgDir );
+
+            if( !bf::exists( pos_img_path) )
+            {
+                cout<<"pos img or gt path does not exist!"<<endl;
+                return false;
+            }
+            int number_pos_img = getNumberOfFilesInDir( opts.posGtDir );
+
+            /* iterate the folder*/
+            bf::directory_iterator end_it;
+            vector<string> image_path_vector;
+            for( bf::directory_iterator file_iter(pos_img_path); file_iter!=end_it; file_iter++)
+            {
+                bf::path s = *(file_iter);
+                string basename = bf::basename( s );
+                string pathname = file_iter->path().string();
+                string extname  = bf::extension( s );
+                
+                if( extname!=".jpg" && extname!=".bmp" && extname!=".png" &&
+                        extname!=".JPG" && extname!=".BMP" && extname!=".PNG")
+                    continue;
+                image_path_vector.push_back( pathname );
+            }
+            
+
+            #pragma omp parallel for num_threads(Nthreads) /* openmp -->but no error check in runtime ... */
+            for( int i=0;i<image_path_vector.size();i++)
+            {
+                Mat im = imread( image_path_vector[i]);
+
+                /*  resize the rect to fixed widht / height ratio, for pedestrain det , is 41/100 for INRIA database */
+                Rect target_rects = resizeToFixedRatio( target_rects, opts.modelDs.width*1.0/opts.modelDs.height, 1); /* respect to height */
+                target_rects = Rect(0, 0, im.cols, im.rows);
                 /* grow it a little bit */
                 int modelDsBig_width = std::max( 8*opts.shrink, opts.modelDsPad.width)+std::max(2, 64/opts.shrink)*opts.shrink;
                 int modelDsBig_height = std::max( 8*opts.shrink,opts.modelDsPad.height)+std::max(2,64/opts.shrink)*opts.shrink;
                 double w_ratio = modelDsBig_width*1.0/opts.modelDs.width;
                 double h_ratio = modelDsBig_height*1.0/opts.modelDs.height;
-                target_rects[i] = resizeBbox( target_rects[i], h_ratio, w_ratio);
+                target_rects = resizeBbox( target_rects, h_ratio, w_ratio);
                 
                 /* finally crop the image */
-                Mat target_obj = cropImage( im, target_rects[i]);
+                Mat target_obj = cropImage( im, target_rects);
                 cv::resize( target_obj, target_obj, cv::Size(modelDsBig_width, modelDsBig_height), 0, 0, INTER_AREA);
                 #pragma omp critical
                 {
@@ -322,6 +367,7 @@ int runTrainAndTest( double &out_miss_rate, double &out_fp_per_image)
     tree_par.maxDepth = 2;
     tree_par.fracFtrs = 0.0625;
 
+    bool has_groundtruth = true;
 #ifdef P1
     cas_para.posGtDir  = "/home/yuanyang/Workspace/INRIA/train/posGt_opencv/";
     cas_para.posImgDir = "/home/yuanyang/Workspace/INRIA/train/pos/"; 
@@ -373,7 +419,7 @@ int runTrainAndTest( double &out_miss_rate, double &out_fp_per_image)
 		/*  2--> compute lambdas */
 		if( stage == 0)
 		{
-            sampleWins( sc, stage, true, pos_samples, pos_origsamples);
+            sampleWins( sc, stage, true,has_groundtruth,  pos_samples, pos_origsamples);
             ff1.compute_lambdas( pos_origsamples );
 		}
 
@@ -403,7 +449,7 @@ int runTrainAndTest( double &out_miss_rate, double &out_fp_per_image)
         }
 
 		/* 4--> sample negatives and compute features, accumulate negatives from previous stages */
-        sampleWins( sc, stage, false, neg_samples, neg_origsamples );          /* remember the neg_samples is empty */
+        sampleWins( sc, stage, false, has_groundtruth,  neg_samples, neg_origsamples );          /* remember the neg_samples is empty */
 
         vector<Mat> accu_neg;
         if( stage ==0 )                                   /* stage == 0 */
@@ -573,7 +619,7 @@ int runTrainAndTest( double &out_miss_rate, double &out_fp_per_image)
     sc.setParas( par_for_test);
     vector<Mat> test_pos_orig;
     vector<Mat> test_pos_all;
-    sampleWins( sc, 0, true, test_pos_all, test_pos_orig );
+    sampleWins( sc, 0, true, has_groundtruth, test_pos_all, test_pos_orig );
 
     cout<<"->Making positive test data ";
     Mat pos_test_data = Mat::zeros( final_feature_dim, test_pos_all.size(), CV_32F);
@@ -614,7 +660,7 @@ int runTrainAndTest( double &out_miss_rate, double &out_fp_per_image)
 
     vector<Mat> test_neg_orig;
     vector<Mat> test_neg_all;
-    sampleWins( sc, 0, false, test_neg_all, test_neg_orig );
+    sampleWins( sc, 0, false,has_groundtruth,  test_neg_all, test_neg_orig );
     cout<<"Making negative test data "<<endl;
     Mat neg_test_data = Mat::zeros( final_feature_dim, test_neg_orig.size(), CV_32F );
  
