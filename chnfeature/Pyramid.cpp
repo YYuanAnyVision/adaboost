@@ -168,7 +168,7 @@ bool feature_Pyramids::fhog( const Mat &input_image,//in : input image ( w x h )
     /* father code the mag and ori due to different feature type */
     if(type == 0)       // fhog
     {
-        fhog_feature = Mat::zeros( input_image.rows*( oritent*3+5)/binSize, input_image.cols/binSize, CV_32F );
+        fhog_feature = Mat::zeros( input_image.rows/binSize*( oritent*3+5), input_image.cols/binSize, CV_32F );
         ssefhog( (const float*)(mag.data), (const float *)(ori.data), (float *)(fhog_feature.data),input_image.rows,input_image.cols, binSize, oritent ,clip);
 
         /*  "store" it in fea_chns */
