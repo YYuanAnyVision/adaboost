@@ -44,7 +44,7 @@ int main( int argc, char** argv)
     vector<Rect> det_rects;
     vector<double> det_confs;
     tk.start();
-    sc.detectMultiScale( test_img, det_rects, det_confs );
+    sc.detectMultiScale( test_img, det_rects, det_confs, Size(0,0), Size(0,0));
     tk.stop();
     cout<<"Detect a size "<<test_img.size()<<" image, time consuming :"<<tk.getTimeSec()<<" second"<<endl;
     for( int c =0; c<det_rects.size(); c++)

@@ -458,12 +458,15 @@ void softcascade::setParas( const cascadeParameter &in_par )
     m_opts = in_par; 
 }
 
-bool softcascade::detectMultiScale( const Mat &image,
-                       vector<Rect> &targets,
-                       vector<double> &confidence,
-                       int stride,
-                       int minSize,
-                       int maxSize) const
+
+bool softcascade::detectMultiScale( const Mat &image,                   /* in : image */
+                                   vector<Rect> &targets,               /* out: target positions*/
+                                   vector<double> &confidence,          /* out: target confidence */
+                                   const Size &minSize,                 /* in : min target Size */
+                                   const Size &maxSize,                 /* in : max target Size */
+                                   double scale_factor,                 /* in : scale factor */
+                                   int stride,                          /* in : detection stride */
+                                   double threshold ) const             /* in : detect threshold */
 {
     vector< vector<Mat> > approPyramid;
     vector<double> appro_scales;

@@ -103,7 +103,7 @@ int main( int argc, char** argv)
 
 
 
-    Mat input_image = imread(argv[1], CV_LOAD_IMAGE_GRAYSCALE);
+    Mat input_image = imread(argv[1]);
     //Mat input_image = imread("/media/yuanyang/disk1/git/adaboost/build/chnfeature/crop_000007.png", CV_LOAD_IMAGE_GRAYSCALE);
 
     imshow("input",input_image);

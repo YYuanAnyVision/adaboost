@@ -114,9 +114,11 @@ class softcascade
         bool detectMultiScale( const Mat &image,                    /* in : image */
                                vector<Rect> &targets,               /* out: target positions*/
                                vector<double> &confidence,          /* out: target confidence */
+                               const Size &minSize,                 /* in : min target Size */
+                               const Size &maxSize,                 /* in : max target Size */
+                               double scale_factor = 1.2,           /* in : scale factor */
                                int stride = 4,                      /* in : detection stride */
-                               int minSize = 32,                    /* in : min target size */
-                               int maxSize = 300) const;            /* in : max target size */
+                               double threshold = 0) const;         /* in : detect threshold */
 
 		/* 
 		 * ===  FUNCTION  ======================================================================

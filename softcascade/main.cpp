@@ -20,8 +20,8 @@
 #include <omp.h>
 
 #define P1
-#define TEST_STAT_SLIDE
-//#define SAVE_IMAGE
+#define TEST_MUITI
+#define SAVE_IMAGE
 
 using namespace std;
 using namespace cv;
@@ -306,7 +306,7 @@ bool sampleWins(    const softcascade &sc, 	    /*  in: detector */
 			else
 			{
                 /* boostrap the negative samples */
-                sc.detectMultiScale( img, target_rects, conf_v );
+                sc.detectMultiScale( img, target_rects, conf_v, Size(0,0), Size(0,0) );
 
                 if( target_rects.size() > number_target_per_image )
                     target_rects.resize( number_target_per_image);
@@ -573,7 +573,7 @@ int runTrainAndTest( double &out_miss_rate, double &out_fp_per_image)
         Mat test_img = imread( pathname );
 
         vector<Rect> re;vector<double> confs;
-        sc.detectMultiScale( test_img, re, confs);
+        sc.detectMultiScale( test_img, re, confs, Size(0,0), Size(0,0));
         cout<<"detection result "<<re.size()<<endl;
         for( int c=0;c<re.size();c++)
         {
@@ -754,7 +754,7 @@ int runTrainAndTest( double &out_miss_rate, double &out_fp_per_image)
         bf::path t_path( image_path_vector[c]);
         string basename = bf::basename(t_path);
 
-		sc.detectMultiScale( input_img, det_rects, det_confs );
+		sc.detectMultiScale( input_img, det_rects, det_confs, Size(0,0), Size(0,0));
 		//#pragma omp critical
         {
 		    number_of_fp += det_rects.size(); 
@@ -820,7 +820,7 @@ int runTrainAndTest( double &out_miss_rate, double &out_fp_per_image)
 		Mat test_img = imread( image_path_vector[i]);
 		vector<Rect> det_rects;
 		vector<double> det_confs;
-		sc.detectMultiScale( test_img, det_rects, det_confs );
+		sc.detectMultiScale( test_img, det_rects, det_confs, Size(0,0), Size(0,0) );
 
 		int matched = 0;
 		vector<bool> isMatched_r( target_rects.size(), false);
