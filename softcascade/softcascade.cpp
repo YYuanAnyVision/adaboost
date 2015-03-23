@@ -481,7 +481,9 @@ bool softcascade::detectMultiScale( const Mat &image,                   /* in : 
         Apply( approPyramid[c], t_tar, t_conf);
         for ( int i=0;i<t_tar.size(); i++) 
         {
-            
+            if(t_conf[i] < threshold)
+                continue;
+
             Rect s( t_tar[i].x/appro_scales[c], t_tar[i].y/appro_scales[c], t_tar[i].width/scale_w[c], t_tar[i].height/scale_h[c]  );
 
              /* some times the rects on the border are out of the image */
