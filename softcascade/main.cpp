@@ -19,10 +19,6 @@
 
 #include <omp.h>
 
-#define P1
-#define TEST_MUITI
-#define SAVE_IMAGE
-
 using namespace std;
 using namespace cv;
 
@@ -343,7 +339,7 @@ bool sampleWins(    const softcascade &sc, 	    /*  in: detector */
     return true;
 }
  
-int runTrainAndTest( double &out_miss_rate, double &out_fp_per_image)
+int runTrainAndTest()
 {
     std::srand ( unsigned ( std::time(0) ) );
     Mat Km = get_Km(1);
@@ -368,21 +364,10 @@ int runTrainAndTest( double &out_miss_rate, double &out_fp_per_image)
     tree_par.fracFtrs = 0.0625;
 
     bool has_groundtruth = true;
-#ifdef P1
+
     cas_para.posGtDir  = "/home/yuanyang/Workspace/INRIA/train/posGt_opencv/";
     cas_para.posImgDir = "/home/yuanyang/Workspace/INRIA/train/pos/"; 
 	cas_para.negImgDir = "/home/yuanyang/Workspace/INRIA/train/neg/";
-#endif
-#ifdef P2
-    cas_para.posImgDir = "/mnt/disk1/data/INRIAPerson/Train/pos"; 
-    cas_para.posGtDir  = "/mnt/disk1/data/INRIAPerson/Train/posGT/";
-	cas_para.negImgDir = "/mnt/disk1/data/INRIAPerson/Train/neg/";
-#endif
-#ifdef P3
-    cas_para.posImgDir = "/home/pcipci/mzx/ped_detect/Inria/train/pos/"; 
-    cas_para.posGtDir  = "/home/pcipci/mzx/ped_detect/Inria/train/posGt_opencv/";
-	cas_para.negImgDir = "/home/pcipci/mzx/ped_detect/Inria/train/neg/";
-#endif
 
     cas_para.infos = "2015-1-25, YuanYang, Test";
     cas_para.shrink = det_opt.shrink;
@@ -519,373 +504,13 @@ int runTrainAndTest( double &out_miss_rate, double &out_fp_per_image)
         avg_train_neg_score /= pre_neg_score.rows;
         cout<<"Train : avg_train_pos_score is "<<avg_train_pos_score<<endl;
         cout<<"Train : avg_train_neg_score is "<<avg_train_neg_score<<endl;
-
-        /* ---------- ~show improvement over diffierent stages~ ------------*/
-        //vector<Rect> re;vector<double> confs;
-        //Mat test_img = imread("crop001573.png");
-		//if(test_img.empty())
-		//{
-		//	cout<<"img empty, return "<<endl;
-		//	return -1;
-		//}
-        //tk.reset();tk.start();
-        //sc.detectMultiScale( test_img, re, confs );
-        //tk.stop();
-        //cout<<"Time consuming for detect a size "<<test_img.size()<<" pic is "<<tk.getTimeSec()<<endl;
-        //for( int c=0;c<re.size();c++)
-        //{
-        //    if( confs[c] < 1 )
-        //        continue;
-        //    rectangle( test_img, re[c], Scalar(255,0,0), 3);
-        //}
-        //stringstream ss;ss<<stage;string stage_index;ss>>stage_index;
-		//tk.stop();
-        //imshow("show",test_img);
-        //waitKey(0);
-
 	}
     /*  swap the Mat data */
     neg_train_data = Mat::zeros(1,1,CV_32F);
     pos_train_data = Mat::zeros(1,1,CV_32F);
 
+    /*  save the model */
     sc.Save("for_test_sc.xml");
-    
-    /*----------------   test detectMultiScale over dataset , show ----------------*/
-#ifdef TEST_MUITI
-    bf::directory_iterator end_it;
-#ifdef P1
-    bf::path test_data_path("/home/yuanyang/Workspace/INRIA/Test/pos/");
-#endif
-#ifdef P2
-    bf::path test_data_path("/mnt/disk1/data/INRIAPerson/Test/pos/");
-#endif
-#ifdef P3
-    bf::path test_data_path("/home/pcipci/mzx/ped_detect/Inria/Test/pos/");
-#endif
-    for( bf::directory_iterator file_iter(test_data_path); file_iter!=end_it; file_iter++)
-    {
-        string pathname = file_iter->path().string();
-		string extname  = bf::extension( *file_iter);
-		if( extname!=".jpg" && extname!=".bmp" && extname!=".png" &&
-				extname!=".JPG" && extname!=".BMP" && extname!=".PNG")
-			continue;
-
-        Mat test_img = imread( pathname );
-
-        vector<Rect> re;vector<double> confs;
-        sc.detectMultiScale( test_img, re, confs, Size(0,0), Size(0,0));
-        cout<<"detection result "<<re.size()<<endl;
-        for( int c=0;c<re.size();c++)
-        {
-            if( confs[c] < 0 )
-                continue;
-			rectangle( test_img, re[c], Scalar(255,0,0), 3);
-			stringstream ss; ss<<confs[c];string conf_string;ss>>conf_string;
-			putText( test_img, "conf "+conf_string, Point( re[c].x, re[c].y ), FONT_HERSHEY_COMPLEX, 0.8, Scalar(255,0,0));
-			cout<<"confidence is "<<confs[c]<<endl;
-        }
-        cout<<endl;
-        imshow("testimage", test_img );
-        waitKey(0);
-    }
-
-#endif
-
-#ifdef TEST_STAT_WINDOW
-
-#ifdef P1
-    string testset_neg_path =       "/home/yuanyang/Workspace/INRIA/Test/neg/";
-    string testset_pos_image_path = "/home/yuanyang/Workspace/INRIA/Test/pos/";
-    string testset_pos_gt_path =    "/home/yuanyang/Workspace/INRIA/Test/AnnotTest/";
-#endif
-#ifdef P2
-    string testset_neg_path = "/mnt/disk1/data/INRIAPerson/Test/neg/";
-    string testset_pos_image_path = "/mnt/disk1/data/INRIAPerson/Test/pos/";
-    string testset_pos_gt_path = "/mnt/disk1/data/INRIAPerson/Test/AnnotTest/";
-#endif
-#ifdef P3
-    string testset_neg_path = "/home/pcipci/mzx/ped_detect/Inria/Test/neg/";
-    string testset_pos_image_path = "/home/pcipci/mzx/ped_detect/Inria/Test/pos/";
-    string testset_pos_gt_path = "/home/pcipci/mzx/ped_detect/Inria/Test/AnnotTest/";
-#endif
-
-    
-    /*  using the sampleWins function */
-    cascadeParameter par_for_test = sc.getParas();
-    par_for_test.negImgDir = testset_neg_path;
-    par_for_test.posGtDir  = testset_pos_gt_path;
-    par_for_test.posImgDir = testset_pos_image_path;
-    
-    sc.setParas( par_for_test);
-    vector<Mat> test_pos_orig;
-    vector<Mat> test_pos_all;
-    sampleWins( sc, 0, true, has_groundtruth, test_pos_all, test_pos_orig );
-
-    cout<<"->Making positive test data ";
-    Mat pos_test_data = Mat::zeros( final_feature_dim, test_pos_all.size(), CV_32F);
-    #pragma omp parallel for num_threads(Nthreads)
-    for ( int c=0;c<test_pos_all.size();c++) 
-    {
-        vector<Mat> feas;
-        ff1.computeChannels_sse( test_pos_all[c], feas );
-        
-        for(int i=0;i<feas.size();i++)
-        {
-            ff1.convTri( feas[i], feas[i], 1, 1 );
-        }
-
-        Mat tmp = pos_test_data.col(c);
-        makeTrainData( feas, tmp , cas_para.modelDsPad, cas_para.shrink);
-    }
-    /* delete others */
-    vector<Mat>().swap(test_pos_all);
-    vector<Mat>().swap(test_pos_orig);
-    cout<<"done. Total number :"<<pos_test_data.cols<<endl;
-    
-    Mat for_test_feat;
-    double stat_fn = 0;
-    double avg_pos_score = 0;
-    for( int c=0;c<pos_test_data.cols;c++)
-    {
-        Mat tmp = pos_test_data.col(c);
-		tmp.copyTo(for_test_feat);
-        double score = 0;
-		sc.Predict( (float*)for_test_feat.data, score );
-        avg_pos_score += score;
-        if( score < 0)
-            stat_fn += 1.0;
-    }
-    stat_fn = stat_fn / pos_test_data.cols;
-    avg_pos_score /= pos_test_data.cols;
-
-    vector<Mat> test_neg_orig;
-    vector<Mat> test_neg_all;
-    sampleWins( sc, 0, false,has_groundtruth,  test_neg_all, test_neg_orig );
-    cout<<"Making negative test data "<<endl;
-    Mat neg_test_data = Mat::zeros( final_feature_dim, test_neg_orig.size(), CV_32F );
- 
-    #pragma omp parallel for num_threads(Nthreads)
-    for ( int c=0;c<test_neg_orig.size();c++) 
-    {
-        vector<Mat> feas;
-        ff1.computeChannels_sse( test_neg_orig[c], feas );
-        
-        for(int i=0;i<feas.size();i++)
-        {
-            ff1.convTri( feas[i], feas[i], 1, 1 );
-        }
-
-        Mat tmp = neg_test_data.col(c);
-        makeTrainData( feas, tmp , cas_para.modelDsPad, cas_para.shrink);
-    }
-    /* delete others */
-    vector<Mat>().swap(test_neg_all);
-    vector<Mat>().swap(test_neg_orig);
-    cout<<"done. Total number :"<<neg_test_data.cols<<endl;
-    
-    double stat_fp = 0;
-    double avg_neg_score = 0;
-    for( int c=0; c<neg_test_data.cols;c++)
-    {
-        Mat tmp = neg_test_data.col(c);
-		tmp.copyTo(for_test_feat);
-        double score = 0;
-        sc.Predict( (float*)for_test_feat.data, score);
-        avg_neg_score += score;
-        if( score > 0 )
-            stat_fp += 1.0;
-    }
-    stat_fp /= neg_test_data.cols;
-    avg_neg_score /= neg_test_data.cols;
-
-	cout<<"Test data information, Pos "<<pos_test_data.cols<<" Neg "<<neg_test_data.cols<<endl;
-    cout<<"Test result on INRIA dataset\n FP is "<<stat_fp<<" FN is "<<stat_fn<<endl;
-    cout<<"Test: avg pos score is "<<avg_pos_score<<" avg neg score is "<<avg_neg_score<<endl;
-
-#endif
-
-#ifdef TEST_STAT_SLIDE
-
-#ifdef P1
-    string testset_neg_path = "/media/yuanyang/disk1/libs/piotr_toolbox/data/Inria/Test/neg/";
-    string testset_pos_image_path = "/media/yuanyang/disk1/libs/piotr_toolbox/data/Inria/Test/pos/";
-    string testset_pos_gt_path = "/media/yuanyang/disk1/libs/piotr_toolbox/data/Inria/Test/AnnotTest/";
-#endif
-#ifdef P2
-    string testset_neg_path = "/mnt/disk1/data/INRIAPerson/Test/neg/";
-    string testset_pos_image_path = "/mnt/disk1/data/INRIAPerson/Test/pos/";
-    string testset_pos_gt_path = "/mnt/disk1/data/INRIAPerson/Test/AnnotTest/";
-#endif
-#ifdef P3
-    string testset_neg_path = "/home/pcipci/mzx/ped_detect/Inria/Test/neg/";
-    string testset_pos_image_path = "/home/pcipci/mzx/ped_detect/Inria/Test/pos/";
-    string testset_pos_gt_path = "/home/pcipci/mzx/ped_detect/Inria/Test/AnnotTest/";
-#endif
-
-	/* 1 -> slide negative images */
-	bf::path neg_img_dir( testset_neg_path );
-	int number_of_neg_images = getNumberOfFilesInDir( testset_neg_path );
-
-	bf::directory_iterator end_it;
-    vector<string> image_path_vector;
-
-    for( bf::directory_iterator file_iter(neg_img_dir); file_iter!=end_it; file_iter++)
-    {
-        string pathname = file_iter->path().string();
-
-		string extname  = bf::extension( *file_iter);
-		if( extname!=".jpg" && extname!=".bmp" && extname!=".png" &&
-				extname!=".JPG" && extname!=".BMP" && extname!=".PNG")
-			continue;
-
-        image_path_vector.push_back( pathname );
-    }
-
-	int number_of_fp = 0;
-	cout<<"FP test ... "<<endl;
-	tk.reset();tk.start();
-	//#pragma omp parallel for num_threads(Nthreads) reduction( +: number_of_fp)
-	for( int c=0;c<image_path_vector.size();c++)
-	{
-		vector<Rect> det_rects;
-		vector<double> det_confs;
-		Mat input_img = imread( image_path_vector[c]);
-
-        bf::path t_path( image_path_vector[c]);
-        string basename = bf::basename(t_path);
-
-		sc.detectMultiScale( input_img, det_rects, det_confs, Size(0,0), Size(0,0));
-		//#pragma omp critical
-        {
-		    number_of_fp += det_rects.size(); 
-#ifdef SAVE_IMAGE
-            for(int i= 0;i<det_rects.size();i++)
-            {
-                stringstream ss;ss<<i;string index_string;ss>>index_string;
-                string save_path = "neg_fp/"+basename+"_"+index_string+".jpg";
-                Mat save_img = cropImage( input_img, det_rects[i]);
-                imwrite( save_path, save_img );
-            }
-#endif
-        }
-	}
-	tk.stop();
-    cout<<"number_of_fp is "<<number_of_fp<<endl;
-	cout<<"FP test done. Time consume "<<tk.getTimeSec()<<" seconds"<<endl;
-
-	/* 2 -> test FN  */
-	int number_of_fn = 0;
-	int number_of_wrong = 0;
-    int number_of_target = 0;
-	bf::path pos_img_dir(testset_pos_image_path);
-	int number_of_pos_images = getNumberOfFilesInDir( testset_pos_image_path );
-	image_path_vector.clear();
-	vector<string> gt_path_vector;
-	
-	for( bf::directory_iterator file_iter(pos_img_dir); file_iter!=end_it; file_iter++)
-    {
-		bf::path s = *(file_iter);
-		string basename = bf::basename(s);
-        string pathname = file_iter->path().string();
-        string extname  = bf::extension(s);
-
-		if( extname!=".jpg" && extname!=".bmp" && extname!=".png" &&
-				extname!=".JPG" && extname!=".BMP" && extname!=".PNG")
-			continue;
-
-        /* check if both groundTruth and image exist */
-        bf::path gt_path(testset_pos_gt_path + basename + ".xml");
-        if(!bf::exists( gt_path))   // image already exists ..
-        {
-            continue;
-        }
-
-        image_path_vector.push_back( pathname );
-        gt_path_vector.push_back( testset_pos_gt_path + basename + ".xml");
-    }
-	cout<<"Test FN "<<endl;
-	tk.reset();tk.start();
-
-	#pragma omp parallel for num_threads(Nthreads) reduction( +: number_of_fn) reduction( +: number_of_wrong ) reduction(+:number_of_target)
-	for( int i=0;i<image_path_vector.size(); i++)
-	{ 
-		// reading groundtruth...
-		vector<Rect> target_rects;
-        FileStorage fst( gt_path_vector[i], FileStorage::READ | FileStorage::FORMAT_XML);
-        fst["boxes"]>>target_rects;
-        fst.release();
-        number_of_target += target_rects.size();
-
-		// reading image
-		Mat test_img = imread( image_path_vector[i]);
-		vector<Rect> det_rects;
-		vector<double> det_confs;
-		sc.detectMultiScale( test_img, det_rects, det_confs, Size(0,0), Size(0,0) );
-
-		int matched = 0;
-		vector<bool> isMatched_r( target_rects.size(), false);
-		vector<bool> isMatched_l( det_rects.size(), false);
-		for( int c=0;c<det_rects.size();c++)
-		{
-			for( int k=0;k<target_rects.size();k++)	
-			{
-				if( isSameTarget( det_rects[c], target_rects[k]) && !isMatched_r[k] && !isMatched_l[c])
-				{
-					matched++;
-					isMatched_r[k] = true;
-					isMatched_l[c] = true;
-					break;
-				}
-			}
-		}
-
-        bf::path t_path( image_path_vector[i]);
-        string basename = bf::basename(t_path);
-        //#pragma omp critical
-        {
-            for(int c=0;c<isMatched_r.size();c++)
-            {
-                if( !isMatched_r[c])
-                {
-                    number_of_fn++;
-#ifdef SAVE_IMAGE
-                    stringstream ss;ss<<c;string index_string;ss>>index_string;
-                    string save_path = "pos_fn/"+basename+"_"+index_string+".jpg";
-                    Mat save_img = cropImage( test_img, target_rects[c] );
-                    imwrite( save_path, save_img);
-#endif
-                }
-            }
-
-            for(int c=0;c<isMatched_l.size();c++)
-            {
-                if( !isMatched_l[c])
-                {
-                    number_of_wrong++;
-#ifdef SAVE_IMAGE
-                    stringstream ss;ss<<c;string index_string;ss>>index_string;
-                    string save_path = "pos_fp/"+basename+"_"+index_string+".jpg";
-                    Mat save_img = cropImage( test_img, det_rects[c]);
-                    imwrite( save_path, save_img);
-#endif
-                }
-            }
-        }
-	}
-    cout<<"number of wrong is "<<number_of_wrong<<endl;
-    cout<<"number of fn is "<<number_of_fn<<endl;
-	tk.stop();
-	cout<<"Test FN done. Time consuming "<<tk.getTimeSec()<<" seconds."<<endl;
-	
-	number_of_fp += number_of_wrong;
-	cout<<"number of fp is "<<number_of_fp<<endl;
-    cout<<"number of target is "<<number_of_target<<endl;
-
-    cout<<"PRECISON is "<<1-1.0*number_of_fn/number_of_target<<endl;
-    cout<<"FP(per image) is "<<1.0*number_of_fp/(number_of_neg_images + number_of_pos_images)<<endl;
-    out_miss_rate = 1-1.0*number_of_fn/number_of_target;
-    out_fp_per_image = 1.0*number_of_fp/(number_of_neg_images + number_of_pos_images);
-#endif
     return 0;
 }
 
@@ -894,31 +519,5 @@ int runTrainAndTest( double &out_miss_rate, double &out_fp_per_image)
 /* detector parameter define */
 int main( int argc, char** argv)
 {
-    int number_to_go = 1;
-    vector<double> precision_v(number_to_go,0);
-    vector<double> fp_v(number_to_go,0);
-
-
-    for ( int c=0;c < number_to_go; c++) 
-    {
-        cout<<"------------------------------ RUN "<<c<<" ------------------------------------"<<endl;
-        double mr_tmp = 0;
-        double fp_tmp = 0;
-        runTrainAndTest( mr_tmp, fp_tmp );
-        precision_v[c] = mr_tmp;
-        fp_v[c] = fp_tmp;
-    }
-
-    /* show result  */
-    cout<<"precision_v :"<<endl;
-    for ( int c=0; c<precision_v.size(); c++) {
-        cout<<precision_v[c]<<" ";
-    }
-    cout<<endl;
-
-    cout<<"fp_v :"<<endl;
-    for ( int c=0; c<fp_v.size(); c++) {
-        cout<<fp_v[c]<<" ";
-    }
-    cout<<endl;
+    return runTrainAndTest();
 }
