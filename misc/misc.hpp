@@ -28,4 +28,7 @@ Rect resizeToFixedRatio( const Rect &inRect,				/* in : input boudingbox informt
 						 int flag = 1 )	;						/* in : respect to width  = 0 
 																	respect to height > 0 */
 bool saveMatToFile( string path_name, const Mat & m);
+
+bool colorEqu( const Mat &input_image, 
+                Mat &output_image);
 #endif

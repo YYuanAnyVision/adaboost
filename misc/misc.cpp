@@ -136,3 +136,22 @@ bool saveMatToFile( string path_name, const Mat & m)
 
     fs.close();
 } 
+
+
+bool colorEqu( const Mat &input_image, 
+                Mat &output_image)
+{
+    if( input_image.empty() || input_image.channels() != 3)
+    {
+        cout<<"input image should be color image "<<endl;
+        return false;
+    }
+
+    vector<Mat> channels;
+    cv::split( input_image, channels);
+    for( int c=0;c<channels.size();c++)
+        cv::equalizeHist( channels[c], channels[c] );
+    cv::merge( channels , output_image );
+
+    return true;
+}
