@@ -93,37 +93,37 @@ void MultiImage_OneWin(const std::string& MultiShow_WinName, const vector<Mat>& 
 int main( int argc, char** argv)
 {
 
-    cv::TickMeter tk;
-    for ( int c=0; c<5;c++ ) cout<<"a",cout<<"b";
-	const int k=256; float R[k], G[k], B[k];
-	if(size_t(R)&15)
-		cout<<"bingo"<<endl;
-	cout<<(size_t(R))<<endl;
-	cout<<static_cast<const void*>(R)<<endl;
+    //cv::TickMeter tk;
+    //for ( int c=0; c<5;c++ ) cout<<"a",cout<<"b";
+	//const int k=256; float R[k], G[k], B[k];
+	//if(size_t(R)&15)
+	//	cout<<"bingo"<<endl;
+	//cout<<(size_t(R))<<endl;
+	//cout<<static_cast<const void*>(R)<<endl;
 
 
 
-    Mat input_image = imread(argv[1]);
-    //Mat input_image = imread("/media/yuanyang/disk1/git/adaboost/build/chnfeature/crop_000007.png", CV_LOAD_IMAGE_GRAYSCALE);
+    //Mat input_image = imread(argv[1]);
+    ////Mat input_image = imread("/media/yuanyang/disk1/git/adaboost/build/chnfeature/crop_000007.png", CV_LOAD_IMAGE_GRAYSCALE);
 
-    imshow("input",input_image);
-    cout<<"image size : "<<input_image.size()<<endl;
-    feature_Pyramids ff1;
-    vector<Mat> f_chns;
-    tk.start();
-    Mat fhog_feature;
-    ff1.fhog( input_image, fhog_feature, f_chns, 0);
-    tk.stop();
-    cout<<"time consuming "<<tk.getTimeMilli()<<endl;
-    cout<<"feature has "<<f_chns.size()<<" channels "<<endl;
-    cout<<"size of the feature is "<<fhog_feature.size()<<endl;
-    Mat draw;
-    vector<Mat> zero_pi_channel( f_chns.begin() + 18, f_chns.begin()+27);
-    cout<<"contrast unsensitive channels "<<zero_pi_channel.size()<<endl;
-    ff1.visualizeHog( zero_pi_channel, draw);
-    imshow("show", draw);
-    waitKey(0);
-    
+    //imshow("input",input_image);
+    //cout<<"image size : "<<input_image.size()<<endl;
+    //feature_Pyramids ff1;
+    //vector<Mat> f_chns;
+    //tk.start();
+    //Mat fhog_feature;
+    //ff1.fhog( input_image, fhog_feature, f_chns, 0);
+    //tk.stop();
+    //cout<<"time consuming "<<tk.getTimeMilli()<<endl;
+    //cout<<"feature has "<<f_chns.size()<<" channels "<<endl;
+    //cout<<"size of the feature is "<<fhog_feature.size()<<endl;
+    //Mat draw;
+    //vector<Mat> zero_pi_channel( f_chns.begin() + 18, f_chns.begin()+27);
+    //cout<<"contrast unsensitive channels "<<zero_pi_channel.size()<<endl;
+    //ff1.visualizeHog( zero_pi_channel, draw);
+    //imshow("show", draw);
+    //waitKey(0);
+    //
     //vector<vector<Mat> > feature;
     //vector<double> scales;
     //vector<double> scalesw;

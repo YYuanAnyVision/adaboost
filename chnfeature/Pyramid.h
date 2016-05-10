@@ -134,44 +134,6 @@ public:
 	*/
 	const channels_opt  &getParas() const;
 
-
-
-
-    /* 
-     * ===  FUNCTION  ======================================================================
-     *         Name:  computeChannels_sse
-     *  Description:  compute channel features, same effect as computeChannels, only use sse
-     *                channels data is continuous in momory, LUVGOG1G2G3G4G5G6 
-     * =====================================================================================
-     */
-    bool computeChannels_sse( const Mat &image,             // in : input image, BGR 
-                              vector<Mat>& channels) const; //out : 10 channle features, continuous in memory
-    /* 
-     * ===  FUNCTION  ======================================================================
-     *         Name:  convTri
-     *  Description:   convolve one row of I by a 2rx1 triangle filter
-     * =====================================================================================
-     */
-    // sse version, faster
-	void convTri( const Mat &src,       // in : input data, for color image, this is the first channel, and set dim =3
-                  Mat &dst,             // out: output data, for color image, this is the first channel, and set dim =3
-                  int conv_size,        // in : value of r, the length of the kernel
-                  int dim) const;       // in : dim, DO NOT SET dim=3 for gray image, and should make 3 channels continuous 
-
-
-    /* 
-     * ===  FUNCTION  ======================================================================
-     *         Name:  convt_2_luv
-     *  Description:  convert the image from BGR to LUV, LUV channel is contiunous in memory
-     * =====================================================================================
-     */
-
-	bool convt_2_luv( const Mat input_image,            // in : input image
-					  Mat &L_channel,                   // out: L channel
-					  Mat &U_channel,                   // out: U channel
-					  Mat &v_channel) const;            // out: V channel 
-
-
     /* 
      * ===  FUNCTION  ======================================================================
      *         Name:  computeGradMag
@@ -203,31 +165,6 @@ public:
                             bool full = false         //in : ture->0-2pi, false->0-pi
                             ) const;
 
-
-      /* 
-       * ===  FUNCTION  ======================================================================
-       *         Name:  chnsPyramid_sse
-       *  Description:  compute channels pyramid without approximation, slower but accurate
-       * =====================================================================================
-       */
-    bool chnsPyramid_sse(const Mat &img,                        //in : input image
-                         vector<vector<Mat> > &chns_Pyramid,    //out: output features
-                         vector<double> &scales) const;         //out: scale of each pyramid
-
-
-/* 
-     * ===  FUNCTION  ======================================================================
-     *         Name:  chnsPyramid_sse
-     *  Description:  compute channels pyramid with approximation, fast
-     * =====================================================================================
-     */
-	bool chnsPyramid_sse(const Mat &img,                                    //in:  image
-						vector<vector<Mat> > &approxPyramid,			    //out: feature channels pyramid
-						vector<double> &scales,							    //out: all scales
-						vector<double> &scalesh,						    //out: the height scales
-						vector<double> &scalesw) const;					    //out: the width scales
-
-    
     /* 
      * ===  FUNCTION  ======================================================================
      *         Name:  fhog

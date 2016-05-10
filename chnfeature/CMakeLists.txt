@@ -9,9 +9,8 @@ if (OPENMP_FOUND)
 endif()
 
 add_executable( test_chn main.cpp  )
-add_library( sseFun sseFun.h sseFun.cpp)
 add_library( chnFeature Pyramid.h Pyramid.cpp )
 
-target_link_libraries( chnFeature sseFun misc ${OpenCV_LIBS}  )
+target_link_libraries( chnFeature misc ${OpenCV_LIBS}  )
 target_link_libraries(  test_chn chnFeature ${OpenCV_LIBS}    )
 

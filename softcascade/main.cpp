@@ -156,7 +156,7 @@ bool sampleWins(    const softcascade &sc, 	    /*  in: detector */
             for( int i=0;i<image_path_vector.size();i++)
             {
                 Mat im = imread( image_path_vector[i]);
-
+                
                 vector<Rect> target_rects;
                 FileStorage fst( gt_path_vector[i], FileStorage::READ | FileStorage::FORMAT_XML);
                 fst["boxes"]>>target_rects;
@@ -176,6 +176,7 @@ bool sampleWins(    const softcascade &sc, 	    /*  in: detector */
                     /* finally crop the image */
                     Mat target_obj = cropImage( im, target_rects[i]);
                     cv::resize( target_obj, target_obj, cv::Size(modelDsBig_width, modelDsBig_height), 0, 0, INTER_AREA);
+                    
                     #pragma omp critical
                     {
                         origsamples.push_back( target_obj );
@@ -342,7 +343,6 @@ bool sampleWins(    const softcascade &sc, 	    /*  in: detector */
 int runTrainAndTest()
 {
     std::srand ( unsigned ( std::time(0) ) );
-    Mat Km = get_Km(1);
 
     /* globale paras*/
 	int Nthreads = omp_get_max_threads();
@@ -365,11 +365,11 @@ int runTrainAndTest()
 
     bool has_groundtruth = true;
 
-    cas_para.posGtDir  = "/home/yuanyang/Workspace/INRIA/train/posGt_opencv/";
-    cas_para.posImgDir = "/home/yuanyang/Workspace/INRIA/train/pos/"; 
-	cas_para.negImgDir = "/home/yuanyang/Workspace/INRIA/train/neg/";
+    cas_para.posGtDir  = "/home/yuanyang/data/INRIA/gt_opencv/train/";
+    cas_para.posImgDir = "/home/yuanyang/data/INRIA/INRIAPerson/Train/pos"; 
+	cas_para.negImgDir = "/home/yuanyang/data/INRIA/INRIAPerson/Train/neg/";
 
-    cas_para.infos = "2015-1-25, YuanYang, Test";
+    cas_para.infos = "2015-5-10, YuanYang, Test";
     cas_para.shrink = det_opt.shrink;
     cas_para.pad   = det_opt.pad;
     cas_para.nchannels = 10;
@@ -417,11 +417,11 @@ int runTrainAndTest()
             for ( int c=0;c<pos_samples.size();c++) 
             {
                 vector<Mat> feas;
-                ff1.computeChannels_sse( pos_samples[c], feas );
-                
+                ff1.computeChannels( pos_samples[c], feas );
+                Mat kernel = get_Km(1);
                 for(int i=0;i<feas.size();i++)
                 {
-                    ff1.convTri( feas[i], feas[i], 1,1);
+                    ff1.convTri( feas[i], feas[i], kernel);
                 }
 
                 Mat tmp = pos_train_data.col(c);
@@ -462,10 +462,13 @@ int runTrainAndTest()
         for ( int c=0;c<accu_neg.size();c++)
         {
             vector<Mat> feas;
-            ff1.computeChannels_sse( accu_neg[c], feas );
+            ff1.computeChannels( accu_neg[c], feas );
+            
+            Mat kernel = get_Km(1);
+
             for(int i=0;i<feas.size();i++)
             {
-                ff1.convTri( feas[i], feas[i], 1, 1);
+                ff1.convTri( feas[i], feas[i], kernel);
             }
             Mat tmp = neg_train_data.col(c);
             makeTrainData( feas, tmp , cas_para.modelDsPad, cas_para.shrink);
